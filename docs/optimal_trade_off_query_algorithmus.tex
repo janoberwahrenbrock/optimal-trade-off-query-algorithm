@@ -1,0 +1,238 @@
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+
+\title{Optimal Trade-Off-Query Algorithmus}
+\author{Jan Oberwahrenbrock}
+\date{April 2026}
+
+\begin{document}
+
+\maketitle
+
+\section*{Input}
+
+\begin{itemize}
+\item
+Handlungsalternativenmatrix
+\[
+H=(u_{k\ell}) \in [0,1]^{m\times n},
+\]
+wobei \(u_{k\ell}\) den Nutzenwert der Alternative \(k\) im Ziel \(\ell\)
+bezeichnet.
+
+\item
+Menge der bisher beantworteten Trade-off-Queries
+\[
+T=\{(a,b,\xi,\circ)\},
+\]
+wobei \(a,b\) Zielindizes, \(\xi\ge 0\) ein Schwellenwert und
+\[
+\circ \in \{<,=,>\}
+\]
+der zugeh\"orige Operator ist. Eine solche Query hat die Form
+\[
+w_a \ \circ \ \xi\, w_b.
+\]
+\end{itemize}
+
+
+\section*{Ablauf}
+
+\begin{enumerate}
+\item
+Bestimme aus \(T\) die aktuelle Zielgewichtsmenge \(W(T)\).
+
+\item
+Bestimme f\"ur jede Alternative \(k\) die Optimalit\"atsregion
+\[
+O_k(T)
+=
+\left\{
+w\in W(T)\;\middle|\;
+G_k(w)\ge G_g(w)\ \text{f\"ur alle Alternativen } g
+\right\},
+\]
+wobei \(G_k(w)=\sum_{\ell=1}^n u_{k\ell}w_\ell\) den Gesamtnutzen der Alternative \(k\) bezeichnet.
+
+
+Bestimme daraus die Kandidatenmenge
+\[
+K(T)=\left\{k\mid O_k(T)\neq\emptyset\right\}.
+\]
+
+\item
+Pr\"ufe, ob einer der folgenden Terminierungsf\"alle eintritt:
+\[
+|K(T)|=1
+\]
+oder
+\[
+G_a(w)=G_b(w)\qquad\text{f\"ur alle }a,b\in K(T)\text{ und alle }w\in W(T).
+\]
+
+Im zweiten Fall kann keine weitere Query die verbleibenden Kandidaten noch
+unterscheiden.
+
+\item
+Bestimme f\"ur jedes geordnete Zielpaar \((i,j)\) mit \(i\neq j\) und jeden
+Kandidaten \(k\) das Verh\"altnisintervall
+\[
+I_k^{(i,j)}
+=
+\left\{
+\frac{w_i}{w_j}
+\;\middle|\;
+w\in O_k(T),\; w_j>0
+\right\}
+=
+[\alpha_k^{(i,j)},\beta_k^{(i,j)}].
+\]
+
+Bestimme daraus f\"ur jedes geordnete Zielpaar \((i,j)\) die Menge der linken
+Rohkandidaten
+\[
+R_{\mathrm{left}}^{(i,j)}
+=
+\left\{
+(i,j,\alpha_k^{(i,j)},\mathrm{left})
+\;\middle|\;
+k\in K(T),\ \alpha_k^{(i,j)} > \varepsilon
+\right\}
+\]
+sowie die Menge der rechten Rohkandidaten
+\[
+R_{\mathrm{right}}^{(i,j)}
+=
+\left\{
+(i,j,\beta_k^{(i,j)},\mathrm{right})
+\;\middle|\;
+k\in K(T),\ \beta_k^{(i,j)} < \infty
+\right\}.
+\]
+
+Definiere daraus f\"ur jedes geordnete Zielpaar \((i,j)\) die
+Rohkandidatenmenge
+\[
+R^{(i,j)}
+=
+R_{\mathrm{left}}^{(i,j)}
+\cup
+R_{\mathrm{right}}^{(i,j)}
+\]
+sowie die gesamte Rohkandidatenmenge
+\[
+R
+=
+\bigcup_{i\neq j} R^{(i,j)}.
+\]
+
+Fasse anschlie\ss end \"aquivalente Rohkandidaten zusammen, wobei f\"ur \(x>0\)
+\[
+(i,j,x,\mathrm{left}) \sim (j,i,1/x,\mathrm{right})
+\]
+und
+\[
+(i,j,x,\mathrm{right}) \sim (j,i,1/x,\mathrm{left})
+\]
+gelten.
+
+
+
+Die daraus entstehende gefilterte Rohkandidatenmenge bezeichne mit
+\[
+R^{\mathrm{filtered}}.
+\]
+
+Definiere daraus die Mengen
+\[
+Q_{\mathrm{left}}^{\mathrm{filtered}}
+=
+\left\{
+(i,j,\alpha-\varepsilon)
+\;\middle|\;
+(i,j,\alpha,\mathrm{left})\in R^{\mathrm{filtered}}
+\right\}
+\]
+und
+\[
+Q_{\mathrm{right}}^{\mathrm{filtered}}
+=
+\left\{
+(i,j,\beta+\varepsilon)
+\;\middle|\;
+(i,j,\beta,\mathrm{right})\in R^{\mathrm{filtered}}
+\right\}.
+\]
+
+Die gefilterte Query-Menge ist dann gegeben durch
+\[
+Q^{\mathrm{filtered}}
+=
+Q_{\mathrm{left}}^{\mathrm{filtered}}
+\cup
+Q_{\mathrm{right}}^{\mathrm{filtered}}.
+\]
+
+
+
+
+
+\item
+Bestimme f\"ur jede Query \(q=(i,j,x)\in Q^{\mathrm{filtered}}\) die Mengen
+\[
+K_{<}(q):=\{k\in K(T)\mid x>\alpha_k^{(i,j)}\},
+\]
+\[
+K_{>}(q):=\{k\in K(T)\mid x<\beta_k^{(i,j)}\}.
+\]
+
+Bestimme zus\"atzlich die Antwortwahrscheinlichkeiten
+\[
+p_{<}(q),\qquad p_{>}(q),
+\]
+also die Wahrscheinlichkeiten daf\"ur, dass auf die Query \(q\) eine
+\(<\)- bzw. eine \(>\)-Antwort erfolgt.
+
+\item
+Definiere die Menge der informativen Queries durch
+\[
+Q^{\mathrm{info}}
+=
+\left\{
+q\in Q^{\mathrm{filtered}}
+\;\middle|\;
+\bigl(K_{<}(q)\subsetneq K(T)\ \text{und}\ p_{<}(q)>0\bigr)
+\ \lor\
+\bigl(K_{>}(q)\subsetneq K(T)\ \text{und}\ p_{>}(q)>0\bigr)
+\right\}.
+\]
+
+
+Falls
+\[
+Q^{\mathrm{info}}=\emptyset,
+\]
+terminiert der Algorithmus, da keine weitere informative Query existiert.
+
+\item
+Falls \(Q^{\mathrm{info}}\neq\emptyset\), bestimme f\"ur jede Query
+\(q\in Q^{\mathrm{info}}\) die erwartete verbleibende Kandidatenanzahl
+\[
+\mathbb{E}[N\mid q]
+=
+p_{<}(q)\,|K_{<}(q)|
++
+p_{>}(q)\,|K_{>}(q)|.
+\]
+
+W\"ahle anschlie\ss end eine Query
+\[
+q^\star \in \arg\min_{q\in Q^{\mathrm{info}}} \mathbb{E}[N\mid q].
+\]
+
+\end{enumerate}
+
+\end{document}

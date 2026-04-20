@@ -1,0 +1,140 @@
+{
+  "id": "a5_a10_case",
+  "goal_labels": [
+    "Spa\u00df",
+    "Finanzen",
+    "Sicherheit"
+  ],
+  "target_weights": {
+    "vector": [
+      0.0918,
+      0.6304,
+      0.2777
+    ],
+    "by_goal": {
+      "Spa\u00df": 0.0918,
+      "Finanzen": 0.6304,
+      "Sicherheit": 0.2777
+    }
+  },
+  "alternative_names": [
+    "A1",
+    "A2",
+    "A3",
+    "A4",
+    "A5",
+    "A6",
+    "A7",
+    "A8",
+    "A9",
+    "A10"
+  ],
+  "handlungsalternativenmatrix": [
+    [
+      0.45,
+      0.42,
+      0.24
+    ],
+    [
+      0.14,
+      0.58,
+      0.42
+    ],
+    [
+      0.3,
+      0.24,
+      0.76
+    ],
+    [
+      0.81,
+      0.04,
+      0.42
+    ],
+    [
+      0.45,
+      0.68,
+      0.82
+    ],
+    [
+      1.0,
+      0.56,
+      0.67
+    ],
+    [
+      0.91,
+      0.66,
+      0.13
+    ],
+    [
+      0.44,
+      0.48,
+      0.68
+    ],
+    [
+      0.16,
+      0.56,
+      0.04
+    ],
+    [
+      0.15,
+      0.79,
+      0.69
+    ]
+  ],
+  "tradeoffs": [
+    {
+      "ziel_index_a": 1,
+      "ziel_a": "Finanzen",
+      "operator": ">",
+      "value": 1.18082,
+      "ziel_index_b": 2,
+      "ziel_b": "Sicherheit",
+      "text": "Finanzen > 1.18082 * Sicherheit"
+    },
+    {
+      "ziel_index_a": 1,
+      "ziel_a": "Finanzen",
+      "operator": ">",
+      "value": 2.22545,
+      "ziel_index_b": 0,
+      "ziel_b": "Spa\u00df",
+      "text": "Finanzen > 2.22545 * Spa\u00df"
+    },
+    {
+      "ziel_index_a": 0,
+      "ziel_a": "Spa\u00df",
+      "operator": "<",
+      "value": 1.3112,
+      "ziel_index_b": 2,
+      "ziel_b": "Sicherheit",
+      "text": "Spa\u00df < 1.3112 * Sicherheit"
+    },
+    {
+      "ziel_index_a": 1,
+      "ziel_a": "Finanzen",
+      "operator": ">",
+      "value": 3.63033,
+      "ziel_index_b": 0,
+      "ziel_b": "Spa\u00df",
+      "text": "Finanzen > 3.63033 * Spa\u00df"
+    },
+    {
+      "ziel_index_a": 1,
+      "ziel_a": "Finanzen",
+      "operator": "<",
+      "value": 4.75194,
+      "ziel_index_b": 2,
+      "ziel_b": "Sicherheit",
+      "text": "Finanzen < 4.75194 * Sicherheit"
+    },
+    {
+      "ziel_index_a": 0,
+      "ziel_a": "Spa\u00df",
+      "operator": "<",
+      "value": 1.30968,
+      "ziel_index_b": 2,
+      "ziel_b": "Sicherheit",
+      "text": "Spa\u00df < 1.30968 * Sicherheit"
+    }
+  ]
+}

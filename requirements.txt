@@ -1,0 +1,7 @@
+annotated-types>=0.7
+matplotlib>=3.8
+numpy>=1.26
+pandas>=2.2
+pydantic>=2.7
+scipy>=1.12
+streamlit>=1.33
