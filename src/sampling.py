@@ -9,6 +9,9 @@ from .io_models import AlternativenMatrix
 from .ungleichungssysteme import Ungleichungssystem
 
 
+MAX_DIRECTION_RETRIES = 100
+
+
 def sample_points_from_ungleichungssystem(
     system: Ungleichungssystem,
     num_samples: int,
@@ -43,17 +46,32 @@ def sample_points_from_ungleichungssystem(
     total_steps = burn_in + num_samples * thinning
 
     for step_index in range(total_steps):
-        direction = _sample_direction_in_nullspace(
-            equality_nullspace_basis=equality_nullspace_basis,
-            rng=rng,
-            tol=tol,
-        )
-        lambda_min, lambda_max = _compute_feasible_lambda_interval(
-            system=system,
-            current_point=current_point,
-            direction=direction,
-            tol=tol,
-        )
+        for attempt_index in range(MAX_DIRECTION_RETRIES):
+            direction = _sample_direction_in_nullspace(
+                equality_nullspace_basis=equality_nullspace_basis,
+                rng=rng,
+                tol=tol,
+            )
+            try:
+                lambda_min, lambda_max = _compute_feasible_lambda_interval(
+                    system=system,
+                    current_point=current_point,
+                    direction=direction,
+                    tol=tol,
+                )
+                break
+            except RuntimeError as exc:
+                if not _is_retryable_lambda_interval_error(exc):
+                    raise
+                if attempt_index == MAX_DIRECTION_RETRIES - 1:
+                    current_point = np.array(system.find_feasible_point(), dtype=float)
+                    lambda_min, lambda_max = _compute_feasible_lambda_interval(
+                        system=system,
+                        current_point=current_point,
+                        direction=direction,
+                        tol=tol,
+                    )
+                    break
 
         sampled_lambda = rng.uniform(lambda_min, lambda_max)
         current_point = current_point + sampled_lambda * direction
@@ -62,6 +80,13 @@ def sample_points_from_ungleichungssystem(
             sampled_points.append(current_point.astype(float).tolist())
 
     return sampled_points
+
+
+def _is_retryable_lambda_interval_error(exc: RuntimeError) -> bool:
+    return str(exc) in {
+        "current_point is numerically outside the feasible region",
+        "no feasible lambda interval found for the sampled direction",
+    }
 
 
 def estimate_optimality_shares(

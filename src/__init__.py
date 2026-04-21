@@ -12,6 +12,7 @@ from .query_bewertung import (
     QueryInfo,
     build_zielpaar_intervalle_lookup,
     compute_query_info,
+    filter_already_answered_queries,
     filter_informative_query_infos,
 )
 from .query_kandidaten import compute_all_query_kandidaten
@@ -38,6 +39,7 @@ __all__ = [
     "compute_query_info",
     "estimate_optimality_shares",
     "filter_informative_query_infos",
+    "filter_already_answered_queries",
     "Query",
     "QueryInfo",
     "run_algorithmus",

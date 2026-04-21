@@ -33,6 +33,7 @@ from src import (
     compute_all_ratio_intervals,
     compute_query_info,
     estimate_optimality_shares,
+    filter_already_answered_queries,
     filter_informative_query_infos,
     sample_points_from_ungleichungssystem,
 )
@@ -760,6 +761,7 @@ def compute_algorithm_details(
         kandidatenmenge=kandidatenmenge,
     )
     query_kandidaten = compute_all_query_kandidaten(zielpaar_intervalle, epsilon=QUERY_EPSILON)
+    query_kandidaten = filter_already_answered_queries(query_kandidaten, answered_queries)
     state["zielpaar_intervalle"] = zielpaar_intervalle
 
     zielpaar_intervalle_lookup = build_zielpaar_intervalle_lookup(zielpaar_intervalle)

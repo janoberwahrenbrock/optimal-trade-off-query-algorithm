@@ -93,8 +93,16 @@ Die App kann mit den vorhandenen Beispieldaten gestartet werden:
 streamlit run scripts/3_goals.py -- --data-file data/a5_a10_case.json --load-tradeoffs
 ```
 
+## Performance-Analyse starten
+
+```powershell
+python scripts/analyse_performance_cli.py --goals 3,5,7 --alternatives 3,6,9 -x 10 --seed 1 --max-calls 50
+```
+
 ## Projektstruktur
 
 - `src/`: Kernlogik des Algorithmus
-- `scripts/3_goals.py`: Streamlit-App
+- `scripts/3_goals.py`: Streamlit-App fuer drei Ziele
+- `scripts/analyse_performance_cli.py`: CLI-Skript zur Performance-Analyse
 - `data/`: Beispieldaten
+- `docs/`: Dokumentation des Algorithmus

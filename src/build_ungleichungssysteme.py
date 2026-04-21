@@ -161,18 +161,34 @@ def _build_query_nebenbedingung(
         # w_a - value * w_b >= 0  <=>  -w_a + value * w_b <= 0
         linke_seite[ziel_index_a] = -1.0
         linke_seite[ziel_index_b] = value
-        return linke_seite, 0.0, False
+        return _scale_nebenbedingung(linke_seite, 0.0, False)
 
     if answered_query.operator == "<":
         # w_a - value * w_b <= 0
         linke_seite[ziel_index_a] = 1.0
         linke_seite[ziel_index_b] = -value
-        return linke_seite, 0.0, False
+        return _scale_nebenbedingung(linke_seite, 0.0, False)
 
     if answered_query.operator == "=":
         # w_a - value * w_b = 0
         linke_seite[ziel_index_a] = 1.0
         linke_seite[ziel_index_b] = -value
-        return linke_seite, 0.0, True
+        return _scale_nebenbedingung(linke_seite, 0.0, True)
 
     raise ValueError(f"unknown operator: {answered_query.operator}")
+
+
+def _scale_nebenbedingung(
+    linke_seite: Vector,
+    rechte_seite: float,
+    ist_gleichung: bool,
+) -> tuple[Vector, float, bool]:
+    scale = max(abs(value) for value in linke_seite)
+    if scale == 0.0:
+        return linke_seite, rechte_seite, ist_gleichung
+
+    return (
+        [value / scale for value in linke_seite],
+        rechte_seite / scale,
+        ist_gleichung,
+    )

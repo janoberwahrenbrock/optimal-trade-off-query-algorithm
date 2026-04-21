@@ -205,12 +205,19 @@ def _canonicalize_raw_query_candidate(
     if raw_query_candidate.breakpoint_value <= 0.0:
         return raw_query_candidate
 
-    query = _build_query_from_raw_candidate(raw_query_candidate, epsilon)
     mirrored_raw_query_candidate = _build_mirrored_raw_query_candidate(raw_query_candidate)
-    mirrored_query = _build_query_from_raw_candidate(mirrored_raw_query_candidate, epsilon)
 
-    query_value = float(query.value)
-    mirrored_query_value = float(mirrored_query.value)
+    query_value = _compute_query_value_from_raw_candidate(raw_query_candidate, epsilon)
+    mirrored_query_value = _compute_query_value_from_raw_candidate(
+        mirrored_raw_query_candidate,
+        epsilon,
+    )
+
+    if mirrored_query_value < 0.0:
+        return raw_query_candidate
+
+    if query_value < 0.0:
+        return mirrored_raw_query_candidate
 
     if query_value >= 1.0 and mirrored_query_value < 1.0:
         return raw_query_candidate
@@ -256,16 +263,24 @@ def _build_query_from_raw_candidate(
     raw_query_candidate: _RawQueryCandidate,
     epsilon: float,
 ) -> Query:
-    if raw_query_candidate.side == "left":
-        query_value = raw_query_candidate.breakpoint_value - epsilon
-    else:
-        query_value = raw_query_candidate.breakpoint_value + epsilon
+    query_value = _compute_query_value_from_raw_candidate(raw_query_candidate, epsilon)
+    if query_value < 0.0 and math.isclose(query_value, 0.0, abs_tol=1e-12, rel_tol=0.0):
+        query_value = 0.0
 
     return Query(
         ziel_index_a=raw_query_candidate.ziel_index_a,
         ziel_index_b=raw_query_candidate.ziel_index_b,
         value=query_value,
     )
+
+
+def _compute_query_value_from_raw_candidate(
+    raw_query_candidate: _RawQueryCandidate,
+    epsilon: float,
+) -> float:
+    if raw_query_candidate.side == "left":
+        return raw_query_candidate.breakpoint_value - epsilon
+    return raw_query_candidate.breakpoint_value + epsilon
 
 
 def _have_same_raw_candidate_form(

@@ -12,6 +12,7 @@ from .io_models import (
 from .query_bewertung import (
     build_zielpaar_intervalle_lookup,
     compute_query_info,
+    filter_already_answered_queries,
     filter_informative_query_infos,
 )
 from .query_kandidaten import compute_all_query_kandidaten
@@ -67,6 +68,7 @@ def run_algorithmus(
         kandidatenmenge=kandidatenmenge,
     )
     query_kandidaten = compute_all_query_kandidaten(zielpaar_intervalle)
+    query_kandidaten = filter_already_answered_queries(query_kandidaten, answered_queries)
 
     samples = sample_points_from_ungleichungssystem(W, num_samples=1000, burn_in=200, thinning=5)
     zielpaar_intervalle_lookup = build_zielpaar_intervalle_lookup(zielpaar_intervalle)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 from .build_ungleichungssysteme import build_W
@@ -193,6 +194,60 @@ def compute_query_info(
         p_groesser=p_groesser,
         expected_kandidatenanzahl=expected_kandidatenanzahl,
     )
+
+
+def filter_already_answered_queries(
+    queries: list[Query],
+    answered_queries: list[AnsweredQuery],
+    abs_tol: float = 1e-12,
+    rel_tol: float = 1e-9,
+) -> list[Query]:
+    return [
+        query
+        for query in queries
+        if not is_query_already_answered(
+            query=query,
+            answered_queries=answered_queries,
+            abs_tol=abs_tol,
+            rel_tol=rel_tol,
+        )
+    ]
+
+
+def is_query_already_answered(
+    query: Query,
+    answered_queries: list[AnsweredQuery],
+    abs_tol: float = 1e-12,
+    rel_tol: float = 1e-9,
+) -> bool:
+    for answered_query in answered_queries:
+        if (
+            query.ziel_index_a == answered_query.ziel_index_a
+            and query.ziel_index_b == answered_query.ziel_index_b
+            and math.isclose(
+                float(query.value),
+                float(answered_query.value),
+                abs_tol=abs_tol,
+                rel_tol=rel_tol,
+            )
+        ):
+            return True
+
+        if (
+            query.value > 0.0
+            and answered_query.value > 0.0
+            and query.ziel_index_a == answered_query.ziel_index_b
+            and query.ziel_index_b == answered_query.ziel_index_a
+            and math.isclose(
+                float(query.value),
+                1.0 / float(answered_query.value),
+                abs_tol=abs_tol,
+                rel_tol=rel_tol,
+            )
+        ):
+            return True
+
+    return False
 
 
 def is_query_informative(
