@@ -32,6 +32,7 @@ AlgorithmusOutput: TypeAlias = Query | TerminationResult
 def run_algorithmus(
     alternativen_matrix: AlternativenMatrix,
     answered_queries: list[AnsweredQuery],
+    seed: int | None = None,
 ) -> AlgorithmusOutput:
     anzahl_ziele = alternativen_matrix.get_anzahl_spalten()
     W = build_W(anzahl_ziele, answered_queries)
@@ -70,7 +71,13 @@ def run_algorithmus(
     query_kandidaten = compute_all_query_kandidaten(zielpaar_intervalle)
     query_kandidaten = filter_already_answered_queries(query_kandidaten, answered_queries)
 
-    samples = sample_points_from_ungleichungssystem(W, num_samples=1000, burn_in=200, thinning=5)
+    samples = sample_points_from_ungleichungssystem(
+        W,
+        num_samples=1000,
+        burn_in=200,
+        thinning=5,
+        seed=seed,
+    )
     zielpaar_intervalle_lookup = build_zielpaar_intervalle_lookup(zielpaar_intervalle)
 
     query_infos = []

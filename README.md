@@ -75,12 +75,18 @@ Abhaengigkeiten installieren:
 pip install -r requirements.txt
 ```
 
-## App starten
+## Apps starten
 
-Nach dem Aktivieren der virtuellen Umgebung kann die Streamlit-App so gestartet werden:
+Nach dem Aktivieren der virtuellen Umgebung kann die 3-Ziele-App so gestartet werden:
 
 ```bash
 streamlit run scripts/3_goals.py
+```
+
+Die 4-Ziele-App mit Plotly-Tetraeder kann so gestartet werden:
+
+```bash
+streamlit run scripts/4_goals.py
 ```
 
 Danach oeffnet sich die App im Browser. Falls sie nicht automatisch erscheint, zeigt Streamlit im Terminal eine lokale URL an.
@@ -103,6 +109,7 @@ python scripts/analyse_performance_cli.py --goals 3,5,7 --alternatives 3,6,9 -x 
 
 - `src/`: Kernlogik des Algorithmus
 - `scripts/3_goals.py`: Streamlit-App fuer drei Ziele
+- `scripts/4_goals.py`: Streamlit-App fuer vier Ziele mit Plotly-Tetraeder
 - `scripts/analyse_performance_cli.py`: CLI-Skript zur Performance-Analyse
 - `data/`: Beispieldaten
 - `docs/`: Dokumentation des Algorithmus

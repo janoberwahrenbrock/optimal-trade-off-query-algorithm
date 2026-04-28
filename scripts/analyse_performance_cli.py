@@ -34,6 +34,7 @@ MAX_ALGORITHM_CALLS = 100
 UTILITY_DECIMALS = 2
 EQUALITY_TOL = 1e-12
 ONE_HUNDRED_PERCENT_TOL = 1e-12
+MAX_UINT32_SEED = int(np.iinfo(np.uint32).max)
 
 
 @dataclass(frozen=True)
@@ -96,7 +97,7 @@ def parse_args() -> argparse.Namespace:
         "--seed",
         type=int,
         default=DEFAULT_SEED,
-        help="Random Seed. Default: 42",
+        help="Random Seed fuer Problem-Generierung und Sampling. Default: 42",
     )
     parser.add_argument(
         "--max-calls",
@@ -251,14 +252,18 @@ def run_until_termination(
     utilities: np.ndarray,
     target_weights: np.ndarray,
     max_algorithm_calls: int,
+    sampling_seed: int | None = None,
 ) -> SimulationRunResult:
     alternativen_matrix = AlternativenMatrix(entries=utilities.tolist())
     answered_queries: list[AnsweredQuery] = []
+    sampling_seed_rng = np.random.default_rng(sampling_seed)
 
     for call_index in range(1, max_algorithm_calls + 1):
+        algorithm_seed = int(sampling_seed_rng.integers(0, MAX_UINT32_SEED))
         algorithm_output = run_algorithmus(
             alternativen_matrix=alternativen_matrix,
             answered_queries=answered_queries,
+            seed=algorithm_seed,
         )
 
         if isinstance(algorithm_output, TerminationResult):
@@ -323,6 +328,10 @@ def build_summary_row(
         if not run_result.has_100_percent_candidate
     ]
     calls = [run_result.algorithm_calls for run_result in completed_runs]
+    remaining_candidate_counts = [
+        len(run_result.remaining_candidates)
+        for run_result in completed_runs
+    ]
     reason_counts = Counter(run_result.termination_reason for run_result in completed_runs)
     completed_count = len(completed_runs)
 
@@ -330,7 +339,11 @@ def build_summary_row(
         "Ziele": n_goals,
         "Alternativen": n_alternatives,
         "Laeufe": f"{completed_count}/{repetitions}",
-        "Ohne 100%-Kandidat": len(failures),
+        "Verbleibende Kandidaten Mittel": (
+            float(np.mean(remaining_candidate_counts))
+            if remaining_candidate_counts
+            else 0.0
+        ),
         "Anteil ohne 100%-Kandidat": (
             len(failures) / completed_count * 100.0
             if completed_count > 0
@@ -348,7 +361,7 @@ def format_summary_table(rows: list[dict[str, Any]]) -> str:
         "Ziele",
         "Alternativen",
         "Laeufe",
-        "Ohne 100%-Kandidat",
+        "Verbleibende Kandidaten Mittel",
         "Anteil ohne 100%-Kandidat",
         "Algorithmusaufrufe Mittel",
         "Algorithmusaufrufe Max",
@@ -358,6 +371,9 @@ def format_summary_table(rows: list[dict[str, Any]]) -> str:
     formatted_rows = [
         {
             **row,
+            "Verbleibende Kandidaten Mittel": (
+                f"{row['Verbleibende Kandidaten Mittel']:.2f}"
+            ),
             "Anteil ohne 100%-Kandidat": f"{row['Anteil ohne 100%-Kandidat']:.2f}%",
             "Algorithmusaufrufe Mittel": f"{row['Algorithmusaufrufe Mittel']:.2f}",
             "Sekunden": f"{row['Sekunden']:.2f}",
@@ -379,6 +395,11 @@ def format_summary_table(rows: list[dict[str, Any]]) -> str:
         for row in formatted_rows
     ]
     return "\n".join([header, separator, *body])
+
+
+def build_sampling_seed(root_seed: int, run_index: int) -> int:
+    seed_sequence = np.random.SeedSequence([root_seed, run_index])
+    return int(seed_sequence.generate_state(1, dtype=np.uint32)[0])
 
 
 def print_run_result(
@@ -473,6 +494,10 @@ def run_performance_analysis(
                         utilities=utilities,
                         target_weights=target_weights,
                         max_algorithm_calls=max_algorithm_calls,
+                        sampling_seed=build_sampling_seed(
+                            root_seed=seed,
+                            run_index=completed_total_runs,
+                        ),
                     )
                 except NonTerminationError as exc:
                     print_nontermination_debug(
