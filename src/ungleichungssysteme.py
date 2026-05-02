@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal, TypeAlias
+from typing import Any, Literal, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from scipy.optimize import linprog
@@ -8,16 +8,60 @@ from scipy.optimize import linprog
 
 Vector: TypeAlias = list[float]
 Matrix: TypeAlias = list[Vector]
+OptimizationStatus: TypeAlias = Literal["optimal", "infeasible", "unbounded"]
+LINPROG_FEASIBILITY_TOLERANCE = 1e-10
+LINPROG_OPTIONS = {
+    "primal_feasibility_tolerance": LINPROG_FEASIBILITY_TOLERANCE,
+    "dual_feasibility_tolerance": LINPROG_FEASIBILITY_TOLERANCE,
+}
+LINPROG_OPTIONS_WITHOUT_PRESOLVE = {
+    **LINPROG_OPTIONS,
+    "presolve": False,
+}
 
 
 class LinearOptimizationResult(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    status: Literal["optimal", "infeasible", "unbounded"]
+    status: OptimizationStatus
     objective_sense: Literal["min", "max"]
     solver_status_code: int | None = None
     solver_message: str | None = None
     optimal_value: float | None = None
+
+
+def _classify_linprog_failure(
+    solver_status_code: int,
+    solver_message: str,
+) -> OptimizationStatus | None:
+    if solver_status_code == 2:
+        return "infeasible"
+
+    if solver_status_code == 3:
+        return "unbounded"
+
+    normalized_message = solver_message.lower()
+
+    if (
+        "model_status is infeasible" in normalized_message
+        or "primal_status is infeasible" in normalized_message
+    ):
+        return "infeasible"
+
+    if "model_status is unbounded" in normalized_message:
+        return "unbounded"
+
+    return None
+
+
+def _is_classified_linprog_result(result: Any) -> bool:
+    if result.success:
+        return True
+
+    return _classify_linprog_failure(
+        solver_status_code=int(result.status),
+        solver_message=str(result.message),
+    ) is not None
 
 
 class Ungleichungssystem(BaseModel):
@@ -99,7 +143,7 @@ class Ungleichungssystem(BaseModel):
                 solver_message="system has no variables",
             )
 
-        result = linprog(
+        result = self._run_linprog_with_retries(
             c=zielfunktion,
             A_ub=self.ungleichungen_linke_seite or None,
             b_ub=self.ungleichungen_rechte_seite or None,
@@ -107,6 +151,7 @@ class Ungleichungssystem(BaseModel):
             b_eq=self.gleichungen_rechte_seite or None,
             bounds=[(None, None)] * self.anzahl_variablen,
             method="highs",
+            options=LINPROG_OPTIONS,
         )
 
         if result.success:
@@ -121,19 +166,16 @@ class Ungleichungssystem(BaseModel):
                 optimal_value=float(result.fun),
             )
 
-        if result.status == 2:
+        solver_status_code = int(result.status)
+        classified_status = _classify_linprog_failure(
+            solver_status_code=solver_status_code,
+            solver_message=str(result.message),
+        )
+        if classified_status is not None:
             return LinearOptimizationResult(
-                status="infeasible",
+                status=classified_status,
                 objective_sense="min",
-                solver_status_code=int(result.status),
-                solver_message=result.message,
-            )
-
-        if result.status == 3:
-            return LinearOptimizationResult(
-                status="unbounded",
-                objective_sense="min",
-                solver_status_code=int(result.status),
+                solver_status_code=solver_status_code,
                 solver_message=result.message,
             )
 
@@ -171,7 +213,7 @@ class Ungleichungssystem(BaseModel):
         if self.anzahl_variablen <= 0:
             raise ValueError("system has no variables")
 
-        result = linprog(
+        result = self._run_linprog_with_retries(
             c=[0.0] * self.anzahl_variablen,
             A_ub=self.ungleichungen_linke_seite or None,
             b_ub=self.ungleichungen_rechte_seite or None,
@@ -179,6 +221,7 @@ class Ungleichungssystem(BaseModel):
             b_eq=self.gleichungen_rechte_seite or None,
             bounds=[(None, None)] * self.anzahl_variablen,
             method="highs",
+            options=LINPROG_OPTIONS,
         )
 
         if result.success:
@@ -187,13 +230,32 @@ class Ungleichungssystem(BaseModel):
 
             return result.x.astype(float).tolist()
 
-        if result.status == 2:
+        classified_status = _classify_linprog_failure(
+            solver_status_code=int(result.status),
+            solver_message=str(result.message),
+        )
+        if classified_status == "infeasible":
             raise ValueError("system is infeasible")
 
-        if result.status == 3:
+        if classified_status == "unbounded":
             raise ValueError("system is unbounded")
 
         raise RuntimeError(f"linprog failed: {result.message}")
+
+    def _run_linprog_with_retries(self, **kwargs: Any) -> Any:
+        result = linprog(**kwargs)
+        if _is_classified_linprog_result(result):
+            return result
+
+        retry_kwargs = {
+            **kwargs,
+            "options": LINPROG_OPTIONS_WITHOUT_PRESOLVE,
+        }
+        retry_result = linprog(**retry_kwargs)
+        if _is_classified_linprog_result(retry_result):
+            return retry_result
+
+        return result
 
     def to_latex(self, variablenname: str = "w") -> str:
         zeilen: list[str] = []
