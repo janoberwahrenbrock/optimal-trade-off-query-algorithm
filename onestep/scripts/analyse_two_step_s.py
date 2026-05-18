@@ -9,26 +9,27 @@ from pathlib import Path
 from typing import Any
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
+ONESTEP_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = ONESTEP_ROOT.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 
-from src.build_ungleichungssysteme import build_W, build_optimal_region_in_W
-from src.io_models import AlternativenMatrix, AnsweredQuery, Query
-from src.query_bewertung import (
+from onestep.src.build_ungleichungssysteme import build_W, build_optimal_region_in_W
+from onestep.src.io_models import AlternativenMatrix, AnsweredQuery, Query
+from onestep.src.query_bewertung import (
     build_zielpaar_intervalle_lookup,
     compute_query_info,
     filter_already_answered_queries,
     filter_informative_query_infos,
 )
-from src.query_kandidaten import compute_all_query_kandidaten
-from src.ratio_intervalle import compute_all_ratio_intervals
-from src.sampling import sample_points_from_ungleichungssystem
-from src.ungleichungssysteme import Ungleichungssystem
+from onestep.src.query_kandidaten import compute_all_query_kandidaten
+from onestep.src.ratio_intervalle import compute_all_ratio_intervals
+from onestep.src.sampling import sample_points_from_ungleichungssystem
+from onestep.src.ungleichungssysteme import Ungleichungssystem
 
 
-DEFAULT_CASE_PATH = PROJECT_ROOT / "data" / "a5_a10_case.json"
+DEFAULT_CASE_PATH = ONESTEP_ROOT / "data" / "a5_a10_case.json"
 
 
 @dataclass(frozen=True)

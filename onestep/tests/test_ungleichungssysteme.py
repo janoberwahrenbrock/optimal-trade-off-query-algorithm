@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import numpy as np
 
-from src.ungleichungssysteme import Ungleichungssystem
+from onestep.src.ungleichungssysteme import Ungleichungssystem
 
 
 UNKNOWN_PRIMAL_INFEASIBLE_MESSAGE = (
@@ -20,7 +20,7 @@ class UngleichungssystemLinprogFailureTests(unittest.TestCase):
         system = self._build_one_variable_system()
 
         with patch(
-            "src.ungleichungssysteme.linprog",
+            "onestep.src.ungleichungssysteme.linprog",
             return_value=SimpleNamespace(
                 success=False,
                 status=4,
@@ -39,7 +39,7 @@ class UngleichungssystemLinprogFailureTests(unittest.TestCase):
         system = self._build_one_variable_system()
 
         with patch(
-            "src.ungleichungssysteme.linprog",
+            "onestep.src.ungleichungssysteme.linprog",
             return_value=SimpleNamespace(
                 success=False,
                 status=4,
@@ -53,7 +53,7 @@ class UngleichungssystemLinprogFailureTests(unittest.TestCase):
         system = self._build_one_variable_system()
 
         with patch(
-            "src.ungleichungssysteme.linprog",
+            "onestep.src.ungleichungssysteme.linprog",
             return_value=SimpleNamespace(
                 success=False,
                 status=4,
@@ -67,7 +67,7 @@ class UngleichungssystemLinprogFailureTests(unittest.TestCase):
         system = self._build_one_variable_system()
 
         with patch(
-            "src.ungleichungssysteme.linprog",
+            "onestep.src.ungleichungssysteme.linprog",
             side_effect=[
                 SimpleNamespace(
                     success=False,
@@ -97,7 +97,7 @@ class UngleichungssystemLinprogFailureTests(unittest.TestCase):
         system = self._build_one_variable_system()
 
         with patch(
-            "src.ungleichungssysteme.linprog",
+            "onestep.src.ungleichungssysteme.linprog",
             side_effect=[
                 SimpleNamespace(
                     success=False,

@@ -80,13 +80,13 @@ pip install -r requirements.txt
 Nach dem Aktivieren der virtuellen Umgebung kann die 3-Ziele-App so gestartet werden:
 
 ```bash
-streamlit run scripts/3_goals.py
+streamlit run onestep/scripts/3_goals.py
 ```
 
 Die 4-Ziele-App mit Plotly-Tetraeder kann so gestartet werden:
 
 ```bash
-streamlit run scripts/4_goals.py
+streamlit run onestep/scripts/4_goals.py
 ```
 
 Danach oeffnet sich die App im Browser. Falls sie nicht automatisch erscheint, zeigt Streamlit im Terminal eine lokale URL an.
@@ -96,20 +96,24 @@ Danach oeffnet sich die App im Browser. Falls sie nicht automatisch erscheint, z
 Die App kann mit den vorhandenen Beispieldaten gestartet werden:
 
 ```bash
-streamlit run scripts/3_goals.py -- --data-file data/a5_a10_case.json --load-tradeoffs
+streamlit run onestep/scripts/3_goals.py -- --data-file data/a5_a10_case.json --load-tradeoffs
 ```
 
 ## Performance-Analyse starten
 
 ```powershell
-python scripts/analyse_performance_cli.py --goals 3,5,7 --alternatives 3,6,9 -x 10 --seed 1 --max-calls 50
+python onestep/scripts/analyse_performance_cli.py --goals 3,5,7 --alternatives 3,6,9 -x 10 --seed 1 --max-calls 50
 ```
 
 ## Projektstruktur
 
-- `src/`: Kernlogik des Algorithmus
-- `scripts/3_goals.py`: Streamlit-App fuer drei Ziele
-- `scripts/4_goals.py`: Streamlit-App fuer vier Ziele mit Plotly-Tetraeder
-- `scripts/analyse_performance_cli.py`: CLI-Skript zur Performance-Analyse
-- `data/`: Beispieldaten
-- `docs/`: Dokumentation des Algorithmus
+- `onestep/src/`: Kernlogik des bisherigen One-Step-Algorithmus
+- `onestep/scripts/`: Apps und Analyse-Skripte fuer den One-Step-Ansatz
+- `onestep/data/`: Beispieldaten fuer den One-Step-Ansatz
+- `onestep/docs/`: Dokumentation des One-Step-Algorithmus
+- `onestep/tests/`: Tests fuer den One-Step-Ansatz
+- `multistep/src/`: Neue Codebasis fuer den Multi-Step-Ansatz
+- `multistep/scripts/`: Skripte fuer den Multi-Step-Ansatz
+- `multistep/data/`: Daten fuer den Multi-Step-Ansatz
+- `multistep/docs/`: Dokumentation des Multi-Step-Ansatzes
+- `multistep/tests/`: Tests fuer den Multi-Step-Ansatz

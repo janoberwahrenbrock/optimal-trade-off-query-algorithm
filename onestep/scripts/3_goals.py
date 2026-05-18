@@ -13,11 +13,12 @@ import streamlit as st
 from matplotlib import colors as mcolors
 from matplotlib.patches import Polygon
 
-ROOT_DIR = Path(__file__).resolve().parents[1]
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
+ONESTEP_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = ONESTEP_ROOT.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
-from src import (
+from onestep.src import (
     AnsweredQuery,
     AlternativenMatrix,
     Query,
@@ -37,7 +38,7 @@ from src import (
     filter_informative_query_infos,
     sample_points_from_ungleichungssystem,
 )
-from src.termination import all_candidates_have_same_utility_values_in_W
+from onestep.src.termination import all_candidates_have_same_utility_values_in_W
 
 
 SQRT3 = np.sqrt(3.0)
@@ -64,7 +65,7 @@ def parse_cli_args() -> argparse.Namespace:
 def resolve_data_file_path(data_file: str) -> Path:
     path = Path(data_file).expanduser()
     if not path.is_absolute():
-        path = ROOT_DIR / path
+        path = ONESTEP_ROOT / path
     return path.resolve()
 
 

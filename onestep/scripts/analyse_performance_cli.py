@@ -11,11 +11,12 @@ from typing import Any
 
 import numpy as np
 
-ROOT_DIR = Path(__file__).resolve().parents[1]
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
+ONESTEP_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = ONESTEP_ROOT.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
-from src import (
+from onestep.src import (
     AlternativenMatrix,
     AnsweredQuery,
     Query,

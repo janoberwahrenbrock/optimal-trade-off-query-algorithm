@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import unittest
 
-from src.build_ungleichungssysteme import build_W
-from src.io_models import AnsweredQuery
-from src.sampling import sample_points_from_ungleichungssystem
+from onestep.src.build_ungleichungssysteme import build_W
+from onestep.src.io_models import AnsweredQuery
+from onestep.src.sampling import sample_points_from_ungleichungssystem
 
 
 class SamplingRegressionTests(unittest.TestCase):
