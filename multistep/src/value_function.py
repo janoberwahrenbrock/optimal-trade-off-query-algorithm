@@ -79,6 +79,7 @@ class QueryEvaluation:
     query: Query
     expected_value: float
     branches: tuple[QueryBranchResult, ...]
+    query_source: str = "unknown"
 
 
 @dataclass(frozen=True)

@@ -60,8 +60,8 @@ class OnestepQueryCandidatesTests(unittest.TestCase):
         self.assertEqual(
             [(query.ziel_index_a, query.ziel_index_b, query.value) for query in queries],
             [
-                (0, 1, 0.4),
                 (0, 1, 2.1),
+                (1, 0, 2.1),
             ],
         )
 
@@ -108,7 +108,7 @@ class OnestepQueryCandidatesTests(unittest.TestCase):
 
         self.assertEqual(
             [(query.ziel_index_a, query.ziel_index_b, query.value) for query in queries],
-            [(0, 1, 0.4)],
+            [(1, 0, 2.1)],
         )
 
     def test_compute_onestep_query_candidates_deduplicates_identical_breakpoints(
@@ -135,7 +135,7 @@ class OnestepQueryCandidatesTests(unittest.TestCase):
         )
 
         self.assertEqual(len(queries), 1)
-        self.assertEqual(queries[0].value, 0.4)
+        self.assertEqual(queries[0].value, 2.1)
 
     def test_compute_onestep_query_candidates_deduplicates_mirrored_candidates(
         self,

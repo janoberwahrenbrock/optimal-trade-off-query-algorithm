@@ -185,18 +185,25 @@ def _canonicalize_raw_query_candidate(
     if query_value < 0.0:
         return mirrored_raw_query_candidate
 
-    if _have_same_raw_candidate_form(
-        raw_query_candidate_a=raw_query_candidate,
-        raw_query_candidate_b=mirrored_raw_query_candidate,
-        abs_tol=abs_tol,
-        rel_tol=rel_tol,
-    ):
+    if query_value >= 1.0 and mirrored_query_value < 1.0:
         return raw_query_candidate
 
-    return min(
+    if mirrored_query_value >= 1.0 and query_value < 1.0:
+        return mirrored_raw_query_candidate
+
+    if math.isclose(query_value, mirrored_query_value, abs_tol=abs_tol, rel_tol=rel_tol):
+        return min(
+            raw_query_candidate,
+            mirrored_raw_query_candidate,
+            key=_raw_query_candidate_sort_key,
+        )
+
+    return max(
         raw_query_candidate,
         mirrored_raw_query_candidate,
-        key=_raw_query_candidate_sort_key,
+        key=lambda candidate: float(
+            _build_query_from_raw_candidate(candidate, epsilon).value
+        ),
     )
 
 
