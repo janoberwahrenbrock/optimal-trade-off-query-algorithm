@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 import sys
 from dataclasses import dataclass
+from multiprocessing import current_process
 from pathlib import Path
 from typing import Any
 
@@ -51,6 +52,13 @@ class VisualizationData:
     alternative_names: list[str]
     entries: list[list[float]]
     target_weights: list[float] | None
+
+
+def cache_data_in_main_process_only(**kwargs: Any) -> Any:
+    if current_process().name != "MainProcess":
+        return lambda function: function
+
+    return st.cache_data(**kwargs)
 
 
 def initialize_state() -> None:
@@ -105,7 +113,7 @@ def barycentric_to_cartesian(w_1: float, w_2: float, w_3: float) -> tuple[float,
     return w_2 + 0.5 * w_3, (SQRT3 / 2.0) * w_3
 
 
-@st.cache_data(show_spinner=False)
+@cache_data_in_main_process_only(show_spinner=False)
 def generate_simplex_grid(step: float) -> np.ndarray:
     grid: list[tuple[float, float, float]] = []
     values = np.arange(0.0, 1.0 + step / 2.0, step)
@@ -420,7 +428,7 @@ def build_algorithm_signature(
     )
 
 
-@st.cache_data(show_spinner=True)
+@cache_data_in_main_process_only(show_spinner=True)
 def compute_depth_two_result_cached(
     signature: tuple[Any, ...],
 ) -> dict[str, Any]:
@@ -686,13 +694,13 @@ def main() -> None:
     with control_col_2:
         st.write("")
         st.write("")
-        if st.button("Generiere Daten", use_container_width=True):
+        if st.button("Generiere Daten", width="stretch"):
             regenerate_problem(alternative_count)
             st.rerun()
     with control_col_3:
         st.write("")
         st.write("")
-        if st.button("Generiere Zielgewichtsvektor", use_container_width=True):
+        if st.button("Generiere Zielgewichtsvektor", width="stretch"):
             st.session_state.multistep_three_goals_target_weights = (
                 generate_random_target_weights()
             )
@@ -786,7 +794,7 @@ def main() -> None:
     )
     simplex_column, _ = st.columns([0.62, 0.38])
     with simplex_column:
-        st.pyplot(figure, clear_figure=True, use_container_width=False)
+        st.pyplot(figure, clear_figure=True, width="content")
     st.caption(
         "Farben zeigen die aktuell optimalen Alternativen in W(T). "
         "Grau liegt ausserhalb des aktuellen Weight-Space."
@@ -800,7 +808,7 @@ def main() -> None:
         st.write("Noch keine.")
 
     if not st.session_state.multistep_three_goals_algorithm_requested:
-        if st.button("Run Tiefe-2 Algorithmus", use_container_width=True):
+        if st.button("Run Tiefe-2 Algorithmus", width="stretch"):
             st.session_state.multistep_three_goals_algorithm_requested = True
             st.rerun()
         return
@@ -859,19 +867,19 @@ def main() -> None:
 
     answer_left, answer_equal, answer_right, answer_target = st.columns(4)
     with answer_left:
-        if st.button("< beantworten", use_container_width=True):
+        if st.button("< beantworten", width="stretch"):
             append_answer("<", result.best_query)
             st.rerun()
     with answer_equal:
-        if st.button("= beantworten", use_container_width=True):
+        if st.button("= beantworten", width="stretch"):
             append_answer("=", result.best_query)
             st.rerun()
     with answer_right:
-        if st.button("> beantworten", use_container_width=True):
+        if st.button("> beantworten", width="stretch"):
             append_answer(">", result.best_query)
             st.rerun()
     with answer_target:
-        if st.button("Nach Zielgewicht", use_container_width=True):
+        if st.button("Nach Zielgewicht", width="stretch"):
             append_target_answer(result.best_query)
             st.rerun()
 

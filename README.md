@@ -199,3 +199,38 @@ Wichtige Optionen:
 - `--print-steps`: Gibt nach jeder beantworteten Query die verbleibenden
   Kandidaten aus.
 - `--output-json`: Speichert die Replay-Analyse als JSON.
+
+### 3-Ziele-App fuer Multi-Step starten
+
+Die interaktive 3-Ziele-App kann aus dem Repo-Root so gestartet werden:
+
+```bash
+python -m streamlit run multistep/scripts/3_goals.py
+```
+
+Falls in diesem Repo keine lokale virtuelle Umgebung existiert, kann die bisher
+verwendete virtuelle Umgebung direkt genutzt werden:
+
+```bash
+/Users/janoberwahrenbrock/Code/optimal-trade-off-query-algorithm/.venv/bin/python \
+  -m streamlit run multistep/scripts/3_goals.py
+```
+
+Die App verwendet fuer die beste Query dieselbe optimierte Kernfunktion wie die
+Terminierungsanalyse:
+
+```text
+compute_value_function_optimized(...)
+```
+
+Damit gilt auch hier:
+
+- Unterste Ebene: Ratio-generierte Queries.
+- Ebenen groesser als 1: Grid-Queries plus Ratio-Queries.
+- Kandidatenzaehlung: ratio-relevante Kandidaten.
+- Terminale Ebene: Ratio-Terminal-Counts mit Fallback.
+
+Die beste Query ist genau dann identisch zur Terminierungsanalyse, wenn
+Alternativenmatrix, beantwortete Queries und Algorithmus-Parameter gleich sind.
+Unterschiede koennen durch andere Grid-Groesse, andere Samples, andere Seeds,
+conditioned samples oder andere zufaellig erzeugte Problemdaten entstehen.
