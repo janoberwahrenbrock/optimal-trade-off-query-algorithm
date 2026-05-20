@@ -46,6 +46,7 @@ from multistep.src.weight_space import build_weight_space
 
 
 CandidateCountMode = Literal["closed_lp", "ratio_relevant"]
+GridDepthQuerySourceMode = Literal["grid", "ratio", "both"]
 QuerySource = Literal["grid", "ratio", "grid+ratio", "unknown"]
 
 
@@ -71,10 +72,14 @@ class OptimizedMultistepConfig:
     filter_answered_query_candidates: bool = True
     answered_query_abs_tolerance: float = 1e-12
     answered_query_rel_tolerance: float = 1e-9
+    answer_support_tolerance: float = 1e-9
+    answer_probability_smoothing: float = 1.0
     parallelize_root: bool = False
     max_workers: int = 4
     candidate_count_mode: CandidateCountMode = "ratio_relevant"
     include_ratio_queries_on_grid_depths: bool = True
+    grid_depth_query_source_mode: GridDepthQuerySourceMode = "both"
+    repair_zero_terminal_counts: bool = True
 
     def __post_init__(self) -> None:
         if self.sample_count <= 0:
@@ -119,11 +124,22 @@ class OptimizedMultistepConfig:
         if self.answered_query_rel_tolerance < 0.0:
             raise ValueError("answered_query_rel_tolerance must not be negative")
 
+        if self.answer_support_tolerance < 0.0:
+            raise ValueError("answer_support_tolerance must not be negative")
+
+        if self.answer_probability_smoothing < 0.0:
+            raise ValueError("answer_probability_smoothing must not be negative")
+
         if self.max_workers <= 0:
             raise ValueError("max_workers must be positive")
 
         if self.candidate_count_mode not in {"closed_lp", "ratio_relevant"}:
             raise ValueError("candidate_count_mode must be 'closed_lp' or 'ratio_relevant'")
+
+        if self.grid_depth_query_source_mode not in {"grid", "ratio", "both"}:
+            raise ValueError(
+                "grid_depth_query_source_mode must be 'grid', 'ratio', or 'both'"
+            )
 
 
 def compute_value_function_optimized(
@@ -221,6 +237,12 @@ def compute_value_function_optimized(
         ),
     )
     best_evaluation = min(query_evaluations, key=query_evaluation_sort_key)
+    if candidate_count > 0 and best_evaluation.expected_value < 1.0 - 1e-9:
+        raise RuntimeError(
+            "expected candidate count must not be below one for a feasible state "
+            f"with candidates; got {best_evaluation.expected_value:g} "
+            f"with candidate_count={candidate_count}"
+        )
 
     return ValueFunctionResult(
         remaining_depth=remaining_depth,
@@ -490,7 +512,9 @@ def compute_query_candidates_for_depth_optimized(
             },
         )
 
-    if config.canonical_grid_goal_pairs_only:
+    query_source_mode = resolve_grid_depth_query_source_mode(config)
+    grid_queries: list[Query] = []
+    if query_source_mode in {"grid", "both"} and config.canonical_grid_goal_pairs_only:
         grid_queries = compute_canonical_grid_query_candidates(
             weight_space=weight_space,
             grid_size=config.grid_size,
@@ -498,7 +522,7 @@ def compute_query_candidates_for_depth_optimized(
             max_query_value=config.max_query_value,
             spacing=config.grid_spacing,
         )
-    else:
+    elif query_source_mode in {"grid", "both"}:
         grid_queries = compute_grid_query_candidates(
             weight_space=weight_space,
             grid_size=config.grid_size,
@@ -510,7 +534,7 @@ def compute_query_candidates_for_depth_optimized(
     ratio_intervals_by_goal_pair: dict[tuple[int, int], GoalPairRatioIntervals] | None
     ratio_intervals_by_goal_pair = None
     ratio_queries: list[Query] = []
-    if config.include_ratio_queries_on_grid_depths:
+    if query_source_mode in {"ratio", "both"}:
         ratio_intervals = compute_all_ratio_intervals(
             alternatives=alternatives,
             weight_space=weight_space,
@@ -537,6 +561,18 @@ def compute_query_candidates_for_depth_optimized(
         query_sources=query_sources,
         ratio_intervals_by_goal_pair=ratio_intervals_by_goal_pair,
     )
+
+
+def resolve_grid_depth_query_source_mode(
+    config: OptimizedMultistepConfig,
+) -> GridDepthQuerySourceMode:
+    if (
+        config.grid_depth_query_source_mode == "both"
+        and not config.include_ratio_queries_on_grid_depths
+    ):
+        return "grid"
+
+    return config.grid_depth_query_source_mode
 
 
 def merge_query_candidates_by_source(
@@ -742,6 +778,69 @@ def _evaluate_query_candidate_worker(
     )
 
 
+def compute_supported_query_answers(
+    weight_space: LinearConstraintSystem,
+    query: Query,
+    tolerance: float,
+) -> dict[QueryOperator, bool]:
+    objective = [0.0] * weight_space.variable_count
+    objective[int(query.ziel_index_a)] = 1.0
+    objective[int(query.ziel_index_b)] = -float(query.value)
+
+    lower_result = weight_space.minimize(objective)
+    upper_result = weight_space.maximize(objective)
+    if lower_result.status != "optimal" or upper_result.status != "optimal":
+        raise RuntimeError("cannot determine query-answer support for weight space")
+
+    if lower_result.optimal_value is None or upper_result.optimal_value is None:
+        raise RuntimeError("query-answer support optimization has no optimal value")
+
+    lower_value = float(lower_result.optimal_value)
+    upper_value = float(upper_result.optimal_value)
+    equality_is_forced = (
+        lower_value >= -tolerance
+        and upper_value <= tolerance
+    )
+    return {
+        "<": lower_value < -tolerance,
+        "=": equality_is_forced,
+        ">": upper_value > tolerance,
+    }
+
+
+def estimate_supported_answer_probabilities(
+    answer_counts: dict[QueryOperator, int],
+    supported_answers: dict[QueryOperator, bool],
+    smoothing: float,
+) -> dict[QueryOperator, float]:
+    weights = {
+        answer: float(answer_counts[answer]) + smoothing
+        if supported_answers[answer]
+        else 0.0
+        for answer in ANSWER_OPTIONS
+    }
+    weight_sum = sum(weights.values())
+    if weight_sum > 0.0:
+        return {
+            answer: weights[answer] / weight_sum
+            for answer in ANSWER_OPTIONS
+        }
+
+    active_answers = [
+        answer
+        for answer in ANSWER_OPTIONS
+        if supported_answers[answer]
+    ]
+    if not active_answers:
+        raise RuntimeError("query has no supported answer in feasible weight space")
+
+    fallback_probability = 1.0 / len(active_answers)
+    return {
+        answer: fallback_probability if answer in active_answers else 0.0
+        for answer in ANSWER_OPTIONS
+    }
+
+
 def evaluate_query_candidate_optimized(
     alternatives: AlternativenMatrix,
     answered_queries: list[AnsweredQuery],
@@ -761,11 +860,23 @@ def evaluate_query_candidate_optimized(
         samples=samples,
         equality_tol=config.equality_tol,
     )
-    sample_count = len(samples)
-    probabilities = {
-        answer: len(partitioned_samples[answer]) / sample_count
+    answer_counts = {
+        answer: len(partitioned_samples[answer])
         for answer in ANSWER_OPTIONS
     }
+    current_weight_space = build_weight_space(
+        goal_count=alternatives.get_anzahl_spalten(),
+        answered_queries=answered_queries,
+    )
+    probabilities = estimate_supported_answer_probabilities(
+        answer_counts=answer_counts,
+        supported_answers=compute_supported_query_answers(
+            weight_space=current_weight_space,
+            query=query,
+            tolerance=config.answer_support_tolerance,
+        ),
+        smoothing=config.answer_probability_smoothing,
+    )
     branches: list[QueryBranchResult] = []
     expected_value = 0.0
 
@@ -794,8 +905,23 @@ def evaluate_query_candidate_optimized(
                 ratio_intervals_by_goal_pair=ratio_intervals_by_goal_pair,
                 tolerance=config.ratio_terminal_tolerance,
             )
-            child_value = float(child_candidate_count)
             is_child_feasible = child_candidate_count > 0
+            if (
+                config.repair_zero_terminal_counts
+                and probability > 0.0
+                and child_candidate_count == 0
+            ):
+                child_candidate_count, is_child_feasible = (
+                    compute_terminal_candidate_count_fallback(
+                        alternatives=alternatives,
+                        answered_queries=answered_queries,
+                        query=query,
+                        answer=answer,
+                        candidate_subset=candidate_subset,
+                        config=config,
+                    )
+                )
+            child_value = float(child_candidate_count)
             expected_value += probability * child_value
             branches.append(
                 QueryBranchResult(
@@ -885,6 +1011,31 @@ def compute_terminal_candidate_count_from_ratio_intervals(
             tolerance=tolerance,
         )
     )
+
+
+def compute_terminal_candidate_count_fallback(
+    alternatives: AlternativenMatrix,
+    answered_queries: list[AnsweredQuery],
+    query: Query,
+    answer: QueryOperator,
+    candidate_subset: list[int] | None,
+    config: OptimizedMultistepConfig,
+) -> tuple[int, bool]:
+    child_answered_queries = answered_queries + [query.answer(answer)]
+    child_weight_space = build_weight_space(
+        goal_count=alternatives.get_anzahl_spalten(),
+        answered_queries=child_answered_queries,
+    )
+    if not child_weight_space.is_feasible():
+        return 0, False
+
+    child_candidates = compute_candidate_set_for_mode(
+        alternatives=alternatives,
+        weight_space=child_weight_space,
+        candidate_subset=candidate_subset,
+        config=config,
+    )
+    return len(child_candidates), True
 
 
 def ratio_interval_is_compatible_with_answer(

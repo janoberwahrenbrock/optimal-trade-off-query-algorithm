@@ -7,7 +7,9 @@ from multistep.optimized.value_function import (
     compute_candidate_set_for_subset,
     compute_query_candidates_for_depth_optimized,
     compute_ratio_relevant_candidate_set,
+    compute_supported_query_answers,
     compute_value_function_optimized,
+    estimate_supported_answer_probabilities,
     filter_already_answered_queries,
     is_query_already_answered,
 )
@@ -156,6 +158,60 @@ class OptimizedValueFunctionTest(unittest.TestCase):
 
         self.assertTrue(query_candidate_data.query_candidates)
         self.assertIn("ratio", set(query_candidate_data.query_sources.values()))
+
+    def test_supported_answer_probabilities_remove_boundary_equality_answer(self) -> None:
+        probabilities = estimate_supported_answer_probabilities(
+            answer_counts={"<": 0, "=": 70, ">": 30},
+            supported_answers={"<": False, "=": False, ">": True},
+            smoothing=1.0,
+        )
+
+        self.assertEqual(probabilities, {"<": 0.0, "=": 0.0, ">": 1.0})
+
+    def test_supported_answer_probabilities_smooth_missing_supported_branch(self) -> None:
+        probabilities = estimate_supported_answer_probabilities(
+            answer_counts={"<": 400, "=": 0, ">": 0},
+            supported_answers={"<": True, "=": False, ">": True},
+            smoothing=1.0,
+        )
+
+        self.assertGreater(probabilities[">"], 0.0)
+        self.assertEqual(probabilities["="], 0.0)
+        self.assertAlmostEqual(sum(probabilities.values()), 1.0)
+
+    def test_supported_answers_detect_forced_equality(self) -> None:
+        weight_space = build_weight_space(
+            goal_count=3,
+            answered_queries=[
+                Query(ziel_index_a=0, ziel_index_b=1, value=2.0).answer("=")
+            ],
+        )
+
+        self.assertEqual(
+            compute_supported_query_answers(
+                weight_space=weight_space,
+                query=Query(ziel_index_a=0, ziel_index_b=1, value=2.0),
+                tolerance=1e-9,
+            ),
+            {"<": False, "=": True, ">": False},
+        )
+
+    def test_supported_answers_treat_boundary_equality_as_zero_probability(self) -> None:
+        weight_space = build_weight_space(
+            goal_count=3,
+            answered_queries=[
+                Query(ziel_index_a=0, ziel_index_b=1, value=2.0).answer(">")
+            ],
+        )
+
+        self.assertEqual(
+            compute_supported_query_answers(
+                weight_space=weight_space,
+                query=Query(ziel_index_a=0, ziel_index_b=1, value=2.0),
+                tolerance=1e-9,
+            ),
+            {"<": False, "=": False, ">": True},
+        )
 
 
 if __name__ == "__main__":
