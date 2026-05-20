@@ -1,0 +1,448 @@
+janoberwahrenbrock@Mac-mini-von-Jan optimal-trade-off-query-algorithm-multistep-intervals % /Users/janoberwahrenbrock/Code/optimal-trade-off-query-algorithm/.venv/bin/python \
+  multistep/scripts/analyze_termination_question_counts.py \
+  --goals 5 \                                                       
+  --alternatives 10 \
+  --problems 10 \
+  --samples 400 \
+  --grid-size 10 \
+  --max-s 100 \
+  --print-problems \
+  --export-json multistep/data/termination_runs/goals5_alts10_seed1.json
+problem 1: start with 8 candidates
+problem 1: call 1, current candidates=8
+problem 1: answered <, value=4.40477, root_queries=136, call_seconds=39.634, remaining_candidates=6
+problem 1: call 2, current candidates=6
+problem 1: answered <, value=3.31321, root_queries=122, call_seconds=27.215, remaining_candidates=4
+problem 1: call 3, current candidates=4
+problem 1: answered <, value=2.47661, root_queries=108, call_seconds=17.170, remaining_candidates=3
+problem 1: call 4, current candidates=3
+problem 1: answered >, value=2.2303, root_queries=106, call_seconds=13.747, remaining_candidates=2
+problem 1: call 5, current candidates=2
+problem 1: answered >, value=1.5809, root_queries=102, call_seconds=10.141, remaining_candidates=2
+problem 1: call 6, current candidates=2
+problem 1: answered >, value=1.73439, root_queries=101, call_seconds=10.289, remaining_candidates=2
+problem 1: call 7, current candidates=2
+problem 1: answered <, value=1.68427, root_queries=101, call_seconds=10.437, remaining_candidates=2
+problem 1: call 8, current candidates=2
+problem 1: answered >, value=1.64892, root_queries=105, call_seconds=11.215, remaining_candidates=2
+problem 1: call 9, current candidates=2
+problem 1: answered >, value=1.89374, root_queries=103, call_seconds=11.038, remaining_candidates=2
+problem 1: call 10, current candidates=2
+problem 1: answered >, value=1.73176, root_queries=108, call_seconds=11.919, remaining_candidates=2
+problem 1: call 11, current candidates=2
+problem 1: answered >, value=1.87388, root_queries=112, call_seconds=12.484, remaining_candidates=2
+problem 1: call 12, current candidates=2
+problem 1: answered >, value=1.86682, root_queries=112, call_seconds=12.724, remaining_candidates=2
+problem 1: call 13, current candidates=2
+problem 1: answered >, value=1.80809, root_queries=112, call_seconds=12.967, remaining_candidates=2
+problem 1: call 14, current candidates=2
+problem 1: answered >, value=1.51301, root_queries=115, call_seconds=13.240, remaining_candidates=1
+problem 2: start with 6 candidates
+problem 2: call 1, current candidates=6
+problem 2: answered <, value=3.51264, root_queries=116, call_seconds=25.033, remaining_candidates=4
+problem 2: call 2, current candidates=4
+problem 2: answered <, value=2.69258, root_queries=111, call_seconds=17.541, remaining_candidates=4
+problem 2: call 3, current candidates=4
+problem 2: answered <, value=2.93928, root_queries=110, call_seconds=17.845, remaining_candidates=3
+problem 2: call 4, current candidates=3
+problem 2: answered >, value=2.47989, root_queries=106, call_seconds=13.814, remaining_candidates=3
+problem 2: call 5, current candidates=3
+problem 2: answered >, value=2.00677, root_queries=110, call_seconds=14.661, remaining_candidates=2
+problem 2: call 6, current candidates=2
+problem 2: answered >, value=1.00249, root_queries=108, call_seconds=10.520, remaining_candidates=2
+problem 2: call 7, current candidates=2
+problem 2: answered >, value=1.0004, root_queries=111, call_seconds=11.062, remaining_candidates=2
+problem 2: call 8, current candidates=2
+problem 2: answered <, value=1.07642, root_queries=113, call_seconds=11.559, remaining_candidates=1
+problem 3: start with 5 candidates
+problem 3: call 1, current candidates=5
+problem 3: answered <, value=3, root_queries=116, call_seconds=21.741, remaining_candidates=4
+problem 3: call 2, current candidates=4
+problem 3: answered <, value=2, root_queries=112, call_seconds=17.321, remaining_candidates=3
+problem 3: call 3, current candidates=3
+problem 3: answered >, value=1.36341, root_queries=109, call_seconds=13.791, remaining_candidates=2
+problem 3: call 4, current candidates=2
+problem 3: answered <, value=1.4377, root_queries=106, call_seconds=10.089, remaining_candidates=2
+problem 3: call 5, current candidates=2
+problem 3: answered >, value=1.32491, root_queries=106, call_seconds=10.305, remaining_candidates=2
+problem 3: call 6, current candidates=2
+problem 3: answered <, value=1.00115, root_queries=106, call_seconds=10.403, remaining_candidates=1
+problem 4: start with 5 candidates
+problem 4: call 1, current candidates=5
+problem 4: answered <, value=3.51721, root_queries=116, call_seconds=21.523, remaining_candidates=5
+problem 4: call 2, current candidates=5
+problem 4: answered <, value=3.4938, root_queries=115, call_seconds=21.771, remaining_candidates=5
+problem 4: call 3, current candidates=5
+problem 4: answered >, value=3.24098, root_queries=121, call_seconds=22.852, remaining_candidates=5
+problem 4: call 4, current candidates=5
+problem 4: answered >, value=3.08183, root_queries=124, call_seconds=24.261, remaining_candidates=5
+problem 4: call 5, current candidates=5
+problem 4: answered <, value=2.94194, root_queries=122, call_seconds=23.920, remaining_candidates=5
+problem 4: call 6, current candidates=5
+problem 4: answered <, value=2.79035, root_queries=125, call_seconds=24.882, remaining_candidates=4
+problem 4: call 7, current candidates=4
+problem 4: answered <, value=2.04324, root_queries=122, call_seconds=20.661, remaining_candidates=4
+problem 4: call 8, current candidates=4
+problem 4: answered <, value=1.00498, root_queries=123, call_seconds=21.144, remaining_candidates=4
+problem 4: call 9, current candidates=4
+problem 4: answered <, value=1.00498, root_queries=121, call_seconds=21.298, remaining_candidates=4
+problem 4: call 10, current candidates=4
+problem 4: answered >, value=1.00622, root_queries=119, call_seconds=20.896, remaining_candidates=4
+problem 4: call 11, current candidates=4
+problem 4: answered >, value=1.00609, root_queries=120, call_seconds=21.363, remaining_candidates=4
+problem 4: call 12, current candidates=4
+problem 4: answered <, value=2.18176, root_queries=121, call_seconds=21.716, remaining_candidates=4
+problem 4: call 13, current candidates=4
+problem 4: answered <, value=1.57736, root_queries=134, call_seconds=24.819, remaining_candidates=4
+problem 4: call 14, current candidates=4
+problem 4: answered <, value=1.52697, root_queries=135, call_seconds=25.157, remaining_candidates=4
+problem 4: call 15, current candidates=4
+problem 4: answered <, value=1.49517, root_queries=135, call_seconds=25.386, remaining_candidates=4
+problem 4: call 16, current candidates=4
+problem 4: answered <, value=1.00737, root_queries=145, call_seconds=27.981, remaining_candidates=4
+problem 4: call 17, current candidates=4
+problem 4: answered >, value=1.00647, root_queries=144, call_seconds=27.980, remaining_candidates=1
+problem 5: start with 5 candidates
+problem 5: call 1, current candidates=5
+problem 5: answered <, value=2.79862, root_queries=116, call_seconds=21.318, remaining_candidates=4
+problem 5: call 2, current candidates=4
+problem 5: answered >, value=2.41077, root_queries=114, call_seconds=18.100, remaining_candidates=4
+problem 5: call 3, current candidates=4
+problem 5: answered <, value=2.73033, root_queries=111, call_seconds=18.502, remaining_candidates=3
+problem 5: call 4, current candidates=3
+problem 5: answered <, value=1.36068, root_queries=115, call_seconds=14.866, remaining_candidates=2
+problem 5: call 5, current candidates=2
+problem 5: answered >, value=1.21918, root_queries=107, call_seconds=10.432, remaining_candidates=2
+problem 5: call 6, current candidates=2
+problem 5: answered >, value=1.09083, root_queries=105, call_seconds=10.308, remaining_candidates=2
+problem 5: call 7, current candidates=2
+problem 5: answered >, value=1.05052, root_queries=107, call_seconds=10.725, remaining_candidates=2
+problem 5: call 8, current candidates=2
+problem 5: answered >, value=1.0005, root_queries=105, call_seconds=10.689, remaining_candidates=2
+problem 5: call 9, current candidates=2
+problem 5: answered <, value=1.07266, root_queries=106, call_seconds=11.126, remaining_candidates=2
+problem 5: call 10, current candidates=2
+problem 5: answered >, value=1.00164, root_queries=115, call_seconds=12.134, remaining_candidates=1
+problem 6: start with 7 candidates
+problem 6: call 1, current candidates=7
+problem 6: answered <, value=4.20437, root_queries=124, call_seconds=30.834, remaining_candidates=5
+problem 6: call 2, current candidates=5
+problem 6: answered <, value=3.06923, root_queries=115, call_seconds=21.976, remaining_candidates=5
+problem 6: call 3, current candidates=5
+problem 6: answered >, value=3.29496, root_queries=121, call_seconds=23.632, remaining_candidates=4
+problem 6: call 4, current candidates=4
+problem 6: answered >, value=2.62104, root_queries=116, call_seconds=20.093, remaining_candidates=4
+problem 6: call 5, current candidates=4
+problem 6: answered >, value=2.74252, root_queries=115, call_seconds=19.421, remaining_candidates=3
+problem 6: call 6, current candidates=3
+problem 6: answered >, value=2.11989, root_queries=112, call_seconds=15.823, remaining_candidates=3
+problem 6: call 7, current candidates=3
+problem 6: answered <, value=2.20952, root_queries=110, call_seconds=15.010, remaining_candidates=3
+problem 6: call 8, current candidates=3
+problem 6: answered <, value=2.221, root_queries=109, call_seconds=15.173, remaining_candidates=3
+problem 6: call 9, current candidates=3
+problem 6: answered <, value=2.06301, root_queries=114, call_seconds=16.390, remaining_candidates=3
+problem 6: call 10, current candidates=3
+problem 6: answered <, value=2.16627, root_queries=117, call_seconds=16.984, remaining_candidates=3
+problem 6: call 11, current candidates=3
+problem 6: answered <, value=1.92946, root_queries=119, call_seconds=17.513, remaining_candidates=2
+problem 6: call 12, current candidates=2
+problem 6: answered >, value=1.59177, root_queries=114, call_seconds=13.250, remaining_candidates=2
+problem 6: call 13, current candidates=2
+problem 6: answered >, value=1.36396, root_queries=120, call_seconds=13.025, remaining_candidates=2
+problem 6: call 14, current candidates=2
+problem 6: answered <, value=1.0334, root_queries=120, call_seconds=12.427, remaining_candidates=2
+problem 6: call 15, current candidates=2
+problem 6: answered <, value=1.01061, root_queries=120, call_seconds=13.459, remaining_candidates=2
+problem 6: call 16, current candidates=2
+problem 6: answered >, value=1.00229, root_queries=118, call_seconds=12.765, remaining_candidates=2
+problem 6: call 17, current candidates=2
+problem 6: answered <, value=1.00167, root_queries=117, call_seconds=13.036, remaining_candidates=2
+problem 6: call 18, current candidates=2
+problem 6: answered >, value=1.00171, root_queries=117, call_seconds=14.136, remaining_candidates=1
+problem 7: start with 7 candidates
+problem 7: call 1, current candidates=7
+problem 7: answered <, value=3.97847, root_queries=128, call_seconds=32.893, remaining_candidates=5
+problem 7: call 2, current candidates=5
+problem 7: answered >, value=3.12453, root_queries=115, call_seconds=21.855, remaining_candidates=5
+problem 7: call 3, current candidates=5
+problem 7: answered <, value=2.81948, root_queries=117, call_seconds=22.630, remaining_candidates=5
+problem 7: call 4, current candidates=5
+problem 7: answered >, value=2.37812, root_queries=130, call_seconds=26.936, remaining_candidates=4
+problem 7: call 5, current candidates=4
+problem 7: answered >, value=1.54457, root_queries=131, call_seconds=21.762, remaining_candidates=4
+problem 7: call 6, current candidates=4
+problem 7: answered <, value=1.00309, root_queries=131, call_seconds=22.034, remaining_candidates=4
+problem 7: call 7, current candidates=4
+problem 7: answered <, value=1.39704, root_queries=132, call_seconds=22.460, remaining_candidates=4
+problem 7: call 8, current candidates=4
+problem 7: answered <, value=1.0038, root_queries=143, call_seconds=25.018, remaining_candidates=4
+problem 7: call 9, current candidates=4
+problem 7: answered >, value=1.35648, root_queries=142, call_seconds=25.297, remaining_candidates=4
+problem 7: call 10, current candidates=4
+problem 7: answered >, value=1.00647, root_queries=144, call_seconds=25.964, remaining_candidates=4
+problem 7: call 11, current candidates=4
+problem 7: answered >, value=1.00126, root_queries=143, call_seconds=26.017, remaining_candidates=4
+problem 7: call 12, current candidates=4
+problem 7: answered >, value=1.14959, root_queries=142, call_seconds=26.247, remaining_candidates=4
+problem 7: call 13, current candidates=4
+problem 7: answered <, value=1.15824, root_queries=141, call_seconds=27.538, remaining_candidates=2
+problem 7: call 14, current candidates=2
+problem 7: answered <, value=1.00249, root_queries=116, call_seconds=13.466, remaining_candidates=2
+problem 7: call 15, current candidates=2
+problem 7: answered >, value=1.00122, root_queries=115, call_seconds=13.452, remaining_candidates=1
+problem 8: start with 7 candidates
+problem 8: call 1, current candidates=7
+problem 8: answered >, value=4.77389, root_queries=120, call_seconds=29.857, remaining_candidates=6
+problem 8: call 2, current candidates=6
+problem 8: answered >, value=3.27404, root_queries=115, call_seconds=25.372, remaining_candidates=6
+problem 8: call 3, current candidates=6
+problem 8: answered <, value=2.93238, root_queries=125, call_seconds=27.928, remaining_candidates=5
+problem 8: call 4, current candidates=5
+problem 8: answered >, value=1.08519, root_queries=120, call_seconds=23.336, remaining_candidates=5
+problem 8: call 5, current candidates=5
+problem 8: answered <, value=1.00553, root_queries=119, call_seconds=23.319, remaining_candidates=5
+problem 8: call 6, current candidates=5
+problem 8: answered >, value=2.34035, root_queries=119, call_seconds=23.760, remaining_candidates=4
+problem 8: call 7, current candidates=4
+problem 8: answered <, value=2.45131, root_queries=113, call_seconds=19.384, remaining_candidates=2
+problem 8: call 8, current candidates=2
+problem 8: answered >, value=1.0367, root_queries=112, call_seconds=11.175, remaining_candidates=2
+problem 8: call 9, current candidates=2
+problem 8: answered <, value=1.00037, root_queries=112, call_seconds=10.973, remaining_candidates=1
+problem 9: start with 5 candidates
+problem 9: call 1, current candidates=5
+problem 9: answered <, value=2.78306, root_queries=112, call_seconds=20.620, remaining_candidates=3
+problem 9: call 2, current candidates=3
+problem 9: answered <, value=2.02702, root_queries=107, call_seconds=13.354, remaining_candidates=3
+problem 9: call 3, current candidates=3
+problem 9: answered >, value=2.1711, root_queries=106, call_seconds=13.585, remaining_candidates=3
+problem 9: call 4, current candidates=3
+problem 9: answered >, value=1.64333, root_queries=110, call_seconds=14.441, remaining_candidates=3
+problem 9: call 5, current candidates=3
+problem 9: answered <, value=1.62274, root_queries=113, call_seconds=14.717, remaining_candidates=3
+problem 9: call 6, current candidates=3
+problem 9: answered <, value=1.12876, root_queries=120, call_seconds=16.033, remaining_candidates=2
+problem 9: call 7, current candidates=2
+problem 9: answered <, value=1.07927, root_queries=111, call_seconds=11.324, remaining_candidates=2
+problem 9: call 8, current candidates=2
+problem 9: answered <, value=1.01879, root_queries=112, call_seconds=11.612, remaining_candidates=2
+problem 9: call 9, current candidates=2
+problem 9: answered <, value=1.00145, root_queries=111, call_seconds=11.685, remaining_candidates=1
+problem 10: start with 6 candidates
+problem 10: call 1, current candidates=6
+problem 10: answered <, value=2.81131, root_queries=132, call_seconds=28.794, remaining_candidates=3
+problem 10: call 2, current candidates=3
+problem 10: answered <, value=2.04756, root_queries=107, call_seconds=13.708, remaining_candidates=3
+problem 10: call 3, current candidates=3
+problem 10: answered <, value=2.16363, root_queries=106, call_seconds=13.535, remaining_candidates=3
+problem 10: call 4, current candidates=3
+problem 10: answered <, value=2.10971, root_queries=110, call_seconds=14.510, remaining_candidates=3
+problem 10: call 5, current candidates=3
+problem 10: answered <, value=2.05571, root_queries=110, call_seconds=14.524, remaining_candidates=3
+problem 10: call 6, current candidates=3
+problem 10: answered <, value=1.95882, root_queries=113, call_seconds=15.167, remaining_candidates=2
+problem 10: call 7, current candidates=2
+problem 10: answered >, value=1.20695, root_queries=107, call_seconds=10.851, remaining_candidates=2
+problem 10: call 8, current candidates=2
+problem 10: answered >, value=1.1509, root_queries=110, call_seconds=11.470, remaining_candidates=2
+problem 10: call 9, current candidates=2
+problem 10: answered >, value=1.48422, root_queries=109, call_seconds=11.582, remaining_candidates=2
+problem 10: call 10, current candidates=2
+problem 10: answered >, value=1.00058, root_queries=111, call_seconds=11.861, remaining_candidates=2
+problem 10: call 11, current candidates=2
+problem 10: answered <, value=1.0913, root_queries=112, call_seconds=12.345, remaining_candidates=2
+problem 10: call 12, current candidates=2
+problem 10: answered <, value=1.06555, root_queries=112, call_seconds=12.203, remaining_candidates=2
+problem 10: call 13, current candidates=2
+problem 10: answered <, value=1.00132, root_queries=114, call_seconds=12.712, remaining_candidates=1
+Configuration
+  goals: 5
+  alternatives: 10
+  problems: 10
+  start problem: 1
+  depth: 2
+  max questions: 50
+  samples: 400
+  burn-in: 200
+  thinning: 5
+  grid size: 10
+  s range: [0.001, 100.0]
+  root query source: both
+  seed: 1
+
+Question-count distribution
+  questions  problems  share
+          6         1   10.0%
+          8         1   10.0%
+          9         2   20.0%
+         10         1   10.0%
+         13         1   10.0%
+         14         1   10.0%
+         15         1   10.0%
+         17         1   10.0%
+         18         1   10.0%
+
+Summary
+  solved problems: 10
+  min questions: 6
+  max questions: 18
+  avg questions: 11.900
+  total runtime: 2173.905 s
+  avg runtime/problem: 217.390 s
+
+Problem details
+  idx  questions  initialK  finalK  finalCandidate  seconds
+    1         14         8       1               1  220.592
+    2          8         6       1               1  125.757
+    3          6         5       1               5   86.557
+    4         17         5       1               3  404.834
+    5         10         5       1               3  142.900
+    6         18         7       1               7  313.160
+    7         15         7       1               5  360.108
+    8          9         7       1              10  199.037
+    9          9         5       1               7  131.614
+   10         13         6       1               9  189.346
+janoberwahrenbrock@Mac-mini-von-Jan optimal-trade-off-query-algorithm-multistep-intervals % /Users/janoberwahrenbrock/Code/optimal-trade-off-query-algorithm/.venv/bin/python \
+  multistep/scripts/analyze_exported_query_run.py \         
+  --input multistep/data/termination_runs/goals5_alts10_seed1.json \
+  --print-steps      
+problem 1:
+  step  1: answer=<, candidates=[1, 3, 5, 6, 8, 9]
+  step  2: answer=<, candidates=[1, 5, 6, 9]
+  step  3: answer=<, candidates=[1, 5, 9]
+  step  4: answer=>, candidates=[1, 9]
+  step  5: answer=>, candidates=[1, 9]
+  step  6: answer=>, candidates=[1, 9]
+  step  7: answer=<, candidates=[1, 9]
+  step  8: answer=>, candidates=[1, 9]
+  step  9: answer=>, candidates=[1, 9]
+  step 10: answer=>, candidates=[1, 9]
+  step 11: answer=>, candidates=[1, 9]
+  step 12: answer=>, candidates=[1, 9]
+  step 13: answer=>, candidates=[1, 9]
+  step 14: answer=>, candidates=[1]
+  final candidates: [1]; target best: [1]
+problem 2:
+  step  1: answer=<, candidates=[1, 3, 5, 10]
+  step  2: answer=<, candidates=[1, 3, 5, 10]
+  step  3: answer=<, candidates=[1, 5, 10]
+  step  4: answer=>, candidates=[1, 5, 10]
+  step  5: answer=>, candidates=[1, 5]
+  step  6: answer=>, candidates=[1, 5]
+  step  7: answer=>, candidates=[1, 5]
+  step  8: answer=<, candidates=[1]
+  final candidates: [1]; target best: [1]
+problem 3:
+  step  1: answer=<, candidates=[3, 5, 8, 10]
+  step  2: answer=<, candidates=[3, 5, 8]
+  step  3: answer=>, candidates=[3, 5]
+  step  4: answer=<, candidates=[3, 5]
+  step  5: answer=>, candidates=[3, 5]
+  step  6: answer=<, candidates=[5]
+  final candidates: [5]; target best: [5]
+problem 4:
+  step  1: answer=<, candidates=[1, 3, 5, 8, 10]
+  step  2: answer=<, candidates=[1, 3, 5, 8, 10]
+  step  3: answer=>, candidates=[1, 3, 5, 8, 10]
+  step  4: answer=>, candidates=[1, 3, 5, 8, 10]
+  step  5: answer=<, candidates=[1, 3, 5, 8, 10]
+  step  6: answer=<, candidates=[3, 5, 8, 10]
+  step  7: answer=<, candidates=[3, 5, 8, 10]
+  step  8: answer=<, candidates=[3, 5, 8, 10]
+  step  9: answer=<, candidates=[3, 5, 8, 10]
+  step 10: answer=>, candidates=[3, 5, 8, 10]
+  step 11: answer=>, candidates=[3, 5, 8, 10]
+  step 12: answer=<, candidates=[3, 5, 8, 10]
+  step 13: answer=<, candidates=[3, 5, 8, 10]
+  step 14: answer=<, candidates=[3, 5, 8, 10]
+  step 15: answer=<, candidates=[3, 5, 8, 10]
+  step 16: answer=<, candidates=[3, 5, 8, 10]
+  step 17: answer=>, candidates=[3]
+  final candidates: [3]; target best: [3]
+problem 5:
+  step  1: answer=<, candidates=[1, 3, 4, 9]
+  step  2: answer=>, candidates=[1, 3, 4, 9]
+  step  3: answer=<, candidates=[3, 4, 9]
+  step  4: answer=<, candidates=[3, 9]
+  step  5: answer=>, candidates=[3, 9]
+  step  6: answer=>, candidates=[3, 9]
+  step  7: answer=>, candidates=[3, 9]
+  step  8: answer=>, candidates=[3, 9]
+  step  9: answer=<, candidates=[3, 9]
+  step 10: answer=>, candidates=[3]
+  final candidates: [3]; target best: [3]
+problem 6:
+  step  1: answer=<, candidates=[1, 3, 4, 7, 8]
+  step  2: answer=<, candidates=[1, 3, 4, 7, 8]
+  step  3: answer=>, candidates=[1, 3, 7, 8]
+  step  4: answer=>, candidates=[1, 3, 7, 8]
+  step  5: answer=>, candidates=[1, 3, 7]
+  step  6: answer=>, candidates=[1, 3, 7]
+  step  7: answer=<, candidates=[1, 3, 7]
+  step  8: answer=<, candidates=[1, 3, 7]
+  step  9: answer=<, candidates=[1, 3, 7]
+  step 10: answer=<, candidates=[1, 3, 7]
+  step 11: answer=<, candidates=[3, 7]
+  step 12: answer=>, candidates=[3, 7]
+  step 13: answer=>, candidates=[3, 7]
+  step 14: answer=<, candidates=[3, 7]
+  step 15: answer=<, candidates=[3, 7]
+  step 16: answer=>, candidates=[3, 7]
+  step 17: answer=<, candidates=[3, 7]
+  step 18: answer=>, candidates=[7]
+  final candidates: [7]; target best: [7]
+problem 7:
+  step  1: answer=<, candidates=[1, 2, 5, 6, 7]
+  step  2: answer=>, candidates=[1, 2, 5, 6, 7]
+  step  3: answer=<, candidates=[1, 2, 5, 6, 7]
+  step  4: answer=>, candidates=[1, 2, 5, 7]
+  step  5: answer=>, candidates=[1, 2, 5, 7]
+  step  6: answer=<, candidates=[1, 2, 5, 7]
+  step  7: answer=<, candidates=[1, 2, 5, 7]
+  step  8: answer=<, candidates=[1, 2, 5, 7]
+  step  9: answer=>, candidates=[1, 2, 5, 7]
+  step 10: answer=>, candidates=[1, 2, 5, 7]
+  step 11: answer=>, candidates=[1, 2, 5, 7]
+  step 12: answer=>, candidates=[1, 2, 5, 7]
+  step 13: answer=<, candidates=[1, 5]
+  step 14: answer=<, candidates=[1, 5]
+  step 15: answer=>, candidates=[5]
+  final candidates: [5]; target best: [5]
+problem 8:
+  step  1: answer=>, candidates=[2, 3, 4, 6, 7, 10]
+  step  2: answer=>, candidates=[2, 3, 4, 6, 7, 10]
+  step  3: answer=<, candidates=[2, 3, 4, 6, 10]
+  step  4: answer=>, candidates=[2, 3, 4, 6, 10]
+  step  5: answer=<, candidates=[2, 3, 4, 6, 10]
+  step  6: answer=>, candidates=[2, 3, 6, 10]
+  step  7: answer=<, candidates=[6, 10]
+  step  8: answer=>, candidates=[6, 10]
+  step  9: answer=<, candidates=[10]
+  final candidates: [10]; target best: [10]
+problem 9:
+  step  1: answer=<, candidates=[2, 5, 7]
+  step  2: answer=<, candidates=[2, 5, 7]
+  step  3: answer=>, candidates=[2, 5, 7]
+  step  4: answer=>, candidates=[2, 5, 7]
+  step  5: answer=<, candidates=[2, 5, 7]
+  step  6: answer=<, candidates=[5, 7]
+  step  7: answer=<, candidates=[5, 7]
+  step  8: answer=<, candidates=[5, 7]
+  step  9: answer=<, candidates=[7]
+  final candidates: [7]; target best: [7]
+problem 10:
+  step  1: answer=<, candidates=[8, 9, 10]
+  step  2: answer=<, candidates=[8, 9, 10]
+  step  3: answer=<, candidates=[8, 9, 10]
+  step  4: answer=<, candidates=[8, 9, 10]
+  step  5: answer=<, candidates=[8, 9, 10]
+  step  6: answer=<, candidates=[8, 9]
+  step  7: answer=>, candidates=[8, 9]
+  step  8: answer=>, candidates=[8, 9]
+  step  9: answer=>, candidates=[8, 9]
+  step 10: answer=>, candidates=[8, 9]
+  step 11: answer=<, candidates=[8, 9]
+  step 12: answer=<, candidates=[8, 9]
+  step 13: answer=<, candidates=[9]
+  final candidates: [9]; target best: [9]
