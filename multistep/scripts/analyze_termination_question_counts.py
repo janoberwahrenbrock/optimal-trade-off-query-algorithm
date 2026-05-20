@@ -111,10 +111,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--root-query-source",
         choices=["grid", "ratio", "both"],
-        default="grid",
+        default="both",
         help=(
             "Which query sources to use on depths greater than one. "
-            "For higher dimensions, 'ratio' or 'grid' can be much faster than 'both'."
+            "The intended policy is 'both': grid queries plus ratio-generated queries. "
+            "For experiments, 'ratio' or 'grid' can be faster."
         ),
     )
     parser.add_argument(
@@ -141,6 +142,14 @@ def parse_args() -> argparse.Namespace:
         "--disable-terminal-zero-fallback",
         action="store_true",
         help="Reproduce the old terminal shortcut behavior without repairing zero counts.",
+    )
+    parser.add_argument(
+        "--validate-terminal-counts",
+        action="store_true",
+        help=(
+            "Validate terminal ratio shortcut counts with exact child candidate "
+            "counts. This is slower but useful for debugging."
+        ),
     )
     parser.add_argument(
         "--quiet",
@@ -283,7 +292,9 @@ def build_config(args: argparse.Namespace, random_seed: int) -> OptimizedMultist
         candidate_count_mode="ratio_relevant",
         include_ratio_queries_on_grid_depths=not bool(args.no_ratio_root_queries),
         grid_depth_query_source_mode=str(args.root_query_source),
+        depth_one_query_source_mode="ratio",
         repair_zero_terminal_counts=not bool(args.disable_terminal_zero_fallback),
+        validate_ratio_terminal_counts=bool(args.validate_terminal_counts),
     )
 
 

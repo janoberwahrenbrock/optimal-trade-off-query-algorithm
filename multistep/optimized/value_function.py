@@ -47,6 +47,7 @@ from multistep.src.weight_space import build_weight_space
 
 CandidateCountMode = Literal["closed_lp", "ratio_relevant"]
 GridDepthQuerySourceMode = Literal["grid", "ratio", "both"]
+DepthOneQuerySourceMode = Literal["grid", "ratio", "both"]
 QuerySource = Literal["grid", "ratio", "grid+ratio", "unknown"]
 
 
@@ -79,7 +80,9 @@ class OptimizedMultistepConfig:
     candidate_count_mode: CandidateCountMode = "ratio_relevant"
     include_ratio_queries_on_grid_depths: bool = True
     grid_depth_query_source_mode: GridDepthQuerySourceMode = "both"
+    depth_one_query_source_mode: DepthOneQuerySourceMode = "ratio"
     repair_zero_terminal_counts: bool = True
+    validate_ratio_terminal_counts: bool = False
 
     def __post_init__(self) -> None:
         if self.sample_count <= 0:
@@ -139,6 +142,11 @@ class OptimizedMultistepConfig:
         if self.grid_depth_query_source_mode not in {"grid", "ratio", "both"}:
             raise ValueError(
                 "grid_depth_query_source_mode must be 'grid', 'ratio', or 'both'"
+            )
+
+        if self.depth_one_query_source_mode not in {"grid", "ratio", "both"}:
+            raise ValueError(
+                "depth_one_query_source_mode must be 'grid', 'ratio', or 'both'"
             )
 
 
@@ -492,12 +500,22 @@ def compute_query_candidates_for_depth_optimized(
             weight_space=weight_space,
             candidates=candidates,
         )
-        ratio_queries = compute_onestep_query_candidates(
-            goal_pair_ratio_intervals=ratio_intervals,
-            epsilon=config.query_epsilon,
-        )
+        grid_queries: list[Query] = []
+        if config.depth_one_query_source_mode in {"grid", "both"}:
+            grid_queries = compute_grid_queries_for_config(
+                weight_space=weight_space,
+                config=config,
+            )
+
+        ratio_queries: list[Query] = []
+        if config.depth_one_query_source_mode in {"ratio", "both"}:
+            ratio_queries = compute_onestep_query_candidates(
+                goal_pair_ratio_intervals=ratio_intervals,
+                epsilon=config.query_epsilon,
+            )
+
         query_candidates, query_sources = merge_query_candidates_by_source(
-            grid_queries=[],
+            grid_queries=grid_queries,
             ratio_queries=ratio_queries,
         )
         return QueryCandidateData(
@@ -514,21 +532,10 @@ def compute_query_candidates_for_depth_optimized(
 
     query_source_mode = resolve_grid_depth_query_source_mode(config)
     grid_queries: list[Query] = []
-    if query_source_mode in {"grid", "both"} and config.canonical_grid_goal_pairs_only:
-        grid_queries = compute_canonical_grid_query_candidates(
+    if query_source_mode in {"grid", "both"}:
+        grid_queries = compute_grid_queries_for_config(
             weight_space=weight_space,
-            grid_size=config.grid_size,
-            min_query_value=config.min_query_value,
-            max_query_value=config.max_query_value,
-            spacing=config.grid_spacing,
-        )
-    elif query_source_mode in {"grid", "both"}:
-        grid_queries = compute_grid_query_candidates(
-            weight_space=weight_space,
-            grid_size=config.grid_size,
-            min_query_value=config.min_query_value,
-            max_query_value=config.max_query_value,
-            spacing=config.grid_spacing,
+            config=config,
         )
 
     ratio_intervals_by_goal_pair: dict[tuple[int, int], GoalPairRatioIntervals] | None
@@ -573,6 +580,28 @@ def resolve_grid_depth_query_source_mode(
         return "grid"
 
     return config.grid_depth_query_source_mode
+
+
+def compute_grid_queries_for_config(
+    weight_space: LinearConstraintSystem,
+    config: OptimizedMultistepConfig,
+) -> list[Query]:
+    if config.canonical_grid_goal_pairs_only:
+        return compute_canonical_grid_query_candidates(
+            weight_space=weight_space,
+            grid_size=config.grid_size,
+            min_query_value=config.min_query_value,
+            max_query_value=config.max_query_value,
+            spacing=config.grid_spacing,
+        )
+
+    return compute_grid_query_candidates(
+        weight_space=weight_space,
+        grid_size=config.grid_size,
+        min_query_value=config.min_query_value,
+        max_query_value=config.max_query_value,
+        spacing=config.grid_spacing,
+    )
 
 
 def merge_query_candidates_by_source(
@@ -907,9 +936,14 @@ def evaluate_query_candidate_optimized(
             )
             is_child_feasible = child_candidate_count > 0
             if (
-                config.repair_zero_terminal_counts
-                and probability > 0.0
-                and child_candidate_count == 0
+                probability > 0.0
+                and (
+                    config.validate_ratio_terminal_counts
+                    or (
+                        config.repair_zero_terminal_counts
+                        and child_candidate_count == 0
+                    )
+                )
             ):
                 child_candidate_count, is_child_feasible = (
                     compute_terminal_candidate_count_fallback(

@@ -83,114 +83,74 @@
       ],
       "queries": [
         {
-          "goal_index_a": 1,
-          "goal_index_b": 2,
-          "value": 0.5994842503189409
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 4,
-          "value": 2.1544346900318843
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 1,
-          "value": 2.1544346900318843
-        },
-        {
-          "goal_index_a": 1,
-          "goal_index_b": 3,
-          "value": 2.1544346900318843
-        },
-        {
-          "goal_index_a": 1,
-          "goal_index_b": 2,
-          "value": 1.8689812233247602
-        },
-        {
-          "goal_index_a": 1,
-          "goal_index_b": 4,
-          "value": 2.7825594022071245
-        },
-        {
-          "goal_index_a": 3,
-          "goal_index_b": 4,
-          "value": 0.5994842503189409
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 3,
-          "value": 2.1544346900318843
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 1,
-          "value": 0.001
-        },
-        {
-          "goal_index_a": 3,
-          "goal_index_b": 4,
-          "value": 1.0585012080885978
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 2,
-          "value": 29.827906352941806
-        },
-        {
           "goal_index_a": 2,
-          "goal_index_b": 3,
-          "value": 1.7982050017908053
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 4,
-          "value": 18.630872602849198
-        },
-        {
-          "goal_index_a": 1,
-          "goal_index_b": 2,
-          "value": 100.0
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 4,
-          "value": 9.250467774695418
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 4,
-          "value": 5.800303165326851
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 3,
-          "value": 4.014369411398832
+          "goal_index_b": 1,
+          "value": 1.8648559150103454
         },
         {
           "goal_index_a": 0,
           "goal_index_b": 1,
-          "value": 0.34648734586414215
+          "value": 1.5195970588712797
         },
         {
-          "goal_index_a": 0,
+          "goal_index_a": 4,
+          "goal_index_b": 1,
+          "value": 1.0012672067046473
+        },
+        {
+          "goal_index_a": 1,
           "goal_index_b": 3,
-          "value": 3.044325685423181
+          "value": 2.5330917540740616
         },
         {
-          "goal_index_a": 3,
+          "goal_index_a": 1,
           "goal_index_b": 4,
-          "value": 2.7339529682974177
+          "value": 4.63767173480653
         },
         {
-          "goal_index_a": 2,
+          "goal_index_a": 1,
+          "goal_index_b": 3,
+          "value": 3.8108604097373324
+        },
+        {
+          "goal_index_a": 1,
           "goal_index_b": 4,
-          "value": 2.2748193245401214
+          "value": 50.53848552027668
         },
         {
           "goal_index_a": 1,
           "goal_index_b": 2,
-          "value": 5.640867418408085
+          "value": 3.063631162423544
+        },
+        {
+          "goal_index_a": 3,
+          "goal_index_b": 4,
+          "value": 0.5602726915329019
+        },
+        {
+          "goal_index_a": 0,
+          "goal_index_b": 3,
+          "value": 2.1544346900318843
+        },
+        {
+          "goal_index_a": 1,
+          "goal_index_b": 2,
+          "value": 4.512658044417645
+        },
+        {
+          "goal_index_a": 3,
+          "goal_index_b": 4,
+          "value": 0.7963212653144743
+        },
+        {
+          "goal_index_a": 1,
+          "goal_index_b": 2,
+          "value": 12.675203777761109
+        },
+        {
+          "goal_index_a": 1,
+          "goal_index_b": 0,
+          "value": 2.062370294588281
         }
       ]
     },
@@ -282,34 +242,29 @@
           "value": 2.1544346900318843
         },
         {
-          "goal_index_a": 2,
-          "goal_index_b": 4,
-          "value": 0.5994842503189409
+          "goal_index_a": 1,
+          "goal_index_b": 0,
+          "value": 2.249427312152359
+        },
+        {
+          "goal_index_a": 4,
+          "goal_index_b": 1,
+          "value": 1.1320017423104074
         },
         {
           "goal_index_a": 0,
-          "goal_index_b": 1,
-          "value": 0.9182542835656291
+          "goal_index_b": 4,
+          "value": 2.489166574608043
+        },
+        {
+          "goal_index_a": 3,
+          "goal_index_b": 0,
+          "value": 2.128257503795891
         },
         {
           "goal_index_a": 1,
           "goal_index_b": 3,
-          "value": 0.5994842503189409
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 1,
-          "value": 0.43027375433136794
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 4,
-          "value": 2.1544346900318843
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 4,
-          "value": 5.054796821191241
+          "value": 0.001
         },
         {
           "goal_index_a": 1,
@@ -317,29 +272,9 @@
           "value": 0.001
         },
         {
-          "goal_index_a": 0,
-          "goal_index_b": 1,
-          "value": 0.6026484093835257
-        },
-        {
-          "goal_index_a": 3,
-          "goal_index_b": 4,
-          "value": 4.844071979361964
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 2,
-          "value": 0.0027303227749871923
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 2,
-          "value": 0.09709504640034383
-        },
-        {
           "goal_index_a": 2,
-          "goal_index_b": 4,
-          "value": 4.359483572358572
+          "goal_index_b": 1,
+          "value": 3.0203797142247164
         }
       ]
     },
@@ -426,44 +361,34 @@
       ],
       "queries": [
         {
-          "goal_index_a": 0,
+          "goal_index_a": 2,
           "goal_index_b": 3,
-          "value": 0.1668100537200059
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 2,
-          "value": 0.5994842503189409
+          "value": 9.215570951688116
         },
         {
           "goal_index_a": 3,
           "goal_index_b": 4,
-          "value": 0.5994842503189409
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 2,
-          "value": 1.8689812233247602
-        },
-        {
-          "goal_index_a": 1,
-          "goal_index_b": 3,
-          "value": 0.5994842503189409
+          "value": 7.3690167782499785
         },
         {
           "goal_index_a": 0,
           "goal_index_b": 4,
-          "value": 4.6415888336127775
+          "value": 1.487940808676678
+        },
+        {
+          "goal_index_a": 2,
+          "goal_index_b": 3,
+          "value": 0.43955662632036185
+        },
+        {
+          "goal_index_a": 1,
+          "goal_index_b": 2,
+          "value": 2.1544346900318843
         },
         {
           "goal_index_a": 0,
           "goal_index_b": 3,
-          "value": 3.3000347911252854
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 2,
-          "value": 10.959242106296337
+          "value": 1.5043140296567021
         }
       ]
     },
@@ -550,104 +475,89 @@
       ],
       "queries": [
         {
+          "goal_index_a": 4,
+          "goal_index_b": 1,
+          "value": 1.2389695331302222
+        },
+        {
+          "goal_index_a": 0,
+          "goal_index_b": 2,
+          "value": 1.2648060215842167
+        },
+        {
+          "goal_index_a": 2,
+          "goal_index_b": 3,
+          "value": 1.8838457743837207
+        },
+        {
+          "goal_index_a": 2,
+          "goal_index_b": 0,
+          "value": 3.4550787819711224
+        },
+        {
+          "goal_index_a": 3,
+          "goal_index_b": 0,
+          "value": 4.051388838821852
+        },
+        {
           "goal_index_a": 1,
+          "goal_index_b": 0,
+          "value": 5.43935939686661
+        },
+        {
+          "goal_index_a": 0,
+          "goal_index_b": 1,
+          "value": 0.3701706618884513
+        },
+        {
+          "goal_index_a": 3,
+          "goal_index_b": 1,
+          "value": 1.493512300535712
+        },
+        {
+          "goal_index_a": 4,
+          "goal_index_b": 0,
+          "value": 6.738961602930181
+        },
+        {
+          "goal_index_a": 0,
           "goal_index_b": 4,
-          "value": 0.5994842503189409
+          "value": 0.3059814703432134
         },
         {
-          "goal_index_a": 0,
-          "goal_index_b": 2,
-          "value": 0.5994842503189409
-        },
-        {
-          "goal_index_a": 2,
-          "goal_index_b": 3,
-          "value": 0.5994842503189409
-        },
-        {
-          "goal_index_a": 2,
-          "goal_index_b": 3,
-          "value": 1.8689812233247602
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 4,
-          "value": 2.1544346900318843
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 2,
-          "value": 0.29453424888145274
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 2,
-          "value": 0.0832604890475651
-        },
-        {
-          "goal_index_a": 0,
+          "goal_index_a": 1,
           "goal_index_b": 2,
           "value": 0.001
         },
         {
           "goal_index_a": 2,
           "goal_index_b": 4,
-          "value": 0.001
+          "value": 100.0
+        },
+        {
+          "goal_index_a": 0,
+          "goal_index_b": 1,
+          "value": 0.3424757307315086
+        },
+        {
+          "goal_index_a": 0,
+          "goal_index_b": 1,
+          "value": 0.3196024298945407
+        },
+        {
+          "goal_index_a": 2,
+          "goal_index_b": 3,
+          "value": 26.608176648414133
         },
         {
           "goal_index_a": 1,
-          "goal_index_b": 2,
-          "value": 0.5994842503189409
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 1,
-          "value": 0.2782559402207126
+          "goal_index_b": 0,
+          "value": 4.777903397613854
         },
         {
           "goal_index_a": 2,
-          "goal_index_b": 3,
-          "value": 7.042658429341913
-        },
-        {
-          "goal_index_a": 2,
-          "goal_index_b": 3,
-          "value": 5.244539511734953
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 3,
-          "value": 0.12995823070212584
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 3,
-          "value": 0.170125257883992
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 1,
-          "value": 0.652852114112785
-        },
-        {
-          "goal_index_a": 2,
-          "goal_index_b": 3,
-          "value": 4.723032894095728
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 3,
-          "value": 0.393242028550147
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 1,
-          "value": 0.30591213696462083
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 1,
-          "value": 0.33279477377052424
+          "goal_index_b": 0,
+          "value": 14.235445446245555
         }
       ]
     },
@@ -734,69 +644,54 @@
       ],
       "queries": [
         {
-          "goal_index_a": 0,
-          "goal_index_b": 1,
-          "value": 0.5994842503189409
+          "goal_index_a": 1,
+          "goal_index_b": 0,
+          "value": 1.7468153897064265
         },
         {
           "goal_index_a": 0,
           "goal_index_b": 4,
-          "value": 2.1544346900318843
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 2,
-          "value": 2.1544346900318843
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 1,
-          "value": 1.8689812233247602
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 2,
-          "value": 0.9182542835656291
+          "value": 2.559899807960039
         },
         {
           "goal_index_a": 0,
           "goal_index_b": 3,
-          "value": 27.825594022071257
+          "value": 2.107989629944195
+        },
+        {
+          "goal_index_a": 1,
+          "goal_index_b": 3,
+          "value": 1.6623109316432172
+        },
+        {
+          "goal_index_a": 0,
+          "goal_index_b": 4,
+          "value": 5.780310888414022
         },
         {
           "goal_index_a": 2,
-          "goal_index_b": 3,
-          "value": 0.01291549665014884
-        },
-        {
-          "goal_index_a": 1,
           "goal_index_b": 4,
           "value": 2.1544346900318843
-        },
-        {
-          "goal_index_a": 1,
-          "goal_index_b": 3,
-          "value": 1.760118218144703
         },
         {
           "goal_index_a": 3,
           "goal_index_b": 4,
-          "value": 0.8431909292866255
+          "value": 20.221554831989284
         },
         {
-          "goal_index_a": 1,
+          "goal_index_a": 0,
           "goal_index_b": 2,
-          "value": 0.03127511408669718
+          "value": 0.001
         },
         {
-          "goal_index_a": 0,
-          "goal_index_b": 3,
-          "value": 0.294534248881453
+          "goal_index_a": 3,
+          "goal_index_b": 4,
+          "value": 58.69550566678318
         },
         {
-          "goal_index_a": 0,
-          "goal_index_b": 3,
-          "value": 6.10953603171656
+          "goal_index_a": 3,
+          "goal_index_b": 0,
+          "value": 1.989325662520988
         }
       ]
     },
@@ -885,82 +780,92 @@
         {
           "goal_index_a": 1,
           "goal_index_b": 3,
-          "value": 2.1544346900318843
+          "value": 2.806820538807531
         },
         {
-          "goal_index_a": 0,
-          "goal_index_b": 3,
-          "value": 0.5994842503189409
+          "goal_index_a": 3,
+          "goal_index_b": 0,
+          "value": 1.1408767770852264
         },
         {
           "goal_index_a": 0,
           "goal_index_b": 2,
-          "value": 2.1544346900318843
+          "value": 2.796692451263659
+        },
+        {
+          "goal_index_a": 0,
+          "goal_index_b": 3,
+          "value": 1.5983152964087504
         },
         {
           "goal_index_a": 0,
           "goal_index_b": 4,
-          "value": 2.1544346900318843
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 2,
-          "value": 7.742636826811274
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 1,
-          "value": 7.314717042971196
+          "value": 2.1215174254023834
         },
         {
           "goal_index_a": 0,
           "goal_index_b": 3,
-          "value": 2.5631802586156187
+          "value": 2.5307865416740145
         },
         {
           "goal_index_a": 0,
           "goal_index_b": 3,
-          "value": 3.8375788181398054
+          "value": 10.55139206178837
         },
         {
           "goal_index_a": 1,
           "goal_index_b": 2,
-          "value": 7.991095300336262
+          "value": 7.742636826811277
         },
         {
-          "goal_index_a": 1,
+          "goal_index_a": 0,
           "goal_index_b": 4,
-          "value": 0.5627855467658772
+          "value": 7.400080709005956
         },
         {
           "goal_index_a": 1,
           "goal_index_b": 2,
-          "value": 3.2540325054103074
+          "value": 2.862794165665951
         },
         {
-          "goal_index_a": 1,
-          "goal_index_b": 3,
-          "value": 1.3453712663729025
-        },
-        {
-          "goal_index_a": 1,
-          "goal_index_b": 3,
-          "value": 1.0913327213239414
+          "goal_index_a": 4,
+          "goal_index_b": 2,
+          "value": 7.054948152773386
         },
         {
           "goal_index_a": 0,
           "goal_index_b": 3,
-          "value": 5.252726218601253
+          "value": 3.475724525173695
         },
         {
           "goal_index_a": 0,
           "goal_index_b": 3,
-          "value": 6.475446751066532
+          "value": 6.4412480175392925
+        },
+        {
+          "goal_index_a": 3,
+          "goal_index_b": 4,
+          "value": 0.7799376015592168
+        },
+        {
+          "goal_index_a": 2,
+          "goal_index_b": 3,
+          "value": 1.3727521689659763
+        },
+        {
+          "goal_index_a": 0,
+          "goal_index_b": 4,
+          "value": 2.3890458941519386
+        },
+        {
+          "goal_index_a": 0,
+          "goal_index_b": 2,
+          "value": 13.690628761077331
         },
         {
           "goal_index_a": 0,
           "goal_index_b": 1,
-          "value": 5.042248537297941
+          "value": 3.1882642786735955
         }
       ]
     },
@@ -1049,17 +954,17 @@
         {
           "goal_index_a": 1,
           "goal_index_b": 4,
-          "value": 0.5994842503189409
-        },
-        {
-          "goal_index_a": 1,
-          "goal_index_b": 4,
-          "value": 1.8689812233247602
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 4,
           "value": 2.1544346900318843
+        },
+        {
+          "goal_index_a": 4,
+          "goal_index_b": 3,
+          "value": 5.576962709842194
+        },
+        {
+          "goal_index_a": 4,
+          "goal_index_b": 0,
+          "value": 1.404363511331947
         },
         {
           "goal_index_a": 1,
@@ -1067,44 +972,59 @@
           "value": 0.5994842503189409
         },
         {
-          "goal_index_a": 0,
-          "goal_index_b": 3,
-          "value": 2.1544346900318843
-        },
-        {
-          "goal_index_a": 3,
+          "goal_index_a": 1,
           "goal_index_b": 4,
-          "value": 0.1668100537200059
+          "value": 0.9182542835656291
         },
         {
           "goal_index_a": 0,
           "goal_index_b": 1,
-          "value": 37.09137871437633
+          "value": 100.0
         },
         {
           "goal_index_a": 0,
           "goal_index_b": 3,
-          "value": 100.0
+          "value": 69.87538999905786
+        },
+        {
+          "goal_index_a": 0,
+          "goal_index_b": 1,
+          "value": 9.024701141436536
+        },
+        {
+          "goal_index_a": 0,
+          "goal_index_b": 3,
+          "value": 26.865126989453668
+        },
+        {
+          "goal_index_a": 4,
+          "goal_index_b": 3,
+          "value": 9.189537413399714
         },
         {
           "goal_index_a": 1,
-          "goal_index_b": 4,
-          "value": 0.6802169696872458
+          "goal_index_b": 3,
+          "value": 11.106096276525923
         },
         {
-          "goal_index_a": 1,
-          "goal_index_b": 4,
-          "value": 0.7610628360851074
+          "goal_index_a": 4,
+          "goal_index_b": 3,
+          "value": 9.252309940644453
         },
         {
-          "goal_index_a": 1,
-          "goal_index_b": 4,
-          "value": 1.1345818042407618
+          "goal_index_a": 2,
+          "goal_index_b": 3,
+          "value": 24.702271553130814
         },
         {
-          "goal_index_a": 1,
+          "goal_index_a": 3,
           "goal_index_b": 4,
-          "value": 1.1992818816107584
+          "value": 0.08313797197212601
+        },
+        {
+          "goal_index_a": 0,
+          "goal_index_b": 1,
+          "value": 1.986624486927762
         }
       ]
     },
@@ -1191,64 +1111,49 @@
       ],
       "queries": [
         {
-          "goal_index_a": 3,
-          "goal_index_b": 4,
-          "value": 0.5994842503189409
+          "goal_index_a": 1,
+          "goal_index_b": 3,
+          "value": 1.5566317080190835
+        },
+        {
+          "goal_index_a": 4,
+          "goal_index_b": 1,
+          "value": 2.214086866155906
         },
         {
           "goal_index_a": 0,
-          "goal_index_b": 2,
-          "value": 0.5994842503189409
+          "goal_index_b": 4,
+          "value": 1.4366191972386715
         },
         {
-          "goal_index_a": 0,
-          "goal_index_b": 4,
-          "value": 0.5994842503189409
-        },
-        {
-          "goal_index_a": 3,
-          "goal_index_b": 4,
-          "value": 0.29453424888145274
+          "goal_index_a": 4,
+          "goal_index_b": 1,
+          "value": 2.3461068318097045
         },
         {
           "goal_index_a": 2,
-          "goal_index_b": 3,
-          "value": 2.1544346900318843
-        },
-        {
-          "goal_index_a": 1,
           "goal_index_b": 4,
-          "value": 7.742636826811277
+          "value": 27.825594022071257
         },
         {
-          "goal_index_a": 1,
+          "goal_index_a": 4,
           "goal_index_b": 2,
-          "value": 2.1544346900318843
+          "value": 1.6981095231092684
         },
         {
-          "goal_index_a": 0,
+          "goal_index_a": 4,
           "goal_index_b": 2,
-          "value": 1.0585012080885978
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 4,
-          "value": 0.001
-        },
-        {
-          "goal_index_a": 1,
-          "goal_index_b": 4,
-          "value": 0.1668100537200059
+          "value": 3.8790652458381714
         },
         {
           "goal_index_a": 2,
-          "goal_index_b": 3,
-          "value": 7.742636826811274
+          "goal_index_b": 4,
+          "value": 0.44714375900379677
         },
         {
-          "goal_index_a": 1,
-          "goal_index_b": 3,
-          "value": 7.865885122409436
+          "goal_index_a": 4,
+          "goal_index_b": 1,
+          "value": 9.768281562331676
         }
       ]
     },
@@ -1340,39 +1245,44 @@
           "value": 2.1544346900318843
         },
         {
-          "goal_index_a": 1,
-          "goal_index_b": 3,
-          "value": 0.5994842503189409
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 1,
-          "value": 0.5994842503189409
-        },
-        {
-          "goal_index_a": 1,
-          "goal_index_b": 2,
-          "value": 2.1544346900318843
-        },
-        {
-          "goal_index_a": 1,
-          "goal_index_b": 2,
-          "value": 3.3000347911252854
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 4,
-          "value": 0.1668100537200059
-        },
-        {
           "goal_index_a": 3,
           "goal_index_b": 4,
-          "value": 0.046415888336127795
+          "value": 1.2738289454733844
+        },
+        {
+          "goal_index_a": 0,
+          "goal_index_b": 4,
+          "value": 0.3913745601980388
         },
         {
           "goal_index_a": 1,
+          "goal_index_b": 0,
+          "value": 1.8302086460885199
+        },
+        {
+          "goal_index_a": 0,
+          "goal_index_b": 2,
+          "value": 7.742636826811277
+        },
+        {
+          "goal_index_a": 0,
           "goal_index_b": 3,
-          "value": 18.165997883753278
+          "value": 1.9878759467682867
+        },
+        {
+          "goal_index_a": 0,
+          "goal_index_b": 3,
+          "value": 0.8669335541433081
+        },
+        {
+          "goal_index_a": 0,
+          "goal_index_b": 4,
+          "value": 0.696422473948581
+        },
+        {
+          "goal_index_a": 1,
+          "goal_index_b": 2,
+          "value": 3.900019550562971
         }
       ]
     },
@@ -1461,97 +1371,67 @@
         {
           "goal_index_a": 1,
           "goal_index_b": 3,
-          "value": 2.1544346900318843
+          "value": 1.3183431633996698
         },
         {
           "goal_index_a": 0,
           "goal_index_b": 3,
-          "value": 0.5994842503189409
+          "value": 1.7103128591798624
         },
         {
           "goal_index_a": 1,
+          "goal_index_b": 4,
+          "value": 2.1544346900318843
+        },
+        {
+          "goal_index_a": 2,
           "goal_index_b": 3,
-          "value": 0.9182542835656291
+          "value": 0.5994842503189409
         },
         {
           "goal_index_a": 3,
           "goal_index_b": 4,
-          "value": 0.5994842503189409
+          "value": 3.301582067866228
         },
         {
           "goal_index_a": 1,
+          "goal_index_b": 2,
+          "value": 1.218966713605807
+        },
+        {
+          "goal_index_a": 0,
           "goal_index_b": 3,
-          "value": 0.43027375433136794
+          "value": 0.027347804811706906
         },
         {
-          "goal_index_a": 1,
+          "goal_index_a": 4,
+          "goal_index_b": 2,
+          "value": 5.4993109871883314
+        },
+        {
+          "goal_index_a": 0,
+          "goal_index_b": 3,
+          "value": 0.4308815164595355
+        },
+        {
+          "goal_index_a": 0,
           "goal_index_b": 4,
-          "value": 0.001
-        },
-        {
-          "goal_index_a": 1,
-          "goal_index_b": 2,
-          "value": 7.742636826811277
+          "value": 0.04650135691266577
         },
         {
           "goal_index_a": 2,
-          "goal_index_b": 3,
-          "value": 0.5994842503189409
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 1,
-          "value": 0.001
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 1,
-          "value": 0.003593813663804626
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 1,
-          "value": 0.011204248075250207
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 1,
-          "value": 0.030785073303512815
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 1,
-          "value": 0.0756004908332006
+          "goal_index_b": 4,
+          "value": 0.057218702385517205
         },
         {
           "goal_index_a": 2,
-          "goal_index_b": 3,
-          "value": 0.29453424888145274
+          "goal_index_b": 4,
+          "value": 0.036496902224433726
         },
         {
-          "goal_index_a": 1,
-          "goal_index_b": 2,
-          "value": 0.001
-        },
-        {
-          "goal_index_a": 1,
-          "goal_index_b": 2,
-          "value": 0.0027045733569217908
-        },
-        {
-          "goal_index_a": 1,
-          "goal_index_b": 2,
-          "value": 0.006549174420837754
-        },
-        {
-          "goal_index_a": 1,
-          "goal_index_b": 2,
-          "value": 0.01437467144935917
-        },
-        {
-          "goal_index_a": 0,
-          "goal_index_b": 2,
-          "value": 0.0010867322171375484
+          "goal_index_a": 4,
+          "goal_index_b": 0,
+          "value": 3.7749028847939745
         }
       ]
     }

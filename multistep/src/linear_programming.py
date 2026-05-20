@@ -61,17 +61,30 @@ def is_classified_linprog_result(result: Any) -> bool:
 def run_linprog_with_retries(**kwargs: Any) -> Any:
     with _suppress_native_solver_output():
         result = linprog(**kwargs)
-    if is_classified_linprog_result(result):
+    if result.success:
         return result
 
-    retry_kwargs = {
-        **kwargs,
-        "options": LINPROG_OPTIONS_WITHOUT_PRESOLVE,
-    }
-    with _suppress_native_solver_output():
-        retry_result = linprog(**retry_kwargs)
-    if is_classified_linprog_result(retry_result):
-        return retry_result
+    classified_status = classify_linprog_failure(
+        solver_status_code=int(result.status),
+        solver_message=str(result.message),
+    )
+
+    # HiGHS presolve can occasionally report infeasible for homogeneous
+    # ratio-normalized systems whose non-presolve model is feasible/unbounded.
+    # Infeasible and unknown failures are therefore checked once more without
+    # presolve before we accept the status.
+    if classified_status != "unbounded":
+        retry_kwargs = {
+            **kwargs,
+            "options": LINPROG_OPTIONS_WITHOUT_PRESOLVE,
+        }
+        with _suppress_native_solver_output():
+            retry_result = linprog(**retry_kwargs)
+        if is_classified_linprog_result(retry_result):
+            return retry_result
+
+    if classified_status is not None:
+        return result
 
     return result
 

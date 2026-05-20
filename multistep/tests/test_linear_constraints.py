@@ -107,6 +107,39 @@ class LinearConstraintSystemTests(unittest.TestCase):
         self.assertNotIn("presolve", mocked_linprog.call_args_list[0].kwargs["options"])
         self.assertFalse(mocked_linprog.call_args_list[1].kwargs["options"]["presolve"])
 
+    def test_maximize_retries_without_presolve_for_presolve_infeasible_status(self) -> None:
+        system = self._build_one_variable_system()
+
+        with patch(
+            "multistep.src.linear_programming.linprog",
+            side_effect=[
+                SimpleNamespace(
+                    success=False,
+                    status=2,
+                    message=(
+                        "The problem is infeasible. "
+                        "(HiGHS Status 8: model_status is Infeasible; "
+                        "primal_status is None)"
+                    ),
+                ),
+                SimpleNamespace(
+                    success=False,
+                    status=3,
+                    message=(
+                        "The problem is unbounded. "
+                        "(HiGHS Status 10: model_status is Unbounded; "
+                        "primal_status is Feasible)"
+                    ),
+                ),
+            ],
+        ) as mocked_linprog:
+            result = system.maximize([1.0])
+
+        self.assertEqual(result.status, "unbounded")
+        self.assertEqual(result.objective_sense, "max")
+        self.assertEqual(mocked_linprog.call_count, 2)
+        self.assertFalse(mocked_linprog.call_args_list[1].kwargs["options"]["presolve"])
+
     def test_find_feasible_point_retries_without_presolve_and_returns_point(self) -> None:
         system = self._build_one_variable_system()
 
