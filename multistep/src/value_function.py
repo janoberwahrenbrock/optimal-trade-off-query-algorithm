@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections.abc import Callable
+from dataclasses import dataclass, replace
 
 from .candidates import compute_candidate_set
 from .grid_query_candidates import (
@@ -80,6 +81,7 @@ class QueryEvaluation:
     expected_value: float
     branches: tuple[QueryBranchResult, ...]
     query_source: str = "unknown"
+    lexicographic_expected_values: tuple[float, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -168,9 +170,20 @@ def compute_value_function(
         )
         for query in query_candidates
     )
-    best_evaluation = min(
-        query_evaluations,
-        key=lambda evaluation: evaluation.expected_value,
+    query_evaluations, best_evaluation = refine_query_evaluations_lexicographically(
+        query_evaluations=query_evaluations,
+        remaining_depth=remaining_depth,
+        evaluate_queries_at_depth=lambda queries, depth: tuple(
+            evaluate_query_candidate(
+                alternatives=alternatives,
+                answered_queries=answered_queries,
+                query=query,
+                samples=samples,
+                remaining_depth=depth,
+                config=resolved_config,
+            )
+            for query in queries
+        ),
     )
 
     return ValueFunctionResult(
@@ -180,6 +193,102 @@ def compute_value_function(
         candidate_count=candidate_count,
         query_evaluations=query_evaluations,
         is_feasible=True,
+    )
+
+
+def refine_query_evaluations_lexicographically(
+    query_evaluations: tuple[QueryEvaluation, ...],
+    remaining_depth: int,
+    evaluate_queries_at_depth: Callable[
+        [list[Query], int], tuple[QueryEvaluation, ...]
+    ],
+) -> tuple[tuple[QueryEvaluation, ...], QueryEvaluation]:
+    """Select by ``(E_d, E_{d-1}, ..., E_1)`` with lazy tie refinement.
+
+    Shallower values cannot affect the result unless all preceding values are
+    equal.  Computing them only for the tied queries is therefore equivalent
+    to constructing every complete key, while avoiding redundant recursion in
+    the usual case where ``E_d`` already has a unique minimum.
+    """
+    if remaining_depth <= 0:
+        raise ValueError("remaining_depth must be positive")
+    if not query_evaluations:
+        raise ValueError("query_evaluations must not be empty")
+
+    value_profiles = [
+        [float(evaluation.expected_value)]
+        for evaluation in query_evaluations
+    ]
+    best_value = min(profile[0] for profile in value_profiles)
+    tied_indices = [
+        index
+        for index, profile in enumerate(value_profiles)
+        if profile[0] == best_value
+    ]
+
+    for shallower_depth in range(remaining_depth - 1, 0, -1):
+        if len(tied_indices) <= 1:
+            break
+
+        tied_queries = [
+            query_evaluations[index].query
+            for index in tied_indices
+        ]
+        shallower_evaluations = evaluate_queries_at_depth(
+            tied_queries,
+            shallower_depth,
+        )
+        if len(shallower_evaluations) != len(tied_indices):
+            raise RuntimeError(
+                "shallower query evaluation count does not match tied query count"
+            )
+
+        for index, shallower_evaluation in zip(
+            tied_indices,
+            shallower_evaluations,
+            strict=True,
+        ):
+            if shallower_evaluation.query != query_evaluations[index].query:
+                raise RuntimeError("shallower query evaluation order changed")
+            value_profiles[index].append(float(shallower_evaluation.expected_value))
+
+        best_value = min(value_profiles[index][-1] for index in tied_indices)
+        tied_indices = [
+            index
+            for index in tied_indices
+            if value_profiles[index][-1] == best_value
+        ]
+
+    refined_evaluations = tuple(
+        replace(
+            evaluation,
+            lexicographic_expected_values=tuple(value_profiles[index]),
+        )
+        for index, evaluation in enumerate(query_evaluations)
+    )
+    best_index = min(
+        tied_indices,
+        key=lambda index: query_identity_sort_key(
+            refined_evaluations[index].query
+        ),
+    )
+    return refined_evaluations, refined_evaluations[best_index]
+
+
+def query_evaluation_lexicographic_sort_key(
+    evaluation: QueryEvaluation,
+) -> tuple[float | int, ...]:
+    expected_values = evaluation.lexicographic_expected_values or (
+        float(evaluation.expected_value),
+    )
+    return (*expected_values, *query_identity_sort_key(evaluation.query))
+
+
+def query_identity_sort_key(query: Query) -> tuple[int, int, float]:
+    return (
+        int(query.ziel_index_a),
+        int(query.ziel_index_b),
+        float(query.value),
     )
 
 

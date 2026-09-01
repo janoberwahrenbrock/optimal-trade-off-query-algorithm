@@ -1,0 +1,560 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[ngerman]{babel}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{booktabs}
+\usepackage{geometry}
+\usepackage[hidelinks]{hyperref}
+
+\geometry{left=28mm,right=28mm,top=25mm,bottom=28mm}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Vol}{\operatorname{Vol}}
+\newcommand{\conv}{\operatorname{conv}}
+
+\title{Exakte Volumenberechnung im\\Optimal-Trade-off-Query-Algorithmus}
+\author{}
+\date{September 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Dieses Dokument beschreibt die geometrisch exakte Bestimmung von
+Kandidaten- und Query-Antwortwahrscheinlichkeiten im
+Optimal-Trade-off-Query-Algorithmus. Der zulässige Gewichtsraum wird als
+konvexes Polytop dargestellt. Beantwortete Queries und
+Optimalitätsbedingungen schneiden dieses Polytop durch lineare Halbräume.
+Nach der Elimination der Gewichtssummengleichung werden die Ecken der
+entstehenden Polytopen bestimmt und ihre intrinsischen Volumina berechnet.
+Die gesuchten Wahrscheinlichkeiten ergeben sich anschließend als
+Volumenquotienten. Die Wahrscheinlichkeiten dienen ausschließlich zur
+Gewichtung der Zweige der bereits vorhandenen Zielfunktion; es wird kein
+zusätzliches Entropie- oder Regret-Ziel eingeführt.
+\end{abstract}
+
+\tableofcontents
+
+\section{Ausgangsproblem und Notation}
+
+Es seien
+\begin{itemize}
+  \item $m$ Ziele,
+  \item $n$ Handlungsalternativen und
+  \item $x_k\in\R^m$ der Zielwertvektor der Alternative $k$
+\end{itemize}
+gegeben. Der unbekannte Gewichtsvektor wird mit
+\[
+  w=(w_1,\dots,w_m)^\top\in\R^m
+\]
+bezeichnet. Für jedes Gewicht gelten
+\[
+  w_i\geq 0
+  \qquad\text{für alle }i\in\{1,\dots,m\}
+\]
+und
+\[
+  \sum_{i=1}^{m}w_i=1.
+\]
+
+Der aggregierte Nutzen der Alternative $k$ ist
+\[
+  U_k(w)=x_k^\top w.
+\]
+Eine Alternative wird als optimal bezeichnet, wenn ihr aggregierter Nutzen
+mindestens so groß ist wie der Nutzen jeder anderen Alternative.
+
+\section{Der Gewichtsraum als konvexes Polytop}
+
+Ohne beantwortete Queries ist der zulässige Gewichtsraum der Standardsimplex
+\[
+  W_0
+  =
+  \left\{
+    w\in\R^m
+    \;\middle|\;
+    w_i\geq 0\text{ für alle }i,
+    \ \boldsymbol{1}^\top w=1
+  \right\}.
+\]
+Für drei Ziele ist $W_0$ ein Dreieck mit den Ecken
+\[
+  (1,0,0)^\top,
+  \qquad
+  (0,1,0)^\top,
+  \qquad
+  (0,0,1)^\top.
+\]
+
+Allgemein ist $W_0$ ein Simplex. Obwohl $w$ aus $m$ Komponenten besteht,
+besitzt $W_0$ aufgrund der Gleichung $\boldsymbol{1}^\top w=1$ nur die
+intrinsische Dimension
+\[
+  d=m-1.
+\]
+Bei sieben Zielen wird daher ein sechsdimensionales Volumen berechnet.
+Das gewöhnliche siebendimensionale Volumen in $\R^7$ wäre null und ist nicht
+die gesuchte geometrische Größe.
+
+\subsection{Query-Antworten als lineare Schnitte}
+
+Eine Trade-off-Query hat die Form
+\[
+  w_a\mathrel{?}s\,w_b,
+  \qquad s\geq 0.
+\]
+Die Antwort ``kleiner'' erzeugt die Ungleichung
+\[
+  w_a-s w_b\leq 0,
+\]
+während die Antwort ``größer'' durch
+\[
+  -w_a+s w_b\leq 0
+\]
+dargestellt wird. Eine exakte Gleichheitsantwort erzeugt die Gleichung
+\[
+  w_a-s w_b=0.
+\]
+
+Für eine Menge $T$ bereits beantworteter Queries lässt sich der aktuelle
+Gewichtsraum somit in der allgemeinen Form
+\[
+  W(T)
+  =
+  \left\{
+    w\in\R^m
+    \;\middle|\;
+    Aw\leq b,
+    \ Cw=d
+  \right\}
+\]
+schreiben. Alle Nebenbedingungen sind linear. Folglich ist $W(T)$ ein
+konvexes Polytop, solange es nicht leer und beschränkt ist.
+
+\section{Optimalitätsregionen der Alternativen}
+
+Alternative $k$ ist für ein Gewicht $w$ optimal, wenn
+\[
+  U_k(w)\geq U_j(w)
+  \qquad\text{für alle }j\neq k.
+\]
+Mit $U_k(w)=x_k^\top w$ folgt
+\[
+  x_k^\top w\geq x_j^\top w
+\]
+beziehungsweise
+\[
+  (x_j-x_k)^\top w\leq 0.
+\]
+Die Optimalitätsregion von Alternative $k$ im aktuellen Gewichtsraum ist
+damit
+\[
+  W_k(T)
+  =
+  W(T)
+  \cap
+  \bigcap_{j\neq k}
+  \left\{
+    w\in\R^m
+    \;\middle|\;
+    (x_j-x_k)^\top w\leq 0
+  \right\}.
+\]
+
+Auch $W_k(T)$ ist ein konvexes Polytop. Ist die Region leer, kann Alternative
+$k$ unter keinem zulässigen Gewichtsvektor optimal sein. Eine Region, die nur
+aus einer Fläche niedrigerer Dimension besteht, besitzt bezüglich des
+intrinsischen Volumens von $W(T)$ ebenfalls Volumen null.
+
+Die Kandidatenregionen überdecken den Gewichtsraum:
+\[
+  W(T)=\bigcup_{k=1}^{n}W_k(T).
+\]
+Verschiedene Regionen können sich auf Grenzen überschneiden, auf denen zwei
+oder mehr Alternativen den gleichen Nutzen besitzen. Solche Grenzen haben im
+voll-dimensionalen Gewichtsraum Volumen null. Daher gilt
+\[
+  \Vol(W(T))
+  =
+  \sum_{k=1}^{n}\Vol(W_k(T)).
+\]
+Diese Identität wird in den Benchmarks als numerische Konsistenzprüfung
+verwendet.
+
+\section{Wahrscheinlichkeiten als Volumenquotienten}
+
+Es wird angenommen, dass der unbekannte Gewichtsvektor innerhalb des aktuell
+zulässigen Gewichtsraums gleichverteilt ist. Unter dieser Modellannahme ist
+die Wahrscheinlichkeit, dass Alternative $k$ optimal ist,
+\[
+  p_k(T)
+  =
+  \Pr(k\text{ ist optimal}\mid T)
+  =
+  \frac{\Vol(W_k(T))}{\Vol(W(T))}.
+\]
+Die Wahrscheinlichkeiten erfüllen
+\[
+  p_k(T)\geq 0
+  \qquad\text{und}\qquad
+  \sum_{k=1}^{n}p_k(T)=1,
+\]
+bis auf unvermeidbare Rundungsfehler der Fließkommaarithmetik.
+
+Wichtig ist die Trennung zwischen Geometrie und Entscheidungsziel:
+Die Volumenquotienten definieren keine neue Zielfunktion. Sie liefern lediglich
+die Wahrscheinlichkeiten, die zur Auswertung der vorhandenen Zielfunktion
+benötigt werden.
+
+\section{Berechnung des intrinsischen Volumens}
+
+\subsection{Elimination der Gleichungen}
+
+Algorithmen zur Ecken- und Volumenberechnung benötigen eine Darstellung im
+tatsächlichen affinen Raum des Polytops. Sei
+\[
+  Cw=d
+\]
+das Gleichungssystem. Zunächst wird ein spezieller Punkt $w_0$ mit
+\[
+  Cw_0=d
+\]
+bestimmt. Außerdem sei
+\[
+  B\in\R^{m\times d_W}
+\]
+eine orthonormale Basis des Nullraums von $C$. Es gilt also
+\[
+  CB=0
+  \qquad\text{und}\qquad
+  B^\top B=I.
+\]
+Jeder Punkt im affinen Gleichungsraum besitzt nun die eindeutige Darstellung
+\[
+  w=w_0+Bz,
+  \qquad z\in\R^{d_W}.
+\]
+
+Setzt man diese Darstellung in die Ungleichungen $Aw\leq b$ ein, erhält man
+\begin{align*}
+  A(w_0+Bz)&\leq b,\\
+  ABz&\leq b-Aw_0.
+\end{align*}
+Das reduzierte Polytop lautet somit
+\[
+  P
+  =
+  \left\{
+    z\in\R^{d_W}
+    \;\middle|\;
+    \widetilde A z\leq\widetilde b
+  \right\},
+\]
+wobei
+\[
+  \widetilde A=AB
+  \qquad\text{und}\qquad
+  \widetilde b=b-Aw_0.
+\]
+Da $B$ orthonormal ist, bleiben Längen und intrinsische Volumina bei dieser
+Koordinatentransformation erhalten.
+
+\subsection{Relativer Chebyshev-Mittelpunkt}
+
+Die Halfspace-Intersection-Methode benötigt einen Punkt, der strikt im Inneren
+aller nichtredundanten Ungleichungen liegt. Ein beliebiger Machbarkeitspunkt
+eines LP-Solvers genügt nicht, weil dieser häufig auf einer Ecke oder Kante
+liegt.
+
+Deshalb wird ein relativer Chebyshev-Mittelpunkt berechnet. Für jede Zeile
+$\widetilde a_i^\top$ von $\widetilde A$ wird der Abstand zur zugehörigen
+Hyperebene berücksichtigt. Das lineare Programm lautet
+\begin{align*}
+  \max_{z,r}\quad & r,\\
+  \text{unter}\quad
+  & \widetilde a_i^\top z
+    +\lVert\widetilde a_i\rVert_2r
+    \leq\widetilde b_i
+    \qquad\text{für alle }i,\\
+  & r\geq 0.
+\end{align*}
+Der optimale Radius $r^*$ beschreibt den Radius einer größtmöglichen Kugel im
+relativen Inneren des Polytops. Gilt $r^*>0$, steht ein geeigneter innerer
+Punkt für die Eckenberechnung zur Verfügung. Gilt $r^*=0$, reduzieren die
+Ungleichungen die Dimension zusätzlich; dieser degenerierte Fall muss separat
+behandelt werden.
+
+\subsection{Bestimmung der Ecken}
+
+Das reduzierte Polytop ist durch Halbräume
+\[
+  \widetilde a_i^\top z\leq\widetilde b_i
+\]
+gegeben. Ausgehend vom inneren Punkt berechnet die
+Halfspace-Intersection-Methode sämtliche Ecken
+\[
+  z_1,\dots,z_N.
+\]
+Die Rücktransformation in die ursprünglichen Gewichtskomponenten lautet
+\[
+  w_i=w_0+Bz_i.
+\]
+
+Anschließend werden numerisch identische Ecken zusammengefasst und gegen alle
+ursprünglichen Ungleichungen und Gleichungen geprüft. Diese Validierung
+verhindert, dass numerisch unzulässige Qhull-Ergebnisse in die
+Volumenberechnung gelangen.
+
+\subsection{Volumen aus der konvexen Hülle}
+
+Jedes beschränkte konvexe Polytop ist die konvexe Hülle seiner Ecken:
+\[
+  P=\conv\{z_1,\dots,z_N\}.
+\]
+Die konvexe Hülle kann in $d_W$-dimensionale Simplizes zerlegt werden. Ein
+Simplex mit den Ecken $v_0,\dots,v_{d_W}$ besitzt das Volumen
+\[
+  \Vol
+  \bigl(
+    \conv\{v_0,\dots,v_{d_W}\}
+  \bigr)
+  =
+  \frac{
+    \left|
+      \det
+      \begin{pmatrix}
+        v_1-v_0 & \cdots & v_{d_W}-v_0
+      \end{pmatrix}
+    \right|
+  }{d_W!}.
+\]
+Das Volumen des Polytops ist die Summe der Volumina der Simplizes einer
+überlappungsfreien Zerlegung. Die verwendete Convex-Hull-Engine führt diese
+geometrische Berechnung intern durch.
+
+Es wird weder ein Raster aufgebaut noch über eine feste Zahl zufälliger Punkte
+integriert. Die Berechnung ist daher deterministisch und besitzt keinen
+Monte-Carlo-Fehler.
+
+\section{Exakte Wahrscheinlichkeiten für eine Query}
+
+Für eine mögliche Query
+\[
+  q=(a,b,s)
+\]
+werden die beiden voll-dimensionalen Antwortregionen definiert als
+\begin{align*}
+  W_q^{<}(T)
+  &=
+  W(T)\cap
+  \left\{w\mid w_a-s w_b\leq 0\right\},\\
+  W_q^{>}(T)
+  &=
+  W(T)\cap
+  \left\{w\mid -w_a+s w_b\leq 0\right\}.
+\end{align*}
+Die Antwortwahrscheinlichkeiten ergeben sich durch
+\begin{align*}
+  \Pr(<\mid q,T)
+  &=
+  \frac{\Vol(W_q^{<}(T))}{\Vol(W(T))},\\
+  \Pr(>\mid q,T)
+  &=
+  \frac{\Vol(W_q^{>}(T))}{\Vol(W(T))}.
+\end{align*}
+
+Die Hyperebene
+\[
+  w_a-s w_b=0
+\]
+besitzt in einem voll-dimensionalen, kontinuierlich verteilten Gewichtsraum
+Volumen null. Deshalb hat eine exakte Gleichheitsantwort unter diesem Modell
+Wahrscheinlichkeit null. Wird eine Gleichheit tatsächlich als Nutzereingabe
+gegeben, reduziert sie den affinen Raum für alle nachfolgenden Berechnungen;
+das Volumen wird danach in diesem neuen intrinsischen Raum bestimmt.
+
+\section{Einbindung in die vorhandene Zielfunktion}
+
+Die exakte Volumenmethode ändert die Zielfunktion des Algorithmus nicht. Sei
+$V_h(T)$ der Wert eines Zustands bei noch $h$ verfügbaren Query-Schritten. Im
+Terminalfall kann beispielsweise die Anzahl der verbleibenden Kandidaten
+verwendet werden:
+\[
+  V_0(T)=|K(T)|.
+\]
+
+Für eine Query $q$ wird der erwartete Folgewert durch die exakten
+Antwortwahrscheinlichkeiten gewichtet:
+\[
+  V_h(T;q)
+  =
+  \sum_{o\in\{<,>\}}
+  \Pr(o\mid q,T)
+  V_{h-1}\bigl(T\cup\{(q,o)\}\bigr).
+\]
+Die gewählte Query ist weiterhin
+\[
+  q^*
+  =
+  \arg\min_{q\in Q(T)}V_h(T;q).
+\]
+
+Die Volumenberechnung liefert hier ausschließlich
+$\Pr(o\mid q,T)$. Die Bedeutung von $V_h$, die Menge $Q(T)$ der zulässigen
+Query-Kandidaten und die Minimierung bleiben unverändert.
+
+\section{Algorithmischer Ablauf}
+
+Für die Kandidatenwahrscheinlichkeiten eines Zustands wird folgender Ablauf
+verwendet:
+
+\begin{enumerate}
+  \item Erzeuge den aktuellen Gewichtsraum $W(T)$ aus Simplexbedingungen und
+        beantworteten Queries.
+  \item Eliminiere die expliziten Gleichungen und bestimme die Ecken von
+        $W(T)$.
+  \item Berechne das intrinsische Gesamtvolumen $\Vol(W(T))$.
+  \item Für jede Alternative $k$:
+    \begin{enumerate}
+      \item ergänze alle Optimalitätsbedingungen
+            $(x_j-x_k)^\top w\leq 0$,
+      \item bestimme die Ecken von $W_k(T)$,
+      \item berechne $\Vol(W_k(T))$,
+      \item setze
+            $p_k(T)=\Vol(W_k(T))/\Vol(W(T))$.
+    \end{enumerate}
+  \item Prüfe numerisch
+        $\sum_k p_k(T)\approx 1$.
+\end{enumerate}
+
+Für eine Query-Antwortwahrscheinlichkeit werden statt der
+Optimalitätsbedingungen die jeweilige Query-Ungleichung und ihr Gegenstück
+eingesetzt. Für die rekursive Query-Bewertung wird dieser Vorgang in den
+Kindzuständen wiederholt.
+
+\section{Beispiel mit drei Zielen}
+
+Bei drei Zielen ist der unbeschnittene Gewichtsraum das Dreieck
+\[
+  W_0
+  =
+  \conv
+  \left\{
+    (1,0,0)^\top,
+    (0,1,0)^\top,
+    (0,0,1)^\top
+  \right\}.
+\]
+Eine Antwort auf die Query
+\[
+  w_1<2w_2
+\]
+schneidet das Dreieck mit der Geraden
+\[
+  w_1=2w_2.
+\]
+Der verbleibende Gewichtsraum ist wieder ein konvexes Polygon. Die
+Optimalitätsbedingungen einer Alternative schneiden dieses Polygon weiter und
+erzeugen beispielsweise ein kleineres Dreieck oder Viereck. Die
+Kandidatenwahrscheinlichkeit ist dann
+\[
+  \frac{
+    \text{Fläche der Optimalitätsregion}
+  }{
+    \text{Fläche des aktuellen Gewichtsraums}
+  }.
+\]
+In sieben Zielen ist das Prinzip identisch; an die Stelle von Flächen treten
+sechsdimensionale intrinsische Volumina.
+
+\section{Bedeutung von ``exakt''}
+
+Die Methode ist geometrisch und deterministisch exakt:
+\begin{itemize}
+  \item Es existiert kein Samplingfehler.
+  \item Burn-in, Thinning, ESS und R-hat werden nicht benötigt.
+  \item Dieselbe Eingabe erzeugt dasselbe Ergebnis.
+  \item Die vollständige konvexe Geometrie des Zustands wird ausgewertet.
+\end{itemize}
+
+Die Implementierung verwendet jedoch Fließkommaarithmetik und numerische
+LP- sowie Convex-Hull-Verfahren. ``Exakt'' bedeutet daher nicht symbolisch
+exakt über rationalen Zahlen, sondern numerisch exakt bis auf
+Maschinenrundung und Solver-Toleranzen.
+
+Im iterativen Benchmark mit drei, fünf und sieben Zielen, jeweils zehn
+Alternativen und bis zu zwanzig beantworteten Queries, wurden 120 Zustände
+erfolgreich berechnet. Der größte beobachtete Fehler in der Identität
+\[
+  \sum_k\Vol(W_k(T))=\Vol(W(T))
+\]
+betrug relativ
+\[
+  2{,}85\cdot 10^{-10}.
+\]
+
+\section{Laufzeit und Grenzen}
+
+Die Eckenanzahl eines Polytops kann im schlechtesten Fall exponentiell mit der
+Dimension und der Anzahl der Halbräume wachsen. Die exakte Methode besitzt
+daher keine dimensionsunabhängige Laufzeitgarantie. Für den aktuell
+untersuchten Bereich erwies sie sich jedoch als praktikabel.
+
+Im anspruchsvollsten Benchmarkzustand mit sieben Zielen und zwanzig Queries
+wurden bis zu 168 Ecken beobachtet. Die Berechnung des Gesamtvolumens und aller
+zehn Kandidatenvolumina benötigte im Median etwa $0{,}045$ Sekunden und im
+Maximum etwa $0{,}104$ Sekunden auf dem Entwicklungsrechner.
+
+Kritische Fälle sind insbesondere:
+\begin{itemize}
+  \item sehr hohe Zieldimensionen,
+  \item sehr viele Query-Nebenbedingungen,
+  \item extrem dünne oder beinahe degenerierte Polytopen,
+  \item eine sehr große Zahl separat auszuwertender hypothetischer Queries und
+        Kindzustände.
+\end{itemize}
+
+Die exakte Methode sollte deshalb durch folgende Prüfungen abgesichert werden:
+\begin{itemize}
+  \item Validierung aller berechneten Ecken gegen das Nebenbedingungssystem,
+  \item Vergleich der Summe der Kandidatenvolumina mit dem Gesamtvolumen,
+  \item Erkennung leerer und niedriger-dimensionaler Regionen,
+  \item Laufzeit- und Komplexitätsgrenzen für unerwartet große Polytopen.
+\end{itemize}
+
+\section{Bezug zur Implementierung}
+
+Die zentralen Bausteine befinden sich in den folgenden Modulen:
+\begin{itemize}
+  \item \texttt{multistep/src/weight\_space.py}: Aufbau des aktuellen
+        Gewichtsraums aus beantworteten Queries,
+  \item \texttt{multistep/src/optimality\_region.py}: Ergänzung der
+        Optimalitätsbedingungen einer Alternative,
+  \item \texttt{multistep/src/polytope\_geometry.py}: Elimination der
+        Gleichungen, relativer Chebyshev-Mittelpunkt und Eckenbestimmung,
+  \item \texttt{multistep/scripts/benchmark\_iterative\_volume\_methods.py}:
+        reproduzierbare Volumenberechnung und iterativer Benchmark.
+\end{itemize}
+
+\section{Zusammenfassung}
+
+Die exakte Methode basiert auf fünf Schritten:
+\begin{enumerate}
+  \item Darstellung des zulässigen Gewichtsraums durch lineare Gleichungen und
+        Ungleichungen,
+  \item Ergänzung von Query- oder Optimalitätsbedingungen,
+  \item Projektion in den intrinsischen affinen Raum,
+  \item Bestimmung der Ecken und des Volumens der konvexen Hülle,
+  \item Berechnung der Wahrscheinlichkeiten als Volumenquotienten.
+\end{enumerate}
+
+Damit können die für die vorhandene Zielfunktion benötigten
+Kandidaten- und Query-Antwortwahrscheinlichkeiten ohne Monte-Carlo-Sampling
+bestimmt werden.
+
+\end{document}

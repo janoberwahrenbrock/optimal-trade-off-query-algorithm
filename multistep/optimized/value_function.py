@@ -33,6 +33,8 @@ from multistep.src.onestep_query_candidates import (
     compute_onestep_query_candidates,
 )
 from multistep.src.optimality_region import build_optimality_region
+from multistep.src.polytope_volume import compute_exact_query_answer_probabilities
+from multistep.src.polytope_geometry import enumerate_polytope_vertices
 from multistep.src.query_probability import ANSWER_OPTIONS, classify_query_answer
 from multistep.src.ratio_intervals import (
     RatioIntervalEngine,
@@ -45,6 +47,8 @@ from multistep.src.value_function import (
     QueryBranchResult,
     QueryEvaluation,
     ValueFunctionResult,
+    query_evaluation_lexicographic_sort_key,
+    refine_query_evaluations_lexicographically,
 )
 from multistep.src.weight_space import build_weight_space
 
@@ -52,10 +56,11 @@ from .profiling import increment_profile_counter, profile_operation
 
 
 CandidateCountMode = Literal["closed_lp", "ratio_relevant"]
-GridDepthQuerySourceMode = Literal["grid", "ratio", "both"]
-DepthOneQuerySourceMode = Literal["grid", "ratio", "both"]
+GridDepthQuerySourceMode = Literal["grid", "ratio", "both", "central"]
+DepthOneQuerySourceMode = Literal["grid", "ratio", "both", "central"]
 QuerySource = str
 PosteriorQueryObjective = Literal["entropy", "regret"]
+AnswerProbabilityMode = Literal["sampling", "exact_volume"]
 
 
 @dataclass(frozen=True)
@@ -109,6 +114,7 @@ class OptimizedMultistepConfig:
     answered_query_rel_tolerance: float = 1e-9
     answer_support_tolerance: float = 1e-9
     answer_probability_smoothing: float = 1.0
+    answer_probability_mode: AnswerProbabilityMode = "sampling"
     parallelize_root: bool = False
     max_workers: int = 4
     candidate_count_mode: CandidateCountMode = "ratio_relevant"
@@ -180,6 +186,22 @@ class OptimizedMultistepConfig:
         if self.answer_probability_smoothing < 0.0:
             raise ValueError("answer_probability_smoothing must not be negative")
 
+        if self.answer_probability_mode not in {"sampling", "exact_volume"}:
+            raise ValueError(
+                "answer_probability_mode must be 'sampling' or 'exact_volume'"
+            )
+
+        if self.answer_probability_mode == "exact_volume" and (
+            self.reuse_conditioned_samples
+            or self.max_query_candidates_per_state is not None
+            or bool(self.posterior_quantile_levels)
+            or self.posterior_query_objective is not None
+        ):
+            raise ValueError(
+                "exact_volume probabilities cannot be combined with sample-based "
+                "conditioning, quantiles, or shortlists"
+            )
+
         if self.max_workers <= 0:
             raise ValueError("max_workers must be positive")
 
@@ -198,14 +220,26 @@ class OptimizedMultistepConfig:
         if self.candidate_count_mode not in {"closed_lp", "ratio_relevant"}:
             raise ValueError("candidate_count_mode must be 'closed_lp' or 'ratio_relevant'")
 
-        if self.grid_depth_query_source_mode not in {"grid", "ratio", "both"}:
+        if self.grid_depth_query_source_mode not in {
+            "grid",
+            "ratio",
+            "both",
+            "central",
+        }:
             raise ValueError(
-                "grid_depth_query_source_mode must be 'grid', 'ratio', or 'both'"
+                "grid_depth_query_source_mode must be 'grid', 'ratio', 'both', "
+                "or 'central'"
             )
 
-        if self.depth_one_query_source_mode not in {"grid", "ratio", "both"}:
+        if self.depth_one_query_source_mode not in {
+            "grid",
+            "ratio",
+            "both",
+            "central",
+        }:
             raise ValueError(
-                "depth_one_query_source_mode must be 'grid', 'ratio', or 'both'"
+                "depth_one_query_source_mode must be 'grid', 'ratio', 'both', "
+                "or 'central'"
             )
 
         if self.ratio_interval_engine not in {"geometry", "lp"}:
@@ -522,28 +556,43 @@ def compute_value_function_optimized(
             is_feasible=True,
         )
 
-    if state_samples is None:
+    samples_are_required = (
+        resolved_config.answer_probability_mode == "sampling"
+        or resolved_config.max_query_candidates_per_state is not None
+        or resolved_config.posterior_query_objective is not None
+    )
+    if state_samples is None and samples_are_required:
         state_samples = resolve_state_samples(
             weight_space=weight_space,
             samples=samples,
             config=resolved_config,
         )
-    query_candidates = shortlist_query_candidates_by_posterior_objective(
-        alternatives=alternatives,
-        query_candidates=query_candidates,
-        query_sources=query_candidate_data.query_sources,
-        samples=state_samples,
-        equality_tol=resolved_config.equality_tol,
-        objective=resolved_config.posterior_query_objective,
-        additional_query_limit=resolved_config.posterior_query_shortlist_size,
-    )
-    query_candidates = shortlist_query_candidates_by_sample_balance(
-        query_candidates=query_candidates,
-        samples=state_samples,
-        equality_tol=resolved_config.equality_tol,
-        limit=resolved_config.max_query_candidates_per_state,
-    )
+    if resolved_config.posterior_query_objective is not None:
+        assert state_samples is not None
+        query_candidates = shortlist_query_candidates_by_posterior_objective(
+            alternatives=alternatives,
+            query_candidates=query_candidates,
+            query_sources=query_candidate_data.query_sources,
+            samples=state_samples,
+            equality_tol=resolved_config.equality_tol,
+            objective=resolved_config.posterior_query_objective,
+            additional_query_limit=resolved_config.posterior_query_shortlist_size,
+        )
+    if resolved_config.max_query_candidates_per_state is not None:
+        assert state_samples is not None
+        query_candidates = shortlist_query_candidates_by_sample_balance(
+            query_candidates=query_candidates,
+            samples=state_samples,
+            equality_tol=resolved_config.equality_tol,
+            limit=resolved_config.max_query_candidates_per_state,
+        )
     increment_profile_counter("evaluated_query_candidates", len(query_candidates))
+    parallelize_query_evaluations = (
+        is_root_call
+        and resolved_config.parallelize_root
+        and resolved_config.max_workers > 1
+        and len(query_candidates) > 1
+    )
     query_evaluations = evaluate_query_candidates_optimized(
         alternatives=alternatives,
         answered_queries=answered_queries,
@@ -555,15 +604,35 @@ def compute_value_function_optimized(
         candidate_subset=candidates if resolved_config.pass_candidate_subset else None,
         ratio_intervals_by_goal_pair=query_candidate_data.ratio_intervals_by_goal_pair,
         query_sources=query_candidate_data.query_sources,
-        parallelize=(
-            is_root_call
-            and resolved_config.parallelize_root
-            and resolved_config.max_workers > 1
-            and len(query_candidates) > 1
-        ),
+        parallelize=parallelize_query_evaluations,
         executor=executor,
     )
-    best_evaluation = min(query_evaluations, key=query_evaluation_sort_key)
+    query_evaluations, best_evaluation = refine_query_evaluations_lexicographically(
+        query_evaluations=query_evaluations,
+        remaining_depth=evaluation_depth,
+        evaluate_queries_at_depth=lambda queries, depth: (
+            evaluate_query_candidates_optimized(
+                alternatives=alternatives,
+                answered_queries=answered_queries,
+                weight_space=weight_space,
+                query_candidates=queries,
+                samples=state_samples,
+                remaining_depth=depth,
+                config=resolved_config,
+                candidate_subset=(
+                    candidates if resolved_config.pass_candidate_subset else None
+                ),
+                ratio_intervals_by_goal_pair=(
+                    query_candidate_data.ratio_intervals_by_goal_pair
+                ),
+                query_sources=query_candidate_data.query_sources,
+                parallelize=(
+                    parallelize_query_evaluations and len(queries) > 1
+                ),
+                executor=executor,
+            )
+        ),
+    )
     if candidate_count > 0 and best_evaluation.expected_value < 1.0 - 1e-9:
         raise RuntimeError(
             "expected candidate count must not be below one for a feasible state "
@@ -965,45 +1034,8 @@ def ratio_interval_has_positive_width(
 
 def query_evaluation_sort_key(
     evaluation: QueryEvaluation,
-) -> tuple[float, float, int, int, int, float]:
-    return (
-        float(evaluation.expected_value),
-        compute_expected_immediate_candidate_count(evaluation),
-        compute_max_immediate_candidate_count(evaluation),
-        int(evaluation.query.ziel_index_a),
-        int(evaluation.query.ziel_index_b),
-        float(evaluation.query.value),
-    )
-
-
-def compute_expected_immediate_candidate_count(evaluation: QueryEvaluation) -> float:
-    expected_count = 0.0
-    for branch in evaluation.branches:
-        if branch.probability == 0.0:
-            continue
-
-        child_candidate_count = branch.child_candidate_count
-        if child_candidate_count is None:
-            child_candidate_count = int(round(branch.child_value))
-
-        expected_count += branch.probability * child_candidate_count
-
-    return expected_count
-
-
-def compute_max_immediate_candidate_count(evaluation: QueryEvaluation) -> int:
-    max_count = 0
-    for branch in evaluation.branches:
-        if branch.probability == 0.0:
-            continue
-
-        child_candidate_count = branch.child_candidate_count
-        if child_candidate_count is None:
-            child_candidate_count = int(round(branch.child_value))
-
-        max_count = max(max_count, child_candidate_count)
-
-    return max_count
+) -> tuple[float | int, ...]:
+    return query_evaluation_lexicographic_sort_key(evaluation)
 
 
 def filter_already_answered_queries(
@@ -1105,10 +1137,17 @@ def compute_query_candidates_for_depth_optimized(
                 epsilon=config.query_epsilon,
             )
 
+        central_queries = (
+            compute_central_query_candidates(weight_space)
+            if config.depth_one_query_source_mode == "central"
+            else []
+        )
+
         query_candidates, query_sources = merge_query_candidates_by_source(
             grid_queries=grid_queries,
             ratio_queries=ratio_queries,
             quantile_queries=quantile_queries,
+            central_queries=central_queries,
         )
         return QueryCandidateData(
             query_candidates=query_candidates,
@@ -1129,6 +1168,11 @@ def compute_query_candidates_for_depth_optimized(
             weight_space=weight_space,
             config=config,
         )
+    central_queries = (
+        compute_central_query_candidates(weight_space)
+        if query_source_mode == "central"
+        else []
+    )
 
     ratio_intervals_by_goal_pair: dict[tuple[int, int], GoalPairRatioIntervals] | None
     ratio_intervals_by_goal_pair = None
@@ -1152,11 +1196,27 @@ def compute_query_candidates_for_depth_optimized(
             ): goal_pair_intervals
             for goal_pair_intervals in ratio_intervals
         }
+    elif query_source_mode == "central":
+        ratio_intervals = _resolve_ratio_intervals(
+            alternatives=alternatives,
+            weight_space=weight_space,
+            candidates=candidates,
+            precomputed_ratio_intervals=precomputed_ratio_intervals,
+            config=config,
+        )
+        ratio_intervals_by_goal_pair = {
+            (
+                int(goal_pair_intervals.goal_index_a),
+                int(goal_pair_intervals.goal_index_b),
+            ): goal_pair_intervals
+            for goal_pair_intervals in ratio_intervals
+        }
 
     query_candidates, query_sources = merge_query_candidates_by_source(
         grid_queries=grid_queries,
         ratio_queries=ratio_queries,
         quantile_queries=quantile_queries,
+        central_queries=central_queries,
     )
     return QueryCandidateData(
         query_candidates=query_candidates,
@@ -1222,8 +1282,10 @@ def merge_query_candidates_by_source(
     grid_queries: list[Query],
     ratio_queries: list[Query],
     quantile_queries: list[Query] | None = None,
+    central_queries: list[Query] | None = None,
 ) -> tuple[list[Query], dict[tuple[int, int, float], QuerySource]]:
     resolved_quantile_queries = quantile_queries or []
+    resolved_central_queries = central_queries or []
     sources_by_key: dict[tuple[int, int, float], set[str]] = {}
     for query in grid_queries:
         sources_by_key.setdefault(canonical_query_key(query), set()).add("grid")
@@ -1234,8 +1296,11 @@ def merge_query_candidates_by_source(
     for query in resolved_quantile_queries:
         sources_by_key.setdefault(canonical_query_key(query), set()).add("quantile")
 
+    for query in resolved_central_queries:
+        sources_by_key.setdefault(canonical_query_key(query), set()).add("central")
+
     query_candidates = deduplicate_mirrored_query_candidates(
-        grid_queries + ratio_queries + resolved_quantile_queries
+        grid_queries + ratio_queries + resolved_quantile_queries + resolved_central_queries
     )
     query_sources = {
         canonical_query_key(query): combine_query_sources(
@@ -1287,7 +1352,9 @@ def _normalized_answered_query_key(
 
 def combine_query_sources(sources: set[str]) -> QuerySource:
     ordered_sources = [
-        source for source in ("grid", "ratio", "quantile") if source in sources
+        source
+        for source in ("grid", "ratio", "quantile", "central")
+        if source in sources
     ]
     return "+".join(ordered_sources) if ordered_sources else "unknown"
 
@@ -1328,6 +1395,37 @@ def compute_posterior_quantile_query_candidates(
                     )
                 )
     return deduplicate_mirrored_query_candidates(queries)
+
+
+def compute_central_query_candidates(
+    weight_space: LinearConstraintSystem,
+) -> list[Query]:
+    """Return one deterministic vertex-centroid ratio per canonical goal pair."""
+
+    polytope = enumerate_polytope_vertices(
+        weight_space,
+        tolerance=1e-10,
+    )
+    if polytope.status != "full_dimensional":
+        raise RuntimeError(polytope.message or f"polytope status {polytope.status}")
+    centroid = np.mean(polytope.vertices, axis=0)
+    queries: list[Query] = []
+    for goal_index_a in range(weight_space.variable_count):
+        for goal_index_b in range(goal_index_a + 1, weight_space.variable_count):
+            denominator = float(centroid[goal_index_b])
+            if denominator <= 1e-14:
+                continue
+            queries.append(
+                Query(
+                    ziel_index_a=goal_index_a,
+                    ziel_index_b=goal_index_b,
+                    value=max(
+                        1e-12,
+                        float(centroid[goal_index_a]) / denominator,
+                    ),
+                )
+            )
+    return queries
 
 
 def compute_canonical_grid_query_candidates(
@@ -1396,7 +1494,7 @@ def evaluate_query_candidates_optimized(
     answered_queries: list[AnsweredQuery],
     weight_space: LinearConstraintSystem,
     query_candidates: list[Query],
-    samples: list[list[float]],
+    samples: list[list[float]] | None,
     remaining_depth: int,
     config: OptimizedMultistepConfig,
     candidate_subset: list[int] | None,
@@ -1452,7 +1550,7 @@ def _evaluate_query_candidate_worker(
         list[AnsweredQuery],
         LinearConstraintSystem,
         Query,
-        list[list[float]],
+        list[list[float]] | None,
         int,
         OptimizedMultistepConfig,
         list[int] | None,
@@ -1625,7 +1723,7 @@ def evaluate_query_candidate_optimized(
     answered_queries: list[AnsweredQuery],
     weight_space: LinearConstraintSystem,
     query: Query,
-    samples: list[list[float]],
+    samples: list[list[float]] | None,
     remaining_depth: int,
     config: OptimizedMultistepConfig,
     candidate_subset: list[int] | None,
@@ -1636,28 +1734,40 @@ def evaluate_query_candidate_optimized(
         raise ValueError("remaining_depth must be positive")
 
     increment_profile_counter("query_evaluations")
-    partitioned_samples = partition_samples_by_query_answer(
-        query=query,
-        samples=samples,
-        equality_tol=config.equality_tol,
-    )
-    answer_counts = {
-        answer: len(partitioned_samples[answer])
-        for answer in ANSWER_OPTIONS
-    }
-    increment_profile_counter("query_support_checks")
-    with profile_operation("query_support"):
-        supported_answers = compute_supported_query_answers_with_sample_evidence(
-            weight_space=weight_space,
+    partitioned_samples: dict[QueryOperator, list[list[float]]] | None = None
+    if config.answer_probability_mode == "exact_volume":
+        increment_profile_counter("exact_volume_probability_calls")
+        with profile_operation("exact_volume_probabilities"):
+            probabilities = compute_exact_query_answer_probabilities(
+                weight_space=weight_space,
+                query=query,
+                tolerance=config.geometry_tolerance,
+            )
+    else:
+        if samples is None:
+            raise ValueError("samples are required for sampling probabilities")
+        partitioned_samples = partition_samples_by_query_answer(
             query=query,
             samples=samples,
-            tolerance=config.answer_support_tolerance,
+            equality_tol=config.equality_tol,
         )
-    probabilities = estimate_supported_answer_probabilities(
-        answer_counts=answer_counts,
-        supported_answers=supported_answers,
-        smoothing=config.answer_probability_smoothing,
-    )
+        answer_counts = {
+            answer: len(partitioned_samples[answer])
+            for answer in ANSWER_OPTIONS
+        }
+        increment_profile_counter("query_support_checks")
+        with profile_operation("query_support"):
+            supported_answers = compute_supported_query_answers_with_sample_evidence(
+                weight_space=weight_space,
+                query=query,
+                samples=samples,
+                tolerance=config.answer_support_tolerance,
+            )
+        probabilities = estimate_supported_answer_probabilities(
+            answer_counts=answer_counts,
+            supported_answers=supported_answers,
+            smoothing=config.answer_probability_smoothing,
+        )
     branches: list[QueryBranchResult] = []
     expected_value = 0.0
 
@@ -1738,6 +1848,7 @@ def evaluate_query_candidate_optimized(
             child_samples = (
                 partitioned_samples[answer]
                 if config.reuse_conditioned_samples
+                and partitioned_samples is not None
                 else None
             )
             child_result = compute_value_function_optimized(

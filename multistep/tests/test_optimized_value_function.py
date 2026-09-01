@@ -8,6 +8,7 @@ from multistep.optimized.value_function import (
     OptimizedMultistepConfig,
     OptimizedValueFunctionSession,
     compute_candidate_set_for_subset,
+    compute_central_query_candidates,
     compute_query_candidates_for_depth_optimized,
     compute_ratio_relevant_candidate_set,
     compute_posterior_quantile_query_candidates,
@@ -27,7 +28,12 @@ from multistep.src.ratio_intervals import compute_all_ratio_intervals
 from multistep.src.models import Query
 from multistep.src.candidates import compute_candidate_set
 from multistep.src.models import AlternativenMatrix
-from multistep.src.value_function import MultistepConfig, compute_value_function
+from multistep.src.value_function import (
+    MultistepConfig,
+    QueryEvaluation,
+    compute_value_function,
+    refine_query_evaluations_lexicographically,
+)
 from multistep.src.weight_space import build_weight_space
 
 
@@ -40,6 +46,98 @@ class OptimizedValueFunctionTest(unittest.TestCase):
                 [0.2, 0.1, 0.9],
                 [0.6, 0.6, 0.6],
             ]
+        )
+
+    def test_central_query_candidates_have_one_query_per_goal_pair(self) -> None:
+        queries = compute_central_query_candidates(
+            build_weight_space(goal_count=3, answered_queries=[])
+        )
+
+        self.assertEqual(len(queries), 3)
+        self.assertEqual(
+            {
+                (int(query.ziel_index_a), int(query.ziel_index_b))
+                for query in queries
+            },
+            {(0, 1), (0, 2), (1, 2)},
+        )
+        for query in queries:
+            self.assertAlmostEqual(float(query.value), 1.0, places=10)
+
+    def test_lexicographic_key_uses_e_two_to_break_e_three_tie(self) -> None:
+        first = Query(ziel_index_a=0, ziel_index_b=1, value=1.0)
+        second = Query(ziel_index_a=0, ziel_index_b=2, value=1.0)
+        initial_evaluations = (
+            QueryEvaluation(query=first, expected_value=1.0, branches=()),
+            QueryEvaluation(query=second, expected_value=1.0, branches=()),
+        )
+        evaluated_depths: list[int] = []
+
+        def evaluate_tied_queries(
+            queries: list[Query],
+            depth: int,
+        ) -> tuple[QueryEvaluation, ...]:
+            evaluated_depths.append(depth)
+            values = {first: 1.0, second: 2.0}
+            return tuple(
+                QueryEvaluation(
+                    query=query,
+                    expected_value=values[query],
+                    branches=(),
+                )
+                for query in queries
+            )
+
+        refined, best = refine_query_evaluations_lexicographically(
+            query_evaluations=initial_evaluations,
+            remaining_depth=3,
+            evaluate_queries_at_depth=evaluate_tied_queries,
+        )
+
+        self.assertEqual(best.query, first)
+        self.assertEqual(evaluated_depths, [2])
+        self.assertEqual(refined[0].lexicographic_expected_values, (1.0, 1.0))
+        self.assertEqual(refined[1].lexicographic_expected_values, (1.0, 2.0))
+
+    def test_lexicographic_key_continues_to_e_one_if_e_two_is_tied(self) -> None:
+        first = Query(ziel_index_a=0, ziel_index_b=1, value=1.0)
+        second = Query(ziel_index_a=0, ziel_index_b=2, value=1.0)
+        initial_evaluations = (
+            QueryEvaluation(query=first, expected_value=1.0, branches=()),
+            QueryEvaluation(query=second, expected_value=1.0, branches=()),
+        )
+
+        def evaluate_tied_queries(
+            queries: list[Query],
+            depth: int,
+        ) -> tuple[QueryEvaluation, ...]:
+            values = {
+                2: {first: 1.0, second: 1.0},
+                1: {first: 2.0, second: 1.0},
+            }
+            return tuple(
+                QueryEvaluation(
+                    query=query,
+                    expected_value=values[depth][query],
+                    branches=(),
+                )
+                for query in queries
+            )
+
+        refined, best = refine_query_evaluations_lexicographically(
+            query_evaluations=initial_evaluations,
+            remaining_depth=3,
+            evaluate_queries_at_depth=evaluate_tied_queries,
+        )
+
+        self.assertEqual(best.query, second)
+        self.assertEqual(
+            refined[0].lexicographic_expected_values,
+            (1.0, 1.0, 2.0),
+        )
+        self.assertEqual(
+            refined[1].lexicographic_expected_values,
+            (1.0, 1.0, 1.0),
         )
 
     def test_candidate_subset_matches_full_candidate_set_when_subset_is_all(self) -> None:

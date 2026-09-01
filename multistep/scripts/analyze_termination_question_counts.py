@@ -82,6 +82,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--burn-in", type=int, default=DEFAULT_BURN_IN)
     parser.add_argument("--thinning", type=int, default=DEFAULT_THINNING)
     parser.add_argument("--sampling-chains", type=int, default=4)
+    parser.add_argument(
+        "--answer-probability-mode",
+        choices=["sampling", "exact_volume"],
+        default="sampling",
+        help="Estimate query branches by samples or exact volume ratios.",
+    )
     parser.add_argument("--grid-size", type=int, default=DEFAULT_GRID_SIZE)
     parser.add_argument("--min-s", type=float, default=DEFAULT_MIN_QUERY_VALUE)
     parser.add_argument("--max-s", type=float, default=DEFAULT_MAX_QUERY_VALUE)
@@ -151,13 +157,19 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--root-query-source",
-        choices=["grid", "ratio", "both"],
+        choices=["grid", "ratio", "both", "central"],
         default="both",
         help=(
             "Which query sources to use on depths greater than one. "
             "The intended policy is 'both': grid queries plus ratio-generated queries. "
             "For experiments, 'ratio' or 'grid' can be faster."
         ),
+    )
+    parser.add_argument(
+        "--depth-one-query-source",
+        choices=["grid", "ratio", "both", "central"],
+        default="ratio",
+        help="Query sources used when the evaluated lookahead depth is one.",
     )
     parser.add_argument(
         "--no-parallel-root",
@@ -339,6 +351,7 @@ def build_config(args: argparse.Namespace, random_seed: int) -> OptimizedMultist
         thinning=int(args.thinning),
         random_seed=random_seed,
         sampling_chain_count=int(args.sampling_chains),
+        answer_probability_mode=str(args.answer_probability_mode),
         grid_size=int(args.grid_size),
         min_query_value=float(args.min_s),
         max_query_value=float(args.max_s),
@@ -354,7 +367,7 @@ def build_config(args: argparse.Namespace, random_seed: int) -> OptimizedMultist
         candidate_count_mode="ratio_relevant",
         include_ratio_queries_on_grid_depths=not bool(args.no_ratio_root_queries),
         grid_depth_query_source_mode=str(args.root_query_source),
-        depth_one_query_source_mode="ratio",
+        depth_one_query_source_mode=str(args.depth_one_query_source),
         repair_zero_terminal_counts=not bool(args.disable_terminal_zero_fallback),
         validate_ratio_terminal_counts=bool(args.validate_terminal_counts),
         max_query_candidates_per_state=args.max_query_candidates,
@@ -600,9 +613,11 @@ def print_summary(results: list[ProblemRunResult], args: argparse.Namespace) -> 
     print(f"  burn-in: {args.burn_in}")
     print(f"  thinning: {args.thinning}")
     print(f"  sampling chains: {args.sampling_chains}")
+    print(f"  answer probabilities: {args.answer_probability_mode}")
     print(f"  grid size: {args.grid_size}")
     print(f"  s range: [{args.min_s}, {args.max_s}]")
     print(f"  root query source: {args.root_query_source}")
+    print(f"  depth-one query source: {args.depth_one_query_source}")
     print(f"  ratio engine: {args.ratio_engine}")
     print(f"  posterior quantiles: {args.posterior_quantiles}")
     print(f"  posterior objective: {args.posterior_objective}")
