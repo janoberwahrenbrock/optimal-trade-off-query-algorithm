@@ -145,8 +145,11 @@ def enumerate_polytope_vertices(
             )
         else:
             halfspaces = np.column_stack((reduced_matrix, -reduced_right_side))
-            intersection = HalfspaceIntersection(halfspaces, center)
-            reduced_vertices = np.asarray(intersection.intersections, dtype=float)
+            reduced_vertices = _compute_halfspace_intersections_with_retries(
+                halfspaces=halfspaces,
+                center=center,
+                affine_dimension=affine_dimension,
+            )
     except (QhullError, ValueError, RuntimeError) as exc:
         return _empty_result("error", affine_dimension, str(exc), radius)
 
@@ -179,6 +182,35 @@ def enumerate_polytope_vertices(
         affine_dimension=affine_dimension,
         interior_radius=radius,
     )
+
+
+def _compute_halfspace_intersections_with_retries(
+    halfspaces: np.ndarray,
+    center: np.ndarray,
+    affine_dimension: int,
+) -> np.ndarray:
+    """Retry Qhull with increasingly permissive precision recovery.
+
+    High-dimensional posterior polytopes can become nearly degenerate after
+    many answered queries.  Q12 accepts wide facets caused by merge roundoff;
+    QJ additionally joggles the dual input as a last resort.  The caller still
+    validates every returned vertex against the original constraint system.
+    """
+
+    exact_merge = "Qx " if affine_dimension > 4 else ""
+    options = (None, f"{exact_merge}Q12".strip(), f"{exact_merge}Q12 QJ".strip())
+    errors: list[str] = []
+    for qhull_options in options:
+        try:
+            intersection = HalfspaceIntersection(
+                halfspaces,
+                center,
+                qhull_options=qhull_options,
+            )
+            return np.asarray(intersection.intersections, dtype=float)
+        except (QhullError, ValueError, RuntimeError) as exc:
+            errors.append(str(exc))
+    raise RuntimeError("; ".join(errors))
 
 
 def _enumerate_interval_vertices(

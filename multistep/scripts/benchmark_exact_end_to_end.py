@@ -33,10 +33,17 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--goals", type=int, nargs="+", default=[3, 5, 7])
     parser.add_argument("--problems", type=int, default=10)
+    parser.add_argument("--start-problem", type=int, default=1)
     parser.add_argument("--alternatives", type=int, default=10)
     parser.add_argument("--max-questions", type=int, default=100)
     parser.add_argument("--depth", type=int, choices=[1, 2, 3], default=1)
     parser.add_argument("--seed", type=int, default=20260902)
+    parser.add_argument(
+        "--parallel-root",
+        action="store_true",
+        help="Evaluate root query candidates in a persistent process pool.",
+    )
+    parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--output-json", type=Path, required=True)
     return parser.parse_args()
 
@@ -46,11 +53,18 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("goal counts must be at least three")
     if args.problems <= 0 or args.alternatives <= 1:
         raise ValueError("invalid problem or alternative count")
+    if args.start_problem <= 0:
+        raise ValueError("start-problem must be positive")
     if args.max_questions <= 0:
         raise ValueError("max-questions must be positive")
+    if args.workers <= 0:
+        raise ValueError("workers must be positive")
 
 
-def build_config() -> OptimizedMultistepConfig:
+def build_config(
+    parallelize_root: bool = False,
+    max_workers: int = 4,
+) -> OptimizedMultistepConfig:
     return OptimizedMultistepConfig(
         answer_probability_mode="exact_volume",
         skip_zero_probability_branches=True,
@@ -61,7 +75,8 @@ def build_config() -> OptimizedMultistepConfig:
         ratio_interval_engine="geometry",
         grid_depth_query_source_mode="central",
         depth_one_query_source_mode="central",
-        parallelize_root=False,
+        parallelize_root=parallelize_root,
+        max_workers=max_workers,
     )
 
 
@@ -118,9 +133,14 @@ def solve_problem(
     target_weights: list[float],
     max_questions: int,
     depth: int,
+    parallelize_root: bool = False,
+    max_workers: int = 4,
 ) -> dict[str, Any]:
     clear_polytope_volume_cache()
-    config = build_config()
+    config = build_config(
+        parallelize_root=parallelize_root,
+        max_workers=max_workers,
+    )
     answered_queries: list[AnsweredQuery] = []
     query_records: list[dict[str, Any]] = []
     true_winner = target_winner(alternatives, target_weights)
@@ -210,7 +230,14 @@ def run(args: argparse.Namespace) -> list[dict[str, Any]]:
     rng = np.random.default_rng(int(args.seed))
     results: list[dict[str, Any]] = []
     for goal_count in args.goals:
-        for problem_index in range(1, int(args.problems) + 1):
+        for _ in range(1, int(args.start_problem)):
+            generate_problem(
+                rng=rng,
+                goal_count=int(goal_count),
+                alternative_count=int(args.alternatives),
+            )
+        last_problem_index = int(args.start_problem) + int(args.problems) - 1
+        for problem_index in range(int(args.start_problem), last_problem_index + 1):
             alternatives, weights = generate_problem(
                 rng=rng,
                 goal_count=int(goal_count),
@@ -221,6 +248,8 @@ def run(args: argparse.Namespace) -> list[dict[str, Any]]:
                 target_weights=weights,
                 max_questions=int(args.max_questions),
                 depth=int(args.depth),
+                parallelize_root=bool(args.parallel_root),
+                max_workers=int(args.workers),
             )
             result.update(
                 {
