@@ -17,8 +17,8 @@ if str(REPO_ROOT) not in sys.path:
 
 from multistep.optimized import (  # noqa: E402
     OptimizedMultistepConfig,
+    OptimizedValueFunctionSession,
     compute_ratio_relevant_candidate_set,
-    compute_value_function_optimized,
 )
 from multistep.optimized.value_function import (  # noqa: E402
     is_query_already_answered,
@@ -88,6 +88,24 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-s", type=float, default=DEFAULT_MAX_QUERY_VALUE)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument(
+        "--max-query-candidates",
+        type=int,
+        default=None,
+        help=(
+            "Optional approximate mode: evaluate only the N queries with the "
+            "most balanced sample partitions per state."
+        ),
+    )
+    parser.add_argument(
+        "--adaptive-depth-candidate-threshold",
+        type=int,
+        default=None,
+        help=(
+            "Optional approximate mode: use depth 1 while the current candidate "
+            "count is above this threshold."
+        ),
+    )
     parser.add_argument(
         "--min-conditioned-samples",
         type=int,
@@ -208,6 +226,15 @@ def validate_args(args: argparse.Namespace) -> None:
     if args.workers <= 0:
         raise ValueError("--workers must be positive")
 
+    if args.max_query_candidates is not None and args.max_query_candidates <= 0:
+        raise ValueError("--max-query-candidates must be positive")
+
+    if (
+        args.adaptive_depth_candidate_threshold is not None
+        and args.adaptive_depth_candidate_threshold <= 0
+    ):
+        raise ValueError("--adaptive-depth-candidate-threshold must be positive")
+
 
 def generate_random_problem(
     rng: np.random.Generator,
@@ -295,6 +322,8 @@ def build_config(args: argparse.Namespace, random_seed: int) -> OptimizedMultist
         depth_one_query_source_mode="ratio",
         repair_zero_terminal_counts=not bool(args.disable_terminal_zero_fallback),
         validate_ratio_terminal_counts=bool(args.validate_terminal_counts),
+        max_query_candidates_per_state=args.max_query_candidates,
+        adaptive_depth_candidate_threshold=args.adaptive_depth_candidate_threshold,
     )
 
 
@@ -328,6 +357,40 @@ def solve_problem_until_termination(
     export_log: ExportLog | None = None,
     problem_export: dict | None = None,
 ) -> ProblemRunResult:
+    with OptimizedValueFunctionSession(
+        alternatives=alternatives,
+        config=config,
+    ) as value_function_session:
+        return _solve_problem_until_termination(
+            alternatives=alternatives,
+            target_weights=target_weights,
+            depth=depth,
+            max_questions=max_questions,
+            config=config,
+            problem_index=problem_index,
+            quiet=quiet,
+            debug_branches=debug_branches,
+            stop_on_value_below_one=stop_on_value_below_one,
+            value_function_session=value_function_session,
+            export_log=export_log,
+            problem_export=problem_export,
+        )
+
+
+def _solve_problem_until_termination(
+    alternatives: AlternativenMatrix,
+    target_weights: list[float],
+    depth: int,
+    max_questions: int,
+    config: OptimizedMultistepConfig,
+    problem_index: int,
+    quiet: bool,
+    debug_branches: bool,
+    stop_on_value_below_one: bool,
+    value_function_session: OptimizedValueFunctionSession,
+    export_log: ExportLog | None = None,
+    problem_export: dict | None = None,
+) -> ProblemRunResult:
     start = time.perf_counter()
     answered_queries: list[AnsweredQuery] = []
     candidates = compute_current_candidates(
@@ -358,11 +421,9 @@ def solve_problem_until_termination(
             )
 
         call_start = time.perf_counter()
-        result = compute_value_function_optimized(
-            alternatives=alternatives,
+        result = value_function_session.compute(
             answered_queries=answered_queries,
             remaining_depth=depth,
-            config=config,
         )
         call_seconds = time.perf_counter() - call_start
         if result.best_query is None:
@@ -512,6 +573,12 @@ def print_summary(results: list[ProblemRunResult], args: argparse.Namespace) -> 
     print(f"  grid size: {args.grid_size}")
     print(f"  s range: [{args.min_s}, {args.max_s}]")
     print(f"  root query source: {args.root_query_source}")
+    print(f"  workers: {args.workers}")
+    print(f"  max query candidates: {args.max_query_candidates}")
+    print(
+        "  adaptive depth candidate threshold: "
+        f"{args.adaptive_depth_candidate_threshold}"
+    )
     print(f"  seed: {args.seed}")
     print()
 

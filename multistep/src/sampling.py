@@ -43,6 +43,10 @@ def sample_points_from_constraint_system(
     rng = np.random.default_rng(seed)
     sampled_points: list[list[float]] = []
     total_steps = burn_in + num_samples * thinning
+    inequality_matrix, inequality_right_side, _, _ = system.get_solver_matrices()
+    if inequality_matrix is None or inequality_right_side is None:
+        inequality_matrix = np.empty((0, system.variable_count), dtype=float)
+        inequality_right_side = np.empty((0,), dtype=float)
 
     for step_index in range(total_steps):
         for attempt_index in range(MAX_DIRECTION_RETRIES):
@@ -57,6 +61,8 @@ def sample_points_from_constraint_system(
                     current_point=current_point,
                     direction=direction,
                     tol=tol,
+                    inequality_matrix=inequality_matrix,
+                    inequality_right_side=inequality_right_side,
                 )
                 break
             except RuntimeError as exc:
@@ -69,6 +75,8 @@ def sample_points_from_constraint_system(
                         current_point=current_point,
                         direction=direction,
                         tol=tol,
+                        inequality_matrix=inequality_matrix,
+                        inequality_right_side=inequality_right_side,
                     )
                     break
 
@@ -120,30 +128,38 @@ def _compute_feasible_lambda_interval(
     current_point: np.ndarray,
     direction: np.ndarray,
     tol: float,
+    inequality_matrix: np.ndarray | None = None,
+    inequality_right_side: np.ndarray | None = None,
 ) -> tuple[float, float]:
-    lambda_min = -math.inf
-    lambda_max = math.inf
+    if inequality_matrix is None:
+        inequality_matrix = np.asarray(
+            system.inequalities_left_side,
+            dtype=float,
+        )
+    if inequality_right_side is None:
+        inequality_right_side = np.asarray(
+            system.inequalities_right_side,
+            dtype=float,
+        )
 
-    for left_side, right_side in zip(
-        system.inequalities_left_side,
-        system.inequalities_right_side,
-    ):
-        inequality_row = np.array(left_side, dtype=float)
-        numerator = float(right_side - inequality_row @ current_point)
-        denominator = float(inequality_row @ direction)
+    numerators = inequality_right_side - inequality_matrix @ current_point
+    denominators = inequality_matrix @ direction
+    near_zero_mask = np.abs(denominators) <= tol
+    if np.any(numerators[near_zero_mask] < -tol):
+        raise RuntimeError("current_point is numerically outside the feasible region")
 
-        if abs(denominator) <= tol:
-            if numerator < -tol:
-                raise RuntimeError(
-                    "current_point is numerically outside the feasible region"
-                )
-            continue
-
-        candidate_lambda = numerator / denominator
-        if denominator > 0:
-            lambda_max = min(lambda_max, candidate_lambda)
-        else:
-            lambda_min = max(lambda_min, candidate_lambda)
+    positive_mask = denominators > tol
+    negative_mask = denominators < -tol
+    lambda_max = (
+        float(np.min(numerators[positive_mask] / denominators[positive_mask]))
+        if np.any(positive_mask)
+        else math.inf
+    )
+    lambda_min = (
+        float(np.max(numerators[negative_mask] / denominators[negative_mask]))
+        if np.any(negative_mask)
+        else -math.inf
+    )
 
     if not math.isfinite(lambda_min) or not math.isfinite(lambda_max):
         raise ValueError(

@@ -15,8 +15,10 @@ if str(REPO_ROOT) not in sys.path:
 
 from multistep.optimized.value_function import (
     OptimizedMultistepConfig,
+    OptimizedValueFunctionSession,
     compute_value_function_optimized,
 )
+from multistep.optimized.profiling import collect_optimization_profile
 from multistep.src.models import AlternativenMatrix, AnsweredQuery, Query
 from multistep.src.value_function import MultistepConfig, compute_value_function
 
@@ -62,6 +64,8 @@ class BenchmarkResult:
     best_query: Query | None
     root_query_evaluations: int
     flags: OptimizationFlags
+    profile_counters: dict[str, int]
+    profile_seconds: dict[str, float]
 
 
 def parse_args() -> argparse.Namespace:
@@ -76,6 +80,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--grid-size", type=int, default=21)
     parser.add_argument("--max-query-value", type=float, default=100.0)
     parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument("--repeats", type=int, default=1)
+    parser.add_argument(
+        "--reuse-worker-pool",
+        action="store_true",
+        help="Reuse one process pool across repeated optimized evaluations.",
+    )
+    parser.add_argument("--max-query-candidates", type=int, default=None)
+    parser.add_argument(
+        "--adaptive-depth-candidate-threshold",
+        type=int,
+        default=None,
+    )
     parser.add_argument("--min-conditioned-samples", type=int, default=50)
     parser.add_argument(
         "--mode",
@@ -262,6 +278,8 @@ def build_optimized_config(
         canonical_grid_goal_pairs_only=flags.canonical_grid,
         parallelize_root=flags.parallel,
         max_workers=args.workers,
+        max_query_candidates_per_state=args.max_query_candidates,
+        adaptive_depth_candidate_threshold=args.adaptive_depth_candidate_threshold,
     )
 
 
@@ -282,31 +300,53 @@ def run_benchmark_mode(
     alternatives = AlternativenMatrix(entries=case_data.entries)
     flags = get_flags_for_mode(mode)
 
+    profile_counters: dict[str, int] = {}
+    profile_seconds: dict[str, float] = {}
+    result = None
     start = time.perf_counter()
 
     if mode == "reference":
-        result = compute_value_function(
-            alternatives=alternatives,
-            answered_queries=case_data.answered_queries,
-            remaining_depth=2,
-            config=MultistepConfig(
-                sample_count=args.samples,
-                burn_in=args.burn_in,
-                thinning=args.thinning,
-                random_seed=args.seed,
-                grid_size=args.grid_size,
-                max_query_value=args.max_query_value,
-            ),
-        )
+        for _ in range(args.repeats):
+            result = compute_value_function(
+                alternatives=alternatives,
+                answered_queries=case_data.answered_queries,
+                remaining_depth=2,
+                config=MultistepConfig(
+                    sample_count=args.samples,
+                    burn_in=args.burn_in,
+                    thinning=args.thinning,
+                    random_seed=args.seed,
+                    grid_size=args.grid_size,
+                    max_query_value=args.max_query_value,
+                ),
+            )
     else:
-        result = compute_value_function_optimized(
-            alternatives=alternatives,
-            answered_queries=case_data.answered_queries,
-            remaining_depth=2,
-            config=build_optimized_config(flags=flags, args=args),
-        )
+        optimized_config = build_optimized_config(flags=flags, args=args)
+        with collect_optimization_profile() as profile:
+            if args.reuse_worker_pool:
+                with OptimizedValueFunctionSession(
+                    alternatives=alternatives,
+                    config=optimized_config,
+                ) as session:
+                    for _ in range(args.repeats):
+                        result = session.compute(
+                            answered_queries=case_data.answered_queries,
+                            remaining_depth=2,
+                        )
+            else:
+                for _ in range(args.repeats):
+                    result = compute_value_function_optimized(
+                        alternatives=alternatives,
+                        answered_queries=case_data.answered_queries,
+                        remaining_depth=2,
+                        config=optimized_config,
+                    )
+        profile_counters = dict(profile.counters)
+        profile_seconds = dict(profile.seconds_by_operation)
 
-    seconds = time.perf_counter() - start
+    seconds = (time.perf_counter() - start) / args.repeats
+    if result is None:
+        raise RuntimeError("benchmark produced no result")
 
     return BenchmarkResult(
         mode=mode,
@@ -315,11 +355,15 @@ def run_benchmark_mode(
         best_query=result.best_query,
         root_query_evaluations=len(result.query_evaluations),
         flags=flags,
+        profile_counters=profile_counters,
+        profile_seconds=profile_seconds,
     )
 
 
 def main() -> None:
     args = parse_args()
+    if args.repeats <= 0:
+        raise ValueError("--repeats must be positive")
     case_data = load_case(args.case)
     modes = resolve_modes(args.mode)
 
@@ -345,6 +389,13 @@ def main() -> None:
     print(f"  seed: {args.seed}")
     print(f"  grid-size: {args.grid_size}")
     print(f"  workers: {args.workers}")
+    print(f"  repeats: {args.repeats}")
+    print(f"  reuse-worker-pool: {args.reuse_worker_pool}")
+    print(f"  max-query-candidates: {args.max_query_candidates}")
+    print(
+        "  adaptive-depth-candidate-threshold: "
+        f"{args.adaptive_depth_candidate_threshold}"
+    )
     print(f"  min-conditioned-samples: {args.min_conditioned_samples}")
     print()
     print("Flags")
@@ -383,6 +434,22 @@ def main() -> None:
             f"{result.root_query_evaluations:>5} "
             f"{format_query(result.best_query, case_data.goal_labels)}"
         )
+
+    print()
+    print("Optimized profiles (worker-local recursion is included with --workers 1)")
+    for result in results:
+        if not result.profile_counters:
+            continue
+        counters = ", ".join(
+            f"{name}={value}"
+            for name, value in sorted(result.profile_counters.items())
+        )
+        timings = ", ".join(
+            f"{name}={seconds:.3f}s"
+            for name, seconds in sorted(result.profile_seconds.items())
+        )
+        print(f"  {result.mode}: {counters}")
+        print(f"    timings: {timings}")
 
 
 if __name__ == "__main__":

@@ -1,19 +1,29 @@
 from __future__ import annotations
 
 import unittest
+from unittest.mock import patch
 
 from multistep.src.models import AlternativenMatrix, AnsweredQuery
+import multistep.src.ratio_intervals as ratio_intervals_module
 from multistep.src.ratio_intervals import (
     compute_all_ratio_intervals,
     compute_ratio_bounds_for_weight_space,
     compute_ratio_interval_for_candidate,
     compute_ratio_intervals_for_pair,
+    get_canonical_goal_pairs,
     get_ordered_goal_pairs,
+    invert_goal_pair_ratio_intervals,
 )
 from multistep.src.weight_space import build_weight_space
 
 
 class RatioIntervalsTests(unittest.TestCase):
+    def test_get_canonical_goal_pairs(self) -> None:
+        self.assertEqual(
+            get_canonical_goal_pairs(3),
+            [(0, 1), (0, 2), (1, 2)],
+        )
+
     def test_get_ordered_goal_pairs(self) -> None:
         self.assertEqual(
             get_ordered_goal_pairs(3),
@@ -130,6 +140,71 @@ class RatioIntervalsTests(unittest.TestCase):
             [(item.goal_index_a, item.goal_index_b) for item in all_intervals],
             [(0, 1), (1, 0)],
         )
+
+    def test_inverted_intervals_match_direct_reverse_solve(self) -> None:
+        alternatives = AlternativenMatrix(
+            entries=[
+                [1.0, 0.0],
+                [0.0, 1.0],
+            ],
+        )
+        weight_space = build_weight_space(goal_count=2, answered_queries=[])
+        direct = compute_ratio_intervals_for_pair(
+            alternatives=alternatives,
+            weight_space=weight_space,
+            candidates=[0, 1],
+            goal_index_a=0,
+            goal_index_b=1,
+        )
+        inverted = invert_goal_pair_ratio_intervals(direct)
+        reverse = compute_ratio_intervals_for_pair(
+            alternatives=alternatives,
+            weight_space=weight_space,
+            candidates=[0, 1],
+            goal_index_a=1,
+            goal_index_b=0,
+        )
+
+        self.assertIsNotNone(inverted)
+        assert inverted is not None
+        for candidate_index in [0, 1]:
+            actual = inverted.intervals_by_candidate[candidate_index]
+            expected = reverse.intervals_by_candidate[candidate_index]
+            self.assertEqual(actual.lower.status, expected.lower.status)
+            self.assertEqual(actual.upper.status, expected.upper.status)
+            if actual.lower.optimal_value is not None:
+                self.assertAlmostEqual(
+                    actual.lower.optimal_value,
+                    expected.lower.optimal_value,
+                )
+            if actual.upper.optimal_value is not None:
+                self.assertAlmostEqual(
+                    actual.upper.optimal_value,
+                    expected.upper.optimal_value,
+                )
+
+    def test_compute_all_ratio_intervals_solves_only_canonical_pairs(self) -> None:
+        alternatives = AlternativenMatrix(
+            entries=[
+                [1.0, 0.0],
+                [0.0, 1.0],
+            ],
+        )
+        original = ratio_intervals_module.compute_ratio_intervals_for_pair
+
+        with patch.object(
+            ratio_intervals_module,
+            "compute_ratio_intervals_for_pair",
+            autospec=True,
+            side_effect=original,
+        ) as compute_pair:
+            compute_all_ratio_intervals(
+                alternatives=alternatives,
+                weight_space=build_weight_space(goal_count=2, answered_queries=[]),
+                candidates=[0, 1],
+            )
+
+        self.assertEqual(compute_pair.call_count, 1)
 
     def test_compute_ratio_interval_rejects_invalid_candidate_index(self) -> None:
         alternatives = AlternativenMatrix(

@@ -30,6 +30,20 @@ class LinearConstraintSystemTests(unittest.TestCase):
         self.assertEqual(maximization_result.status, "optimal")
         self.assertAlmostEqual(maximization_result.optimal_value, 1.0)
 
+    def test_solver_matrices_are_reused_and_invalidated_after_mutation(self) -> None:
+        system = LinearConstraintSystem()
+        system.add_inequality([-1.0, 0.0], 0.0)
+        system.add_equality([1.0, 1.0], 1.0)
+
+        first_matrices = system.get_solver_matrices()
+        second_matrices = system.get_solver_matrices()
+
+        self.assertIs(first_matrices, second_matrices)
+        system.add_inequality([0.0, -1.0], 0.0)
+        third_matrices = system.get_solver_matrices()
+        self.assertIsNot(first_matrices, third_matrices)
+        self.assertEqual(third_matrices[0].shape, (2, 2))
+
     def test_minimize_maps_unknown_primal_infeasible_status_to_infeasible(self) -> None:
         system = self._build_one_variable_system()
 

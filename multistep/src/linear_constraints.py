@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from typing import TypeAlias
 
-from pydantic import BaseModel, Field, model_validator
+import numpy as np
+from numpy.typing import NDArray
+from pydantic import BaseModel, Field, PrivateAttr, model_validator
 
 from .linear_programming import (
     LINPROG_OPTIONS,
@@ -21,6 +23,12 @@ class LinearConstraintSystem(BaseModel):
     inequalities_right_side: Vector = Field(default_factory=list)
     equalities_left_side: Matrix = Field(default_factory=list)
     equalities_right_side: Vector = Field(default_factory=list)
+    _solver_matrix_cache: tuple[
+        NDArray[np.float64] | None,
+        NDArray[np.float64] | None,
+        NDArray[np.float64] | None,
+        NDArray[np.float64] | None,
+    ] | None = PrivateAttr(default=None)
 
     @model_validator(mode="after")
     def validate_dimensions(self) -> LinearConstraintSystem:
@@ -62,11 +70,13 @@ class LinearConstraintSystem(BaseModel):
         self._validate_left_side(left_side)
         self.inequalities_left_side.append(left_side.copy())
         self.inequalities_right_side.append(right_side)
+        self._solver_matrix_cache = None
 
     def add_equality(self, left_side: Vector, right_side: float) -> None:
         self._validate_left_side(left_side)
         self.equalities_left_side.append(left_side.copy())
         self.equalities_right_side.append(right_side)
+        self._solver_matrix_cache = None
 
     def add_constraint_system(self, other: LinearConstraintSystem) -> None:
         if self.variable_count != 0 and other.variable_count != 0:
@@ -95,12 +105,15 @@ class LinearConstraintSystem(BaseModel):
                 solver_message="system has no variables",
             )
 
+        inequality_matrix, inequality_right_side, equality_matrix, equality_right_side = (
+            self.get_solver_matrices()
+        )
         result = run_linprog_with_retries(
             c=objective,
-            A_ub=self.inequalities_left_side or None,
-            b_ub=self.inequalities_right_side or None,
-            A_eq=self.equalities_left_side or None,
-            b_eq=self.equalities_right_side or None,
+            A_ub=inequality_matrix,
+            b_ub=inequality_right_side,
+            A_eq=equality_matrix,
+            b_eq=equality_right_side,
             bounds=[(None, None)] * self.variable_count,
             method="highs",
             options=LINPROG_OPTIONS,
@@ -165,12 +178,15 @@ class LinearConstraintSystem(BaseModel):
         if self.variable_count <= 0:
             raise ValueError("system has no variables")
 
+        inequality_matrix, inequality_right_side, equality_matrix, equality_right_side = (
+            self.get_solver_matrices()
+        )
         result = run_linprog_with_retries(
             c=[0.0] * self.variable_count,
-            A_ub=self.inequalities_left_side or None,
-            b_ub=self.inequalities_right_side or None,
-            A_eq=self.equalities_left_side or None,
-            b_eq=self.equalities_right_side or None,
+            A_ub=inequality_matrix,
+            b_ub=inequality_right_side,
+            A_eq=equality_matrix,
+            b_eq=equality_right_side,
             bounds=[(None, None)] * self.variable_count,
             method="highs",
             options=LINPROG_OPTIONS,
@@ -193,6 +209,34 @@ class LinearConstraintSystem(BaseModel):
             raise ValueError("system is unbounded")
 
         raise RuntimeError(f"linprog failed: {result.message}")
+
+    def get_solver_matrices(
+        self,
+    ) -> tuple[
+        NDArray[np.float64] | None,
+        NDArray[np.float64] | None,
+        NDArray[np.float64] | None,
+        NDArray[np.float64] | None,
+    ]:
+        """Return cached NumPy constraint arrays for repeated solver calls."""
+
+        if self._solver_matrix_cache is None:
+            self._solver_matrix_cache = (
+                np.asarray(self.inequalities_left_side, dtype=float)
+                if self.inequalities_left_side
+                else None,
+                np.asarray(self.inequalities_right_side, dtype=float)
+                if self.inequalities_right_side
+                else None,
+                np.asarray(self.equalities_left_side, dtype=float)
+                if self.equalities_left_side
+                else None,
+                np.asarray(self.equalities_right_side, dtype=float)
+                if self.equalities_right_side
+                else None,
+            )
+
+        return self._solver_matrix_cache
 
     def to_latex(self, variable_name: str = "w") -> str:
         rows: list[str] = []

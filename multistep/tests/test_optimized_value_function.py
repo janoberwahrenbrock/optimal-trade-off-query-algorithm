@@ -1,20 +1,26 @@
 from __future__ import annotations
 
 import unittest
+from unittest.mock import patch
 
+from multistep.optimized.profiling import collect_optimization_profile
 from multistep.optimized.value_function import (
     OptimizedMultistepConfig,
+    OptimizedValueFunctionSession,
     compute_candidate_set_for_subset,
     compute_query_candidates_for_depth_optimized,
     compute_ratio_relevant_candidate_set,
     compute_supported_query_answers,
+    compute_supported_query_answers_with_sample_evidence,
     compute_terminal_candidate_count_fallback,
     compute_terminal_candidate_count_from_ratio_intervals,
     compute_value_function_optimized,
     estimate_supported_answer_probabilities,
     filter_already_answered_queries,
     is_query_already_answered,
+    shortlist_query_candidates_by_sample_balance,
 )
+from multistep.src.linear_constraints import LinearConstraintSystem
 from multistep.src.ratio_intervals import compute_all_ratio_intervals
 from multistep.src.models import Query
 from multistep.src.candidates import compute_candidate_set
@@ -214,6 +220,221 @@ class OptimizedValueFunctionTest(unittest.TestCase):
                 tolerance=1e-9,
             ),
             {"<": False, "=": False, ">": True},
+        )
+
+    def test_sample_witnesses_avoid_query_support_optimizations(self) -> None:
+        weight_space = build_weight_space(goal_count=2, answered_queries=[])
+        query = Query(ziel_index_a=0, ziel_index_b=1, value=1.0)
+
+        with (
+            patch.object(
+                LinearConstraintSystem,
+                "minimize",
+                side_effect=AssertionError("unexpected lower-bound LP"),
+            ),
+            patch.object(
+                LinearConstraintSystem,
+                "maximize",
+                side_effect=AssertionError("unexpected upper-bound LP"),
+            ),
+        ):
+            supported_answers = compute_supported_query_answers_with_sample_evidence(
+                weight_space=weight_space,
+                query=query,
+                samples=[[0.2, 0.8], [0.8, 0.2]],
+                tolerance=1e-9,
+            )
+
+        self.assertEqual(
+            supported_answers,
+            {"<": True, "=": False, ">": True},
+        )
+
+    def test_one_sample_witness_requires_only_the_opposite_support_bound(self) -> None:
+        weight_space = build_weight_space(goal_count=2, answered_queries=[])
+        query = Query(ziel_index_a=0, ziel_index_b=1, value=1.0)
+        original_minimize = LinearConstraintSystem.minimize
+        original_maximize = LinearConstraintSystem.maximize
+
+        with (
+            patch.object(
+                LinearConstraintSystem,
+                "minimize",
+                autospec=True,
+                side_effect=original_minimize,
+            ) as minimize,
+            patch.object(
+                LinearConstraintSystem,
+                "maximize",
+                autospec=True,
+                side_effect=original_maximize,
+            ) as maximize,
+        ):
+            supported_answers = compute_supported_query_answers_with_sample_evidence(
+                weight_space=weight_space,
+                query=query,
+                samples=[[0.2, 0.8]],
+                tolerance=1e-9,
+            )
+
+        self.assertEqual(minimize.call_count, 1)
+        self.assertEqual(maximize.call_count, 1)
+        self.assertEqual(
+            supported_answers,
+            {"<": True, "=": False, ">": True},
+        )
+
+    def test_sample_evidence_preserves_forced_equality_support(self) -> None:
+        query = Query(ziel_index_a=0, ziel_index_b=1, value=2.0)
+        weight_space = build_weight_space(
+            goal_count=3,
+            answered_queries=[query.answer("=")],
+        )
+
+        supported_answers = compute_supported_query_answers_with_sample_evidence(
+            weight_space=weight_space,
+            query=query,
+            samples=[[2.0 / 3.0, 1.0 / 3.0, 0.0]],
+            tolerance=1e-9,
+        )
+
+        self.assertEqual(
+            supported_answers,
+            compute_supported_query_answers(
+                weight_space=weight_space,
+                query=query,
+                tolerance=1e-9,
+            ),
+        )
+
+    def test_ratio_candidate_analysis_reuses_one_interval_batch(self) -> None:
+        config = OptimizedMultistepConfig(
+            sample_count=30,
+            burn_in=5,
+            thinning=1,
+            random_seed=13,
+            grid_size=3,
+            parallelize_root=False,
+            candidate_count_mode="ratio_relevant",
+            use_ratio_terminal_counts=True,
+            repair_zero_terminal_counts=False,
+        )
+
+        with collect_optimization_profile() as profile:
+            result = compute_value_function_optimized(
+                alternatives=self.alternatives,
+                answered_queries=[],
+                remaining_depth=1,
+                config=config,
+            )
+
+        self.assertTrue(result.is_feasible)
+        self.assertTrue(result.query_evaluations)
+        self.assertEqual(profile.counters["state_calls"], 1)
+        self.assertEqual(profile.counters["ratio_interval_batches"], 1)
+
+    def test_session_reuses_one_executor_across_calls(self) -> None:
+        alternatives = AlternativenMatrix(entries=[[1.0, 0.0], [0.0, 1.0]])
+        created_executors: list[InlineExecutor] = []
+
+        class InlineExecutor:
+            def __init__(self, max_workers: int) -> None:
+                self.max_workers = max_workers
+                self.map_calls = 0
+                self.shutdown_calls = 0
+                created_executors.append(self)
+
+            def map(self, function: object, payloads: object) -> object:
+                self.map_calls += 1
+                return map(function, payloads)  # type: ignore[arg-type]
+
+            def shutdown(self, wait: bool = True) -> None:
+                self.shutdown_calls += 1
+
+        config = OptimizedMultistepConfig(
+            sample_count=10,
+            burn_in=2,
+            thinning=1,
+            random_seed=3,
+            grid_size=2,
+            parallelize_root=True,
+            max_workers=2,
+            use_ratio_terminal_counts=True,
+        )
+        with patch(
+            "multistep.optimized.value_function.ProcessPoolExecutor",
+            InlineExecutor,
+        ):
+            with OptimizedValueFunctionSession(
+                alternatives=alternatives,
+                config=config,
+            ) as session:
+                with collect_optimization_profile() as profile:
+                    first = session.compute(answered_queries=[], remaining_depth=1)
+                    second = session.compute(answered_queries=[], remaining_depth=1)
+
+        self.assertEqual(first, second)
+        self.assertEqual(len(created_executors), 1)
+        self.assertEqual(created_executors[0].map_calls, 1)
+        self.assertEqual(created_executors[0].shutdown_calls, 1)
+        self.assertEqual(profile.counters["session_cache_hits"], 1)
+        with self.assertRaisesRegex(RuntimeError, "session is closed"):
+            session.compute(answered_queries=[], remaining_depth=1)
+
+    def test_query_shortlist_keeps_most_balanced_sample_partition(self) -> None:
+        queries = [
+            Query(ziel_index_a=0, ziel_index_b=1, value=0.1),
+            Query(ziel_index_a=0, ziel_index_b=1, value=1.0),
+            Query(ziel_index_a=0, ziel_index_b=1, value=10.0),
+        ]
+        samples = [
+            [0.2, 0.8],
+            [0.4, 0.6],
+            [0.6, 0.4],
+            [0.8, 0.2],
+        ]
+
+        shortlisted = shortlist_query_candidates_by_sample_balance(
+            query_candidates=queries,
+            samples=samples,
+            equality_tol=0.0,
+            limit=1,
+        )
+
+        self.assertEqual(shortlisted, [queries[1]])
+
+    def test_adaptive_depth_matches_explicit_depth_one_evaluation(self) -> None:
+        common_config = dict(
+            sample_count=30,
+            burn_in=5,
+            thinning=1,
+            random_seed=17,
+            grid_size=3,
+            parallelize_root=False,
+            candidate_count_mode="ratio_relevant",
+            use_ratio_terminal_counts=True,
+        )
+        depth_one_result = compute_value_function_optimized(
+            alternatives=self.alternatives,
+            answered_queries=[],
+            remaining_depth=1,
+            config=OptimizedMultistepConfig(**common_config),
+        )
+        adaptive_result = compute_value_function_optimized(
+            alternatives=self.alternatives,
+            answered_queries=[],
+            remaining_depth=2,
+            config=OptimizedMultistepConfig(
+                **common_config,
+                adaptive_depth_candidate_threshold=1,
+            ),
+        )
+
+        self.assertEqual(adaptive_result.best_query, depth_one_result.best_query)
+        self.assertAlmostEqual(adaptive_result.value, depth_one_result.value)
+        self.assertEqual(
+            adaptive_result.query_evaluations,
+            depth_one_result.query_evaluations,
         )
 
     def test_terminal_ratio_counts_match_exact_child_candidate_counts(self) -> None:

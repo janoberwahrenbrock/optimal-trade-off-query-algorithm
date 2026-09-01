@@ -43,6 +43,17 @@ def get_ordered_goal_pairs(goal_count: int) -> list[tuple[int, int]]:
     ]
 
 
+def get_canonical_goal_pairs(goal_count: int) -> list[tuple[int, int]]:
+    if goal_count < 0:
+        raise ValueError("goal_count must not be negative")
+
+    return [
+        (goal_index_a, goal_index_b)
+        for goal_index_a in range(goal_count)
+        for goal_index_b in range(goal_index_a + 1, goal_count)
+    ]
+
+
 def compute_ratio_bounds_for_weight_space(
     weight_space: LinearConstraintSystem,
     goal_index_a: int,
@@ -153,18 +164,103 @@ def compute_all_ratio_intervals(
             "weight_space must have the same number of variables as the number of goals"
         )
 
-    return [
-        compute_ratio_intervals_for_pair(
+    intervals_by_goal_pair: dict[tuple[int, int], GoalPairRatioIntervals] = {}
+    for goal_index_a, goal_index_b in get_canonical_goal_pairs(
+        alternatives.get_anzahl_spalten()
+    ):
+        direct_intervals = compute_ratio_intervals_for_pair(
             alternatives=alternatives,
             weight_space=weight_space,
             candidates=candidates,
             goal_index_a=goal_index_a,
             goal_index_b=goal_index_b,
         )
-        for goal_index_a, goal_index_b in get_ordered_goal_pairs(
+        intervals_by_goal_pair[(goal_index_a, goal_index_b)] = direct_intervals
+
+        mirrored_intervals = invert_goal_pair_ratio_intervals(direct_intervals)
+        if mirrored_intervals is None:
+            # A pair can be infeasible only because its denominator is forced to
+            # zero.  Its reverse may still be feasible, so retain an exact LP
+            # fallback for this boundary case.
+            mirrored_intervals = compute_ratio_intervals_for_pair(
+                alternatives=alternatives,
+                weight_space=weight_space,
+                candidates=candidates,
+                goal_index_a=goal_index_b,
+                goal_index_b=goal_index_a,
+            )
+        intervals_by_goal_pair[(goal_index_b, goal_index_a)] = mirrored_intervals
+
+    return [
+        intervals_by_goal_pair[goal_pair]
+        for goal_pair in get_ordered_goal_pairs(
             alternatives.get_anzahl_spalten()
         )
     ]
+
+
+def invert_goal_pair_ratio_intervals(
+    goal_pair_intervals: GoalPairRatioIntervals,
+) -> GoalPairRatioIntervals | None:
+    mirrored_by_candidate: dict[int, RatioInterval] = {}
+    for candidate_index, ratio_interval in (
+        goal_pair_intervals.intervals_by_candidate.items()
+    ):
+        mirrored_interval = invert_ratio_interval(ratio_interval)
+        if mirrored_interval is None:
+            return None
+        mirrored_by_candidate[int(candidate_index)] = mirrored_interval
+
+    return GoalPairRatioIntervals(
+        goal_index_a=goal_pair_intervals.goal_index_b,
+        goal_index_b=goal_pair_intervals.goal_index_a,
+        intervals_by_candidate=mirrored_by_candidate,
+    )
+
+
+def invert_ratio_interval(ratio_interval: RatioInterval) -> RatioInterval | None:
+    """Return the interval for the reciprocal ratio when it is well-defined.
+
+    ``None`` means that the reverse orientation must be solved directly.  This
+    occurs when the original denominator cannot be normalized or when the
+    complete interval is exactly zero.
+    """
+
+    if ratio_interval.lower.status != "optimal":
+        return None
+
+    lower_value = ratio_interval.lower.optimal_value
+    if lower_value is None or lower_value < 0.0:
+        return None
+
+    if ratio_interval.upper.status == "unbounded":
+        mirrored_lower_value = 0.0
+    elif ratio_interval.upper.status == "optimal":
+        upper_value = ratio_interval.upper.optimal_value
+        if upper_value is None or upper_value <= 0.0:
+            return None
+        mirrored_lower_value = 1.0 / float(upper_value)
+    else:
+        return None
+
+    mirrored_lower = LinearOptimizationResult(
+        status="optimal",
+        objective_sense="min",
+        optimal_value=mirrored_lower_value,
+    )
+    if float(lower_value) == 0.0:
+        mirrored_upper = LinearOptimizationResult(
+            status="unbounded",
+            objective_sense="max",
+        )
+    else:
+        mirrored_upper = LinearOptimizationResult(
+            status="optimal",
+            objective_sense="max",
+            optimal_value=1.0 / float(lower_value),
+        )
+
+    return RatioInterval(lower=mirrored_lower, upper=mirrored_upper)
 
 
 def _compute_ratio_interval_for_candidate_in_normalized_weight_space(

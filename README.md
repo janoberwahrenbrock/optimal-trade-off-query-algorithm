@@ -120,6 +120,11 @@ python onestep/scripts/analyse_performance_cli.py --goals 3,5,7 --alternatives 3
 
 ## Multi-Step Analyse-Skripte
 
+Die implementierten Laufzeitoptimierungen, Profiling-Zähler, Benchmarks und
+optionalen approximativen Begrenzungen sind in
+[`multistep/docs/performance_optimizations.md`](multistep/docs/performance_optimizations.md)
+dokumentiert.
+
 ### Terminierungsanalyse
 
 Das Skript `multistep/scripts/analyze_termination_question_counts.py` erzeugt
