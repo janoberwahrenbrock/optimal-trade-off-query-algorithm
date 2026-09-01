@@ -155,10 +155,17 @@ Wichtige Optionen:
   gezielt z.B. nur Problem 10 zu reproduzieren.
 - `--depth`: Lookahead-Tiefe, standardmaessig `2`.
 - `--samples`: Anzahl der Samples fuer Antwortwahrscheinlichkeiten.
+- `--sampling-chains`: Anzahl unabhaengiger Hit-and-Run-Ketten; Standard ist 4.
 - `--grid-size`: Anzahl der Grid-Werte pro Zielpaar.
 - `--max-s`: Maximales Query-Verhaeltnis im Grid.
 - `--root-query-source`: Query-Quellen fuer Ebenen groesser als 1. Standard ist
   `both`, also Grid-Queries plus Ratio-Queries.
+- `--ratio-engine`: `geometry` (Standard, mit exaktem LP-Fallback) oder `lp`
+  fuer A/B-Messungen.
+- `--posterior-quantiles 0.25 0.5 0.75`: Ergaenzt Ratio-Queries um
+  posteriorbasierte Quantil-Queries.
+- `--posterior-objective entropy --posterior-additions 21`: Optionale
+  Entropie-Shortlist; alternativ kann `regret` verwendet werden.
 - `--print-problems`: Gibt pro Problem eine Ergebniszeile aus.
 - `--export-json`: Speichert Alternativenmatrix, simulierten
   Zielgewichtsvektor und gestellte Queries als JSON.
@@ -172,6 +179,19 @@ Aktuelles Standardverhalten:
   verwendet.
 - Auf Ebenen groesser als 1 werden standardmaessig Grid-Queries und
   Ratio-Queries gemeinsam betrachtet.
+- Quotientenintervalle werden standardmaessig aus Polytopecken berechnet; fuer
+  degenerierte Faelle bleibt der exakte LP-Fallback aktiv.
+
+### Dimension-7-Benchmark
+
+```bash
+python multistep/scripts/benchmark_dimension_seven.py --preset quick
+```
+
+Der Preset `standard` misst zusaetzlich Tiefe 2 und alle experimentellen
+Query-Politiken. Mit `--output-json DATEI` werden Laufzeiten,
+Samplerdiagnostik, beste Query, posteriorer Entropie-/Regret-Score und interne
+Profiling-Zeiten reproduzierbar exportiert.
 
 ### Exportierte Query-Laeufe pruefen
 

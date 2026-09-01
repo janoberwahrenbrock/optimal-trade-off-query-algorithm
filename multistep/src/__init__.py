@@ -42,7 +42,12 @@ from .ratio_intervals import (
     compute_ratio_intervals_for_pair,
     get_ordered_goal_pairs,
 )
-from .sampling import sample_points_from_constraint_system
+from .sampling import (
+    SamplingDiagnostics,
+    find_relative_interior_point,
+    sample_points_from_constraint_system,
+    sample_points_with_diagnostics,
+)
 from .value_function import (
     MultistepConfig,
     QueryBranchResult,
@@ -102,4 +107,7 @@ __all__ = [
     "get_ordered_goal_pairs",
     "compute_value_function",
     "sample_points_from_constraint_system",
+    "sample_points_with_diagnostics",
+    "find_relative_interior_point",
+    "SamplingDiagnostics",
 ]

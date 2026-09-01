@@ -141,6 +141,47 @@ class RatioIntervalsTests(unittest.TestCase):
             [(0, 1), (1, 0)],
         )
 
+    def test_geometric_engine_matches_lp_engine(self) -> None:
+        alternatives = AlternativenMatrix(
+            entries=[
+                [0.9, 0.2, 0.1],
+                [0.2, 0.9, 0.1],
+                [0.1, 0.2, 0.9],
+                [0.6, 0.6, 0.6],
+            ]
+        )
+        weight_space = build_weight_space(goal_count=3, answered_queries=[])
+
+        geometric = compute_all_ratio_intervals(
+            alternatives=alternatives,
+            weight_space=weight_space,
+            candidates=[0, 1, 2, 3],
+            engine="geometry",
+        )
+        exact_lp = compute_all_ratio_intervals(
+            alternatives=alternatives,
+            weight_space=weight_space,
+            candidates=[0, 1, 2, 3],
+            engine="lp",
+        )
+
+        for geometric_pair, lp_pair in zip(geometric, exact_lp):
+            for candidate_index in [0, 1, 2, 3]:
+                actual = geometric_pair.intervals_by_candidate[candidate_index]
+                expected = lp_pair.intervals_by_candidate[candidate_index]
+                self.assertEqual(actual.lower.status, expected.lower.status)
+                self.assertEqual(actual.upper.status, expected.upper.status)
+                if actual.lower.optimal_value is not None:
+                    self.assertAlmostEqual(
+                        actual.lower.optimal_value,
+                        expected.lower.optimal_value,
+                    )
+                if actual.upper.optimal_value is not None:
+                    self.assertAlmostEqual(
+                        actual.upper.optimal_value,
+                        expected.upper.optimal_value,
+                    )
+
     def test_inverted_intervals_match_direct_reverse_solve(self) -> None:
         alternatives = AlternativenMatrix(
             entries=[
@@ -202,6 +243,7 @@ class RatioIntervalsTests(unittest.TestCase):
                 alternatives=alternatives,
                 weight_space=build_weight_space(goal_count=2, answered_queries=[]),
                 candidates=[0, 1],
+                engine="lp",
             )
 
         self.assertEqual(compute_pair.call_count, 1)

@@ -4,15 +4,21 @@ from .profiling import OptimizationProfile, collect_optimization_profile
 from .value_function import (
     OptimizedMultistepConfig,
     OptimizedValueFunctionSession,
+    QueryPosteriorScore,
+    StateAnalysis,
     compute_ratio_relevant_candidate_set,
     compute_value_function_optimized,
+    score_query_candidates_by_posterior,
 )
 
 __all__ = [
     "OptimizationProfile",
     "OptimizedMultistepConfig",
     "OptimizedValueFunctionSession",
+    "QueryPosteriorScore",
+    "StateAnalysis",
     "collect_optimization_profile",
     "compute_ratio_relevant_candidate_set",
     "compute_value_function_optimized",
+    "score_query_candidates_by_posterior",
 ]

@@ -18,7 +18,6 @@ if str(REPO_ROOT) not in sys.path:
 from multistep.optimized import (  # noqa: E402
     OptimizedMultistepConfig,
     OptimizedValueFunctionSession,
-    compute_ratio_relevant_candidate_set,
 )
 from multistep.optimized.value_function import (  # noqa: E402
     is_query_already_answered,
@@ -26,7 +25,6 @@ from multistep.optimized.value_function import (  # noqa: E402
 )
 from multistep.src.models import AlternativenMatrix, AnsweredQuery  # noqa: E402
 from multistep.src.query_probability import classify_query_answer  # noqa: E402
-from multistep.src.weight_space import build_weight_space  # noqa: E402
 
 
 DEFAULT_GOALS = 3
@@ -83,11 +81,36 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--samples", type=int, default=DEFAULT_SAMPLE_COUNT)
     parser.add_argument("--burn-in", type=int, default=DEFAULT_BURN_IN)
     parser.add_argument("--thinning", type=int, default=DEFAULT_THINNING)
+    parser.add_argument("--sampling-chains", type=int, default=4)
     parser.add_argument("--grid-size", type=int, default=DEFAULT_GRID_SIZE)
     parser.add_argument("--min-s", type=float, default=DEFAULT_MIN_QUERY_VALUE)
     parser.add_argument("--max-s", type=float, default=DEFAULT_MAX_QUERY_VALUE)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument(
+        "--ratio-engine",
+        choices=["geometry", "lp"],
+        default="geometry",
+    )
+    parser.add_argument(
+        "--posterior-quantiles",
+        type=float,
+        nargs="*",
+        default=[],
+        help="Optional ratio quantiles, for example 0.25 0.5 0.75.",
+    )
+    parser.add_argument(
+        "--posterior-objective",
+        choices=["entropy", "regret"],
+        default=None,
+        help="Rank non-ratio additions by posterior entropy or regret.",
+    )
+    parser.add_argument(
+        "--posterior-additions",
+        type=int,
+        default=None,
+        help="Number of posterior-ranked non-ratio queries to retain.",
+    )
     parser.add_argument(
         "--max-query-candidates",
         type=int,
@@ -211,6 +234,9 @@ def validate_args(args: argparse.Namespace) -> None:
     if args.thinning <= 0:
         raise ValueError("--thinning must be positive")
 
+    if args.sampling_chains <= 0 or args.sampling_chains > args.samples:
+        raise ValueError("--sampling-chains must be between one and --samples")
+
     if args.grid_size <= 0:
         raise ValueError("--grid-size must be positive")
 
@@ -225,6 +251,14 @@ def validate_args(args: argparse.Namespace) -> None:
 
     if args.workers <= 0:
         raise ValueError("--workers must be positive")
+
+    if any(not 0.0 < level < 1.0 for level in args.posterior_quantiles):
+        raise ValueError("--posterior-quantiles must be between zero and one")
+
+    if (args.posterior_objective is None) != (args.posterior_additions is None):
+        raise ValueError(
+            "--posterior-objective and --posterior-additions must be used together"
+        )
 
     if args.max_query_candidates is not None and args.max_query_candidates <= 0:
         raise ValueError("--max-query-candidates must be positive")
@@ -304,6 +338,7 @@ def build_config(args: argparse.Namespace, random_seed: int) -> OptimizedMultist
         burn_in=int(args.burn_in),
         thinning=int(args.thinning),
         random_seed=random_seed,
+        sampling_chain_count=int(args.sampling_chains),
         grid_size=int(args.grid_size),
         min_query_value=float(args.min_s),
         max_query_value=float(args.max_s),
@@ -324,23 +359,10 @@ def build_config(args: argparse.Namespace, random_seed: int) -> OptimizedMultist
         validate_ratio_terminal_counts=bool(args.validate_terminal_counts),
         max_query_candidates_per_state=args.max_query_candidates,
         adaptive_depth_candidate_threshold=args.adaptive_depth_candidate_threshold,
-    )
-
-
-def compute_current_candidates(
-    alternatives: AlternativenMatrix,
-    answered_queries: list[AnsweredQuery],
-) -> list[int]:
-    weight_space = build_weight_space(
-        goal_count=alternatives.get_anzahl_spalten(),
-        answered_queries=answered_queries,
-    )
-    if not weight_space.is_feasible():
-        raise RuntimeError("current weight space is infeasible")
-
-    return compute_ratio_relevant_candidate_set(
-        alternatives=alternatives,
-        weight_space=weight_space,
+        ratio_interval_engine=str(args.ratio_engine),
+        posterior_quantile_levels=tuple(float(value) for value in args.posterior_quantiles),
+        posterior_query_objective=args.posterior_objective,
+        posterior_query_shortlist_size=args.posterior_additions,
     )
 
 
@@ -393,10 +415,12 @@ def _solve_problem_until_termination(
 ) -> ProblemRunResult:
     start = time.perf_counter()
     answered_queries: list[AnsweredQuery] = []
-    candidates = compute_current_candidates(
-        alternatives=alternatives,
+    state_analysis = value_function_session.analyze_state(
         answered_queries=answered_queries,
     )
+    if not state_analysis.is_feasible or state_analysis.candidate_analysis is None:
+        raise RuntimeError("initial weight space is infeasible")
+    candidates = state_analysis.candidate_analysis.candidates
     initial_candidate_count = len(candidates)
     question_count = 0
 
@@ -475,10 +499,12 @@ def _solve_problem_until_termination(
 
         answered_queries.append(result.best_query.answer(answer))
         question_count += 1
-        candidates = compute_current_candidates(
-            alternatives=alternatives,
+        state_analysis = value_function_session.analyze_state(
             answered_queries=answered_queries,
         )
+        if not state_analysis.is_feasible or state_analysis.candidate_analysis is None:
+            raise RuntimeError("answered query produced an infeasible weight space")
+        candidates = state_analysis.candidate_analysis.candidates
 
         if not quiet:
             print(
@@ -501,7 +527,10 @@ def _solve_problem_until_termination(
     )
 
 
-def run_analysis(args: argparse.Namespace, export_log: ExportLog | None = None) -> list[ProblemRunResult]:
+def run_analysis(
+    args: argparse.Namespace,
+    export_log: ExportLog | None = None,
+) -> list[ProblemRunResult]:
     rng = np.random.default_rng(args.seed)
     results: list[ProblemRunResult] = []
 
@@ -570,9 +599,14 @@ def print_summary(results: list[ProblemRunResult], args: argparse.Namespace) -> 
     print(f"  samples: {args.samples}")
     print(f"  burn-in: {args.burn_in}")
     print(f"  thinning: {args.thinning}")
+    print(f"  sampling chains: {args.sampling_chains}")
     print(f"  grid size: {args.grid_size}")
     print(f"  s range: [{args.min_s}, {args.max_s}]")
     print(f"  root query source: {args.root_query_source}")
+    print(f"  ratio engine: {args.ratio_engine}")
+    print(f"  posterior quantiles: {args.posterior_quantiles}")
+    print(f"  posterior objective: {args.posterior_objective}")
+    print(f"  posterior additions: {args.posterior_additions}")
     print(f"  workers: {args.workers}")
     print(f"  max query candidates: {args.max_query_candidates}")
     print(

@@ -10,6 +10,7 @@ from multistep.optimized.value_function import (
     compute_candidate_set_for_subset,
     compute_query_candidates_for_depth_optimized,
     compute_ratio_relevant_candidate_set,
+    compute_posterior_quantile_query_candidates,
     compute_supported_query_answers,
     compute_supported_query_answers_with_sample_evidence,
     compute_terminal_candidate_count_fallback,
@@ -19,6 +20,7 @@ from multistep.optimized.value_function import (
     filter_already_answered_queries,
     is_query_already_answered,
     shortlist_query_candidates_by_sample_balance,
+    score_query_candidates_by_posterior,
 )
 from multistep.src.linear_constraints import LinearConstraintSystem
 from multistep.src.ratio_intervals import compute_all_ratio_intervals
@@ -167,6 +169,78 @@ class OptimizedValueFunctionTest(unittest.TestCase):
 
         self.assertTrue(query_candidate_data.query_candidates)
         self.assertIn("ratio", set(query_candidate_data.query_sources.values()))
+
+    def test_posterior_quantiles_create_balanced_ratio_query(self) -> None:
+        queries = compute_posterior_quantile_query_candidates(
+            samples=[
+                [0.9, 0.1],
+                [0.75, 0.25],
+                [0.25, 0.75],
+                [0.1, 0.9],
+            ],
+            quantile_levels=(0.5,),
+            min_query_value=1e-3,
+            max_query_value=100.0,
+        )
+
+        self.assertEqual(len(queries), 1)
+        self.assertAlmostEqual(float(queries[0].value), 5.0 / 3.0)
+
+    def test_entropy_and_regret_scores_prefer_informative_query(self) -> None:
+        alternatives = AlternativenMatrix(entries=[[1.0, 0.0], [0.0, 1.0]])
+        informative = Query(ziel_index_a=0, ziel_index_b=1, value=1.0)
+        uninformative = Query(ziel_index_a=0, ziel_index_b=1, value=10.0)
+
+        scores = score_query_candidates_by_posterior(
+            alternatives=alternatives,
+            query_candidates=[informative, uninformative],
+            samples=[
+                [0.9, 0.1],
+                [0.8, 0.2],
+                [0.2, 0.8],
+                [0.1, 0.9],
+            ],
+        )
+
+        self.assertEqual(scores[0].expected_entropy, 0.0)
+        self.assertEqual(scores[0].expected_regret, 0.0)
+        self.assertGreater(scores[1].expected_entropy, scores[0].expected_entropy)
+        self.assertGreater(scores[1].expected_regret, scores[0].expected_regret)
+
+    def test_session_reuses_canonical_state_analysis(self) -> None:
+        direct = Query(ziel_index_a=0, ziel_index_b=1, value=2.0).answer("<")
+        mirrored = Query(ziel_index_a=1, ziel_index_b=0, value=0.5).answer(">")
+        with OptimizedValueFunctionSession(
+            alternatives=self.alternatives,
+            config=OptimizedMultistepConfig(parallelize_root=False),
+        ) as session:
+            with collect_optimization_profile() as profile:
+                first = session.analyze_state([direct])
+                second = session.analyze_state([mirrored])
+
+        self.assertIs(first, second)
+        self.assertEqual(profile.counters["state_analysis_cache_hits"], 1)
+
+    def test_session_compute_reuses_prior_candidate_analysis(self) -> None:
+        config = OptimizedMultistepConfig(
+            sample_count=40,
+            burn_in=10,
+            thinning=1,
+            random_seed=3,
+            parallelize_root=False,
+            use_ratio_terminal_counts=True,
+            repair_zero_terminal_counts=False,
+        )
+        with OptimizedValueFunctionSession(
+            alternatives=self.alternatives,
+            config=config,
+        ) as session:
+            with collect_optimization_profile() as profile:
+                session.analyze_state([])
+                session.compute(answered_queries=[], remaining_depth=1)
+
+        self.assertEqual(profile.counters["ratio_interval_batches"], 1)
+        self.assertEqual(profile.counters["state_analysis_cache_hits"], 1)
 
     def test_supported_answer_probabilities_remove_boundary_equality_answer(self) -> None:
         probabilities = estimate_supported_answer_probabilities(

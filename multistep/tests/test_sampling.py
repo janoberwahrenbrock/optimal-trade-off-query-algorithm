@@ -3,11 +3,47 @@ from __future__ import annotations
 import unittest
 
 from multistep.src.models import AnsweredQuery
-from multistep.src.sampling import sample_points_from_constraint_system
+import numpy as np
+
+from multistep.src.sampling import (
+    find_relative_interior_point,
+    sample_points_from_constraint_system,
+    sample_points_with_diagnostics,
+)
 from multistep.src.weight_space import build_weight_space
 
 
 class SamplingTests(unittest.TestCase):
+    def test_relative_interior_start_is_centered_in_simplex(self) -> None:
+        system = build_weight_space(goal_count=3, answered_queries=[])
+
+        point, radius = find_relative_interior_point(system)
+
+        np.testing.assert_allclose(point, [1.0 / 3.0] * 3, atol=1e-9)
+        self.assertGreater(radius, 0.0)
+
+    def test_multiple_chains_explore_dimension_seven_simplex(self) -> None:
+        system = build_weight_space(goal_count=7, answered_queries=[])
+
+        samples, diagnostics = sample_points_with_diagnostics(
+            system=system,
+            num_samples=600,
+            burn_in=200,
+            thinning=3,
+            seed=4,
+            chain_count=4,
+        )
+
+        sample_matrix = np.asarray(samples)
+        self.assertEqual(diagnostics.chain_count, 4)
+        self.assertGreater(diagnostics.unique_sample_count, 590)
+        self.assertGreater(diagnostics.minimum_effective_sample_size, 1.0)
+        np.testing.assert_allclose(
+            np.mean(sample_matrix, axis=0),
+            np.full(7, 1.0 / 7.0),
+            atol=0.06,
+        )
+
     def test_sampling_points_from_simplex(self) -> None:
         system = build_weight_space(goal_count=3, answered_queries=[])
 

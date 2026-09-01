@@ -13,6 +13,8 @@ from dataclasses import dataclass
 import math
 from typing import Literal
 
+import numpy as np
+
 from multistep.src.candidates import compute_candidate_set
 from multistep.src.grid_query_candidates import (
     DEFAULT_GRID_SIZE,
@@ -33,6 +35,7 @@ from multistep.src.onestep_query_candidates import (
 from multistep.src.optimality_region import build_optimality_region
 from multistep.src.query_probability import ANSWER_OPTIONS, classify_query_answer
 from multistep.src.ratio_intervals import (
+    RatioIntervalEngine,
     compute_all_ratio_intervals,
     compute_ratio_bounds_for_weight_space,
 )
@@ -51,7 +54,8 @@ from .profiling import increment_profile_counter, profile_operation
 CandidateCountMode = Literal["closed_lp", "ratio_relevant"]
 GridDepthQuerySourceMode = Literal["grid", "ratio", "both"]
 DepthOneQuerySourceMode = Literal["grid", "ratio", "both"]
-QuerySource = Literal["grid", "ratio", "grid+ratio", "unknown"]
+QuerySource = str
+PosteriorQueryObjective = Literal["entropy", "regret"]
 
 
 @dataclass(frozen=True)
@@ -63,11 +67,30 @@ class CandidateAnalysis:
 
 
 @dataclass(frozen=True)
+class StateAnalysis:
+    """Reusable feasibility and candidate analysis for one answered state."""
+
+    weight_space: LinearConstraintSystem
+    is_feasible: bool
+    candidate_analysis: CandidateAnalysis | None = None
+
+
+@dataclass(frozen=True)
+class QueryPosteriorScore:
+    query: Query
+    expected_entropy: float
+    information_gain: float
+    expected_regret: float
+    partition_balance: float
+
+
+@dataclass(frozen=True)
 class OptimizedMultistepConfig:
     sample_count: int = 1000
     burn_in: int = 200
     thinning: int = 5
     random_seed: int | None = None
+    sampling_chain_count: int = 1
     equality_tol: float = 0.0
     grid_size: int = DEFAULT_GRID_SIZE
     min_query_value: float = DEFAULT_MIN_QUERY_VALUE
@@ -96,6 +119,11 @@ class OptimizedMultistepConfig:
     validate_ratio_terminal_counts: bool = False
     max_query_candidates_per_state: int | None = None
     adaptive_depth_candidate_threshold: int | None = None
+    ratio_interval_engine: RatioIntervalEngine = "geometry"
+    geometry_tolerance: float = 1e-10
+    posterior_quantile_levels: tuple[float, ...] = ()
+    posterior_query_objective: PosteriorQueryObjective | None = None
+    posterior_query_shortlist_size: int | None = None
 
     def __post_init__(self) -> None:
         if self.sample_count <= 0:
@@ -106,6 +134,12 @@ class OptimizedMultistepConfig:
 
         if self.thinning <= 0:
             raise ValueError("thinning must be positive")
+
+        if self.sampling_chain_count <= 0:
+            raise ValueError("sampling_chain_count must be positive")
+
+        if self.sampling_chain_count > self.sample_count:
+            raise ValueError("sampling_chain_count must not exceed sample_count")
 
         if self.equality_tol < 0.0:
             raise ValueError("equality_tol must not be negative")
@@ -174,6 +208,45 @@ class OptimizedMultistepConfig:
                 "depth_one_query_source_mode must be 'grid', 'ratio', or 'both'"
             )
 
+        if self.ratio_interval_engine not in {"geometry", "lp"}:
+            raise ValueError("ratio_interval_engine must be 'geometry' or 'lp'")
+
+        if self.geometry_tolerance <= 0.0:
+            raise ValueError("geometry_tolerance must be positive")
+
+        if any(not 0.0 < level < 1.0 for level in self.posterior_quantile_levels):
+            raise ValueError("posterior_quantile_levels must be between zero and one")
+
+        if len(set(self.posterior_quantile_levels)) != len(
+            self.posterior_quantile_levels
+        ):
+            raise ValueError("posterior_quantile_levels must not contain duplicates")
+
+        if self.posterior_query_objective not in {None, "entropy", "regret"}:
+            raise ValueError("posterior_query_objective must be 'entropy' or 'regret'")
+
+        if (
+            self.posterior_query_shortlist_size is not None
+            and self.posterior_query_shortlist_size <= 0
+        ):
+            raise ValueError("posterior_query_shortlist_size must be positive")
+
+        if (self.posterior_query_objective is None) != (
+            self.posterior_query_shortlist_size is None
+        ):
+            raise ValueError(
+                "posterior_query_objective and posterior_query_shortlist_size "
+                "must be configured together"
+            )
+
+        if (
+            self.max_query_candidates_per_state is not None
+            and self.posterior_query_objective is not None
+        ):
+            raise ValueError(
+                "sample-balance and posterior-objective shortlists are mutually exclusive"
+            )
+
 
 class OptimizedValueFunctionSession:
     """Reuse root-level worker processes across consecutive user questions."""
@@ -192,6 +265,9 @@ class OptimizedValueFunctionSession:
         self.max_cached_results = max_cached_results
         self._executor: ProcessPoolExecutor | None = None
         self._result_cache: OrderedDict[tuple[object, ...], ValueFunctionResult] = (
+            OrderedDict()
+        )
+        self._state_analysis_cache: OrderedDict[tuple[object, ...], StateAnalysis] = (
             OrderedDict()
         )
         self._is_closed = False
@@ -220,6 +296,10 @@ class OptimizedValueFunctionSession:
             self._result_cache.move_to_end(cache_key)
             return self._result_cache[cache_key]
 
+        state_analysis = self.analyze_state(
+            answered_queries=answered_queries,
+            candidate_subset=candidate_subset,
+        )
         result = compute_value_function_optimized(
             alternatives=self.alternatives,
             answered_queries=answered_queries,
@@ -229,6 +309,7 @@ class OptimizedValueFunctionSession:
             samples=samples,
             is_root_call=True,
             executor=self._executor,
+            precomputed_state_analysis=state_analysis,
         )
         if cache_key is not None:
             self._result_cache[cache_key] = result
@@ -237,8 +318,68 @@ class OptimizedValueFunctionSession:
                 self._result_cache.popitem(last=False)
         return result
 
+    def analyze_state(
+        self,
+        answered_queries: list[AnsweredQuery],
+        candidate_subset: list[int] | None = None,
+    ) -> StateAnalysis:
+        """Analyze a state once and reuse it across planning and termination."""
+
+        if self._is_closed:
+            raise RuntimeError("optimized value-function session is closed")
+        cache_key = self._build_state_cache_key(
+            answered_queries=answered_queries,
+            candidate_subset=candidate_subset,
+        )
+        if cache_key is not None and cache_key in self._state_analysis_cache:
+            increment_profile_counter("state_analysis_cache_hits")
+            self._state_analysis_cache.move_to_end(cache_key)
+            return self._state_analysis_cache[cache_key]
+
+        weight_space = build_weight_space(
+            goal_count=self.alternatives.get_anzahl_spalten(),
+            answered_queries=answered_queries,
+        )
+        is_feasible = weight_space.is_feasible()
+        candidate_analysis = (
+            compute_candidate_analysis_for_mode(
+                alternatives=self.alternatives,
+                weight_space=weight_space,
+                candidate_subset=candidate_subset,
+                config=self.config,
+            )
+            if is_feasible
+            else None
+        )
+        analysis = StateAnalysis(
+            weight_space=weight_space,
+            is_feasible=is_feasible,
+            candidate_analysis=candidate_analysis,
+        )
+        if cache_key is not None:
+            self._state_analysis_cache[cache_key] = analysis
+            self._state_analysis_cache.move_to_end(cache_key)
+            while len(self._state_analysis_cache) > self.max_cached_results:
+                self._state_analysis_cache.popitem(last=False)
+        return analysis
+
     def clear_cache(self) -> None:
         self._result_cache.clear()
+        self._state_analysis_cache.clear()
+
+    def _build_state_cache_key(
+        self,
+        answered_queries: list[AnsweredQuery],
+        candidate_subset: list[int] | None,
+    ) -> tuple[object, ...] | None:
+        if self.max_cached_results == 0:
+            return None
+        return (
+            tuple(int(candidate) for candidate in candidate_subset)
+            if candidate_subset is not None
+            else None,
+            _normalized_answered_query_key(answered_queries),
+        )
 
     def _build_result_cache_key(
         self,
@@ -255,15 +396,7 @@ class OptimizedValueFunctionSession:
             tuple(int(candidate) for candidate in candidate_subset)
             if candidate_subset is not None
             else None,
-            tuple(
-                (
-                    int(answered_query.ziel_index_a),
-                    int(answered_query.ziel_index_b),
-                    float(answered_query.value),
-                    answered_query.operator,
-                )
-                for answered_query in answered_queries
-            ),
+            _normalized_answered_query_key(answered_queries),
         )
 
     def close(self) -> None:
@@ -291,18 +424,27 @@ def compute_value_function_optimized(
     samples: list[list[float]] | None = None,
     is_root_call: bool = True,
     executor: Executor | None = None,
+    precomputed_state_analysis: StateAnalysis | None = None,
 ) -> ValueFunctionResult:
     if remaining_depth < 0:
         raise ValueError("remaining_depth must not be negative")
 
     resolved_config = config or OptimizedMultistepConfig()
     increment_profile_counter("state_calls")
-    weight_space = build_weight_space(
-        goal_count=alternatives.get_anzahl_spalten(),
-        answered_queries=answered_queries,
-    )
+    state_analysis = precomputed_state_analysis
+    if state_analysis is None:
+        weight_space = build_weight_space(
+            goal_count=alternatives.get_anzahl_spalten(),
+            answered_queries=answered_queries,
+        )
+        state_analysis = StateAnalysis(
+            weight_space=weight_space,
+            is_feasible=weight_space.is_feasible(),
+        )
+    else:
+        weight_space = state_analysis.weight_space
 
-    if not weight_space.is_feasible():
+    if not state_analysis.is_feasible:
         return ValueFunctionResult(
             remaining_depth=remaining_depth,
             value=0.0,
@@ -312,12 +454,14 @@ def compute_value_function_optimized(
             is_feasible=False,
         )
 
-    candidate_analysis = compute_candidate_analysis_for_mode(
-        alternatives=alternatives,
-        weight_space=weight_space,
-        candidate_subset=candidate_subset,
-        config=resolved_config,
-    )
+    candidate_analysis = state_analysis.candidate_analysis
+    if candidate_analysis is None:
+        candidate_analysis = compute_candidate_analysis_for_mode(
+            alternatives=alternatives,
+            weight_space=weight_space,
+            candidate_subset=candidate_subset,
+            config=resolved_config,
+        )
     candidates = candidate_analysis.candidates
     candidate_count = len(candidates)
 
@@ -340,6 +484,15 @@ def compute_value_function_optimized(
         evaluation_depth = 1
         increment_profile_counter("adaptive_depth_reductions")
 
+    state_samples = (
+        resolve_state_samples(
+            weight_space=weight_space,
+            samples=samples,
+            config=resolved_config,
+        )
+        if resolved_config.posterior_quantile_levels
+        else None
+    )
     query_candidate_data = compute_query_candidates_for_depth_optimized(
         alternatives=alternatives,
         weight_space=weight_space,
@@ -347,6 +500,7 @@ def compute_value_function_optimized(
         remaining_depth=evaluation_depth,
         config=resolved_config,
         precomputed_ratio_intervals=candidate_analysis.ratio_intervals,
+        samples=state_samples,
     )
     query_candidates = query_candidate_data.query_candidates
     increment_profile_counter("query_candidates", len(query_candidates))
@@ -368,10 +522,20 @@ def compute_value_function_optimized(
             is_feasible=True,
         )
 
-    state_samples = resolve_state_samples(
-        weight_space=weight_space,
-        samples=samples,
-        config=resolved_config,
+    if state_samples is None:
+        state_samples = resolve_state_samples(
+            weight_space=weight_space,
+            samples=samples,
+            config=resolved_config,
+        )
+    query_candidates = shortlist_query_candidates_by_posterior_objective(
+        alternatives=alternatives,
+        query_candidates=query_candidates,
+        query_sources=query_candidate_data.query_sources,
+        samples=state_samples,
+        equality_tol=resolved_config.equality_tol,
+        objective=resolved_config.posterior_query_objective,
+        additional_query_limit=resolved_config.posterior_query_shortlist_size,
     )
     query_candidates = shortlist_query_candidates_by_sample_balance(
         query_candidates=query_candidates,
@@ -471,6 +635,135 @@ def compute_sample_partition_balance_score(
     )
 
 
+def shortlist_query_candidates_by_posterior_objective(
+    alternatives: AlternativenMatrix,
+    query_candidates: list[Query],
+    query_sources: dict[tuple[int, int, float], QuerySource],
+    samples: list[list[float]],
+    equality_tol: float,
+    objective: PosteriorQueryObjective | None,
+    additional_query_limit: int | None,
+) -> list[Query]:
+    """Retain all ratio queries plus the best posterior-ranked additions."""
+
+    if objective is None or additional_query_limit is None:
+        return query_candidates
+
+    baseline_indices = {
+        index
+        for index, query in enumerate(query_candidates)
+        if "ratio" in query_sources.get(canonical_query_key(query), "").split("+")
+    }
+    additional_indices = [
+        index for index in range(len(query_candidates)) if index not in baseline_indices
+    ]
+    if len(additional_indices) <= additional_query_limit:
+        return query_candidates
+
+    scores = score_query_candidates_by_posterior(
+        alternatives=alternatives,
+        query_candidates=query_candidates,
+        samples=samples,
+        equality_tol=equality_tol,
+    )
+    if objective == "entropy":
+        objective_key = lambda index: (
+            scores[index].expected_entropy,
+            scores[index].partition_balance,
+            canonical_query_key(scores[index].query),
+        )
+    else:
+        objective_key = lambda index: (
+            scores[index].expected_regret,
+            scores[index].partition_balance,
+            canonical_query_key(scores[index].query),
+        )
+    selected_additions = set(
+        sorted(additional_indices, key=objective_key)[:additional_query_limit]
+    )
+    selected_indices = baseline_indices | selected_additions
+    increment_profile_counter(
+        "posterior_shortlisted_query_candidates",
+        len(query_candidates) - len(selected_indices),
+    )
+    return [
+        query
+        for index, query in enumerate(query_candidates)
+        if index in selected_indices
+    ]
+
+
+def score_query_candidates_by_posterior(
+    alternatives: AlternativenMatrix,
+    query_candidates: list[Query],
+    samples: list[list[float]],
+    equality_tol: float = 0.0,
+) -> list[QueryPosteriorScore]:
+    """Evaluate query partitions by winner entropy and decision regret."""
+
+    if not samples:
+        raise ValueError("samples must not be empty")
+    weights = np.asarray(samples, dtype=float)
+    utility_matrix = np.asarray(alternatives.entries, dtype=float)
+    if weights.ndim != 2 or weights.shape[1] != utility_matrix.shape[1]:
+        raise ValueError("samples must have one weight per alternative goal")
+
+    utilities = weights @ utility_matrix.T
+    winners = np.argmax(utilities, axis=1)
+    parent_entropy = _entropy_from_labels(
+        labels=winners,
+        label_count=utility_matrix.shape[0],
+    )
+    sample_count = len(weights)
+    scores: list[QueryPosteriorScore] = []
+    for query in query_candidates:
+        differences = (
+            weights[:, int(query.ziel_index_a)]
+            - float(query.value) * weights[:, int(query.ziel_index_b)]
+        )
+        answer_masks = (
+            differences < -equality_tol,
+            np.abs(differences) <= equality_tol,
+            differences > equality_tol,
+        )
+        expected_entropy = 0.0
+        expected_regret = 0.0
+        squared_probabilities = 0.0
+        for mask in answer_masks:
+            branch_count = int(np.count_nonzero(mask))
+            if branch_count == 0:
+                continue
+            probability = branch_count / sample_count
+            branch_utilities = utilities[mask]
+            chosen_alternative = int(np.argmax(np.mean(branch_utilities, axis=0)))
+            branch_regret = np.mean(
+                np.max(branch_utilities, axis=1)
+                - branch_utilities[:, chosen_alternative]
+            )
+            expected_regret += probability * float(branch_regret)
+            expected_entropy += probability * _entropy_from_labels(
+                labels=winners[mask],
+                label_count=utility_matrix.shape[0],
+            )
+            squared_probabilities += probability**2
+        scores.append(
+            QueryPosteriorScore(
+                query=query,
+                expected_entropy=expected_entropy,
+                information_gain=parent_entropy - expected_entropy,
+                expected_regret=expected_regret,
+                partition_balance=squared_probabilities,
+            )
+        )
+    return scores
+
+
+def _entropy_from_labels(labels: np.ndarray, label_count: int) -> float:
+    counts = np.bincount(labels, minlength=label_count).astype(float)
+    probabilities = counts[counts > 0.0] / len(labels)
+    return float(-np.sum(probabilities * np.log2(probabilities)))
+
+
 def compute_candidate_set_for_subset(
     alternatives: AlternativenMatrix,
     weight_space: LinearConstraintSystem,
@@ -532,6 +825,8 @@ def compute_candidate_analysis_for_mode(
         weight_space=weight_space,
         candidate_subset=candidate_subset,
         tolerance=config.ratio_terminal_tolerance,
+        ratio_interval_engine=config.ratio_interval_engine,
+        geometry_tolerance=config.geometry_tolerance,
     )
 
 
@@ -554,6 +849,8 @@ def compute_ratio_relevant_candidate_analysis(
     weight_space: LinearConstraintSystem,
     candidate_subset: list[int] | None = None,
     tolerance: float = 1e-12,
+    ratio_interval_engine: RatioIntervalEngine = "geometry",
+    geometry_tolerance: float = 1e-10,
 ) -> CandidateAnalysis:
     candidates_to_check = (
         list(range(alternatives.get_anzahl_zeilen()))
@@ -567,6 +864,8 @@ def compute_ratio_relevant_candidate_analysis(
         alternatives=alternatives,
         weight_space=weight_space,
         candidates=candidates_to_check,
+        engine=ratio_interval_engine,
+        geometry_tolerance=geometry_tolerance,
     )
     relevant_candidates: set[int] = set()
     feasible_candidates: set[int] = set()
@@ -622,6 +921,8 @@ def _compute_all_ratio_intervals_profiled(
     alternatives: AlternativenMatrix,
     weight_space: LinearConstraintSystem,
     candidates: list[int],
+    engine: RatioIntervalEngine = "geometry",
+    geometry_tolerance: float = 1e-10,
 ) -> list[GoalPairRatioIntervals]:
     increment_profile_counter("ratio_interval_batches")
     with profile_operation("ratio_intervals"):
@@ -629,6 +930,8 @@ def _compute_all_ratio_intervals_profiled(
             alternatives=alternatives,
             weight_space=weight_space,
             candidates=candidates,
+            engine=engine,
+            geometry_tolerance=geometry_tolerance,
         )
 
 
@@ -764,9 +1067,21 @@ def compute_query_candidates_for_depth_optimized(
     remaining_depth: int,
     config: OptimizedMultistepConfig,
     precomputed_ratio_intervals: list[GoalPairRatioIntervals] | None = None,
+    samples: list[list[float]] | None = None,
 ) -> "QueryCandidateData":
     if remaining_depth <= 0:
         return QueryCandidateData(query_candidates=[])
+
+    quantile_queries: list[Query] = []
+    if config.posterior_quantile_levels:
+        if samples is None:
+            raise ValueError("samples are required for posterior quantile queries")
+        quantile_queries = compute_posterior_quantile_query_candidates(
+            samples=samples,
+            quantile_levels=config.posterior_quantile_levels,
+            min_query_value=config.min_query_value,
+            max_query_value=config.max_query_value,
+        )
 
     if remaining_depth == 1:
         ratio_intervals = _resolve_ratio_intervals(
@@ -774,6 +1089,7 @@ def compute_query_candidates_for_depth_optimized(
             weight_space=weight_space,
             candidates=candidates,
             precomputed_ratio_intervals=precomputed_ratio_intervals,
+            config=config,
         )
         grid_queries: list[Query] = []
         if config.depth_one_query_source_mode in {"grid", "both"}:
@@ -792,6 +1108,7 @@ def compute_query_candidates_for_depth_optimized(
         query_candidates, query_sources = merge_query_candidates_by_source(
             grid_queries=grid_queries,
             ratio_queries=ratio_queries,
+            quantile_queries=quantile_queries,
         )
         return QueryCandidateData(
             query_candidates=query_candidates,
@@ -822,6 +1139,7 @@ def compute_query_candidates_for_depth_optimized(
             weight_space=weight_space,
             candidates=candidates,
             precomputed_ratio_intervals=precomputed_ratio_intervals,
+            config=config,
         )
         ratio_queries = compute_onestep_query_candidates(
             goal_pair_ratio_intervals=ratio_intervals,
@@ -838,6 +1156,7 @@ def compute_query_candidates_for_depth_optimized(
     query_candidates, query_sources = merge_query_candidates_by_source(
         grid_queries=grid_queries,
         ratio_queries=ratio_queries,
+        quantile_queries=quantile_queries,
     )
     return QueryCandidateData(
         query_candidates=query_candidates,
@@ -851,6 +1170,7 @@ def _resolve_ratio_intervals(
     weight_space: LinearConstraintSystem,
     candidates: list[int],
     precomputed_ratio_intervals: list[GoalPairRatioIntervals] | None,
+    config: OptimizedMultistepConfig,
 ) -> list[GoalPairRatioIntervals]:
     if precomputed_ratio_intervals is not None:
         return precomputed_ratio_intervals
@@ -859,6 +1179,8 @@ def _resolve_ratio_intervals(
         alternatives=alternatives,
         weight_space=weight_space,
         candidates=candidates,
+        engine=config.ratio_interval_engine,
+        geometry_tolerance=config.geometry_tolerance,
     )
 
 
@@ -899,16 +1221,21 @@ def compute_grid_queries_for_config(
 def merge_query_candidates_by_source(
     grid_queries: list[Query],
     ratio_queries: list[Query],
+    quantile_queries: list[Query] | None = None,
 ) -> tuple[list[Query], dict[tuple[int, int, float], QuerySource]]:
-    sources_by_key: dict[tuple[int, int, float], set[QuerySource]] = {}
+    resolved_quantile_queries = quantile_queries or []
+    sources_by_key: dict[tuple[int, int, float], set[str]] = {}
     for query in grid_queries:
         sources_by_key.setdefault(canonical_query_key(query), set()).add("grid")
 
     for query in ratio_queries:
         sources_by_key.setdefault(canonical_query_key(query), set()).add("ratio")
 
+    for query in resolved_quantile_queries:
+        sources_by_key.setdefault(canonical_query_key(query), set()).add("quantile")
+
     query_candidates = deduplicate_mirrored_query_candidates(
-        grid_queries + ratio_queries
+        grid_queries + ratio_queries + resolved_quantile_queries
     )
     query_sources = {
         canonical_query_key(query): combine_query_sources(
@@ -941,17 +1268,66 @@ def canonical_query_key(query: Query) -> tuple[int, int, float]:
     return min(direct_key, mirrored_key)
 
 
-def combine_query_sources(sources: set[QuerySource]) -> QuerySource:
-    if "grid" in sources and "ratio" in sources:
-        return "grid+ratio"
+def _normalized_answered_query_key(
+    answered_queries: list[AnsweredQuery],
+) -> tuple[tuple[int, int, float, QueryOperator], ...]:
+    normalized: list[tuple[int, int, float, QueryOperator]] = []
+    for answered_query in answered_queries:
+        goal_index_a = int(answered_query.ziel_index_a)
+        goal_index_b = int(answered_query.ziel_index_b)
+        value = float(answered_query.value)
+        operator: QueryOperator = answered_query.operator
+        if goal_index_a > goal_index_b and value > 0.0:
+            goal_index_a, goal_index_b = goal_index_b, goal_index_a
+            value = 1.0 / value
+            operator = {"<": ">", "=": "=", ">": "<"}[operator]
+        normalized.append((goal_index_a, goal_index_b, value, operator))
+    return tuple(sorted(normalized))
 
-    if "grid" in sources:
-        return "grid"
 
-    if "ratio" in sources:
-        return "ratio"
+def combine_query_sources(sources: set[str]) -> QuerySource:
+    ordered_sources = [
+        source for source in ("grid", "ratio", "quantile") if source in sources
+    ]
+    return "+".join(ordered_sources) if ordered_sources else "unknown"
 
-    return "unknown"
+
+def compute_posterior_quantile_query_candidates(
+    samples: list[list[float]],
+    quantile_levels: tuple[float, ...],
+    min_query_value: float,
+    max_query_value: float,
+    denominator_tolerance: float = 1e-12,
+) -> list[Query]:
+    """Create canonical goal-pair thresholds at posterior ratio quantiles."""
+
+    if not samples:
+        raise ValueError("samples must not be empty")
+    sample_matrix = np.asarray(samples, dtype=float)
+    goal_count = sample_matrix.shape[1]
+    queries: list[Query] = []
+    for goal_index_a in range(goal_count):
+        for goal_index_b in range(goal_index_a + 1, goal_count):
+            valid = sample_matrix[:, goal_index_b] > denominator_tolerance
+            if not np.any(valid):
+                continue
+            ratios = (
+                sample_matrix[valid, goal_index_a]
+                / sample_matrix[valid, goal_index_b]
+            )
+            for query_value in np.quantile(ratios, quantile_levels):
+                clipped_value = min(
+                    max_query_value,
+                    max(min_query_value, float(query_value)),
+                )
+                queries.append(
+                    Query(
+                        ziel_index_a=goal_index_a,
+                        ziel_index_b=goal_index_b,
+                        value=clipped_value,
+                    )
+                )
+    return deduplicate_mirrored_query_candidates(queries)
 
 
 def compute_canonical_grid_query_candidates(
@@ -1011,6 +1387,7 @@ def resolve_state_samples(
             burn_in=config.burn_in,
             thinning=config.thinning,
             seed=config.random_seed,
+            chain_count=config.sampling_chain_count,
         )
 
 
@@ -1349,7 +1726,15 @@ def evaluate_query_candidate_optimized(
             goal_count=alternatives.get_anzahl_spalten(),
             answered_queries=child_answered_queries,
         )
-        if child_weight_space.is_feasible():
+        child_is_feasible = child_weight_space.is_feasible()
+        if child_is_feasible:
+            child_candidate_subset = filter_candidate_subset_for_query_answer(
+                candidate_subset=candidate_subset,
+                query=query,
+                answer=answer,
+                ratio_intervals_by_goal_pair=ratio_intervals_by_goal_pair,
+                tolerance=config.ratio_terminal_tolerance,
+            )
             child_samples = (
                 partitioned_samples[answer]
                 if config.reuse_conditioned_samples
@@ -1360,9 +1745,13 @@ def evaluate_query_candidate_optimized(
                 answered_queries=child_answered_queries,
                 remaining_depth=remaining_depth - 1,
                 config=config,
-                candidate_subset=candidate_subset,
+                candidate_subset=child_candidate_subset,
                 samples=child_samples,
                 is_root_call=False,
+                precomputed_state_analysis=StateAnalysis(
+                    weight_space=child_weight_space,
+                    is_feasible=True,
+                ),
             )
             child_value = child_result.value
             child_candidate_count: int | None = child_result.candidate_count
@@ -1388,6 +1777,60 @@ def evaluate_query_candidate_optimized(
         expected_value=expected_value,
         branches=tuple(branches),
         query_source=query_source,
+    )
+
+
+def filter_candidate_subset_for_query_answer(
+    candidate_subset: list[int] | None,
+    query: Query,
+    answer: QueryOperator,
+    ratio_intervals_by_goal_pair: dict[tuple[int, int], GoalPairRatioIntervals] | None,
+    tolerance: float,
+) -> list[int] | None:
+    """Remove candidates whose parent interval cannot satisfy an answer."""
+
+    if candidate_subset is None or ratio_intervals_by_goal_pair is None:
+        return candidate_subset
+    goal_pair_intervals = ratio_intervals_by_goal_pair.get(
+        (int(query.ziel_index_a), int(query.ziel_index_b))
+    )
+    if goal_pair_intervals is None:
+        return candidate_subset
+    return [
+        candidate_index
+        for candidate_index in candidate_subset
+        if candidate_index in goal_pair_intervals.intervals_by_candidate
+        and ratio_interval_may_support_answer(
+            ratio_interval=goal_pair_intervals.intervals_by_candidate[candidate_index],
+            query_value=float(query.value),
+            answer=answer,
+            tolerance=tolerance,
+        )
+    ]
+
+
+def ratio_interval_may_support_answer(
+    ratio_interval: RatioInterval,
+    query_value: float,
+    answer: QueryOperator,
+    tolerance: float,
+) -> bool:
+    """Conservative compatibility check used only for safe candidate pruning."""
+
+    lower_value = get_lower_ratio_value_or_none(ratio_interval)
+    if lower_value is None:
+        return False
+    upper_value = get_upper_ratio_value_or_none(ratio_interval)
+    upper_is_unbounded = ratio_interval.upper.status == "unbounded"
+    if answer == "<":
+        return lower_value < query_value + tolerance
+    if answer == ">":
+        return upper_is_unbounded or (
+            upper_value is not None and upper_value > query_value - tolerance
+        )
+    return lower_value <= query_value + tolerance and (
+        upper_is_unbounded
+        or (upper_value is not None and upper_value >= query_value - tolerance)
     )
 
 

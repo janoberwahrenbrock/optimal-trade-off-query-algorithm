@@ -1,12 +1,19 @@
 from __future__ import annotations
 
+from typing import Literal
+
+import numpy as np
 from pydantic import BaseModel, ConfigDict, NonNegativeInt, model_validator
 
 from .linear_constraints import LinearConstraintSystem
 from .models import AlternativenMatrix
 from .models.linear_optimization_result import LinearOptimizationResult
 from .optimality_region import build_optimality_region
+from .polytope_geometry import enumerate_polytope_vertices
 from .weight_space import build_ratio_normalized_weight_space
+
+
+RatioIntervalEngine = Literal["geometry", "lp"]
 
 
 class RatioInterval(BaseModel):
@@ -158,12 +165,36 @@ def compute_all_ratio_intervals(
     alternatives: AlternativenMatrix,
     weight_space: LinearConstraintSystem,
     candidates: list[int],
+    engine: RatioIntervalEngine = "geometry",
+    geometry_tolerance: float = 1e-10,
 ) -> list[GoalPairRatioIntervals]:
     if weight_space.variable_count != alternatives.get_anzahl_spalten():
         raise ValueError(
             "weight_space must have the same number of variables as the number of goals"
         )
 
+    if engine == "geometry":
+        return _compute_all_ratio_intervals_from_vertices(
+            alternatives=alternatives,
+            weight_space=weight_space,
+            candidates=candidates,
+            tolerance=geometry_tolerance,
+        )
+    if engine != "lp":
+        raise ValueError("engine must be 'geometry' or 'lp'")
+
+    return _compute_all_ratio_intervals_with_lp(
+        alternatives=alternatives,
+        weight_space=weight_space,
+        candidates=candidates,
+    )
+
+
+def _compute_all_ratio_intervals_with_lp(
+    alternatives: AlternativenMatrix,
+    weight_space: LinearConstraintSystem,
+    candidates: list[int],
+) -> list[GoalPairRatioIntervals]:
     intervals_by_goal_pair: dict[tuple[int, int], GoalPairRatioIntervals] = {}
     for goal_index_a, goal_index_b in get_canonical_goal_pairs(
         alternatives.get_anzahl_spalten()
@@ -197,6 +228,125 @@ def compute_all_ratio_intervals(
             alternatives.get_anzahl_spalten()
         )
     ]
+
+
+def _compute_all_ratio_intervals_from_vertices(
+    alternatives: AlternativenMatrix,
+    weight_space: LinearConstraintSystem,
+    candidates: list[int],
+    tolerance: float,
+) -> list[GoalPairRatioIntervals]:
+    if tolerance <= 0.0:
+        raise ValueError("geometry_tolerance must be positive")
+
+    goal_count = alternatives.get_anzahl_spalten()
+    intervals_by_pair_and_candidate: dict[
+        tuple[int, int], dict[int, RatioInterval]
+    ] = {
+        pair: {} for pair in get_ordered_goal_pairs(goal_count)
+    }
+    for candidate_index in candidates:
+        _validate_candidate_index(
+            alternatives=alternatives,
+            alternative_index=candidate_index,
+        )
+        optimality_region = build_optimality_region(
+            alternatives=alternatives,
+            weight_space=weight_space,
+            alternative_index=candidate_index,
+        )
+        polytope = enumerate_polytope_vertices(
+            system=optimality_region,
+            tolerance=tolerance,
+        )
+        for goal_index_a, goal_index_b in get_ordered_goal_pairs(goal_count):
+            if polytope.status == "infeasible":
+                interval = _build_infeasible_ratio_interval(polytope.message)
+            elif polytope.status in {"full_dimensional", "point"}:
+                interval = _compute_ratio_interval_from_vertices(
+                    vertices=polytope.vertices,
+                    goal_index_a=goal_index_a,
+                    goal_index_b=goal_index_b,
+                    tolerance=tolerance,
+                )
+            else:
+                # Exact fallback for degenerate or numerically difficult
+                # regions.  The fast path is therefore an optimization only;
+                # it does not weaken interval correctness.
+                interval = compute_ratio_interval_for_candidate(
+                    alternatives=alternatives,
+                    weight_space=weight_space,
+                    alternative_index=candidate_index,
+                    goal_index_a=goal_index_a,
+                    goal_index_b=goal_index_b,
+                )
+            intervals_by_pair_and_candidate[(goal_index_a, goal_index_b)][
+                candidate_index
+            ] = interval
+
+    return [
+        GoalPairRatioIntervals(
+            goal_index_a=goal_index_a,
+            goal_index_b=goal_index_b,
+            intervals_by_candidate=intervals_by_pair_and_candidate[
+                (goal_index_a, goal_index_b)
+            ],
+        )
+        for goal_index_a, goal_index_b in get_ordered_goal_pairs(goal_count)
+    ]
+
+
+def _compute_ratio_interval_from_vertices(
+    vertices: np.ndarray,
+    goal_index_a: int,
+    goal_index_b: int,
+    tolerance: float,
+) -> RatioInterval:
+    numerators = vertices[:, goal_index_a]
+    denominators = vertices[:, goal_index_b]
+    positive_denominator = denominators > tolerance
+    if not np.any(positive_denominator):
+        return _build_infeasible_ratio_interval(
+            "ratio denominator is zero throughout the candidate region"
+        )
+
+    ratios = numerators[positive_denominator] / denominators[positive_denominator]
+    lower_value = max(0.0, float(np.min(ratios)))
+    lower = LinearOptimizationResult(
+        status="optimal",
+        objective_sense="min",
+        optimal_value=lower_value,
+    )
+    has_unbounded_vertex = bool(
+        np.any((denominators <= tolerance) & (numerators > tolerance))
+    )
+    if has_unbounded_vertex:
+        upper = LinearOptimizationResult(
+            status="unbounded",
+            objective_sense="max",
+        )
+    else:
+        upper = LinearOptimizationResult(
+            status="optimal",
+            objective_sense="max",
+            optimal_value=max(0.0, float(np.max(ratios))),
+        )
+    return RatioInterval(lower=lower, upper=upper)
+
+
+def _build_infeasible_ratio_interval(message: str | None) -> RatioInterval:
+    return RatioInterval(
+        lower=LinearOptimizationResult(
+            status="infeasible",
+            objective_sense="min",
+            solver_message=message,
+        ),
+        upper=LinearOptimizationResult(
+            status="infeasible",
+            objective_sense="max",
+            solver_message=message,
+        ),
+    )
 
 
 def invert_goal_pair_ratio_intervals(
