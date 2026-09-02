@@ -505,6 +505,37 @@ class OptimizedValueFunctionTest(unittest.TestCase):
         self.assertEqual(profile.counters["state_calls"], 1)
         self.assertEqual(profile.counters["ratio_interval_batches"], 1)
 
+    def test_session_exposes_candidate_volumes_only_when_requested(self) -> None:
+        config = OptimizedMultistepConfig(
+            candidate_count_mode="ratio_relevant",
+            ratio_interval_engine="geometry",
+            parallelize_root=False,
+        )
+
+        with OptimizedValueFunctionSession(
+            alternatives=self.alternatives,
+            config=config,
+        ) as session:
+            default_state = session.analyze_state([])
+            volume_state = session.analyze_state(
+                [],
+                include_candidate_volumes=True,
+            )
+
+        assert default_state.candidate_analysis is not None
+        assert volume_state.candidate_analysis is not None
+        self.assertIsNone(default_state.candidate_analysis.candidate_volumes)
+        self.assertIsNone(default_state.candidate_analysis.candidate_volume_shares)
+        self.assertEqual(
+            set(volume_state.candidate_analysis.candidates),
+            set(volume_state.candidate_analysis.candidate_volumes or {}),
+        )
+        self.assertAlmostEqual(
+            sum((volume_state.candidate_analysis.candidate_volume_shares or {}).values()),
+            1.0,
+            places=10,
+        )
+
     def test_session_reuses_one_executor_across_calls(self) -> None:
         alternatives = AlternativenMatrix(entries=[[1.0, 0.0], [0.0, 1.0]])
         created_executors: list[InlineExecutor] = []

@@ -121,6 +121,38 @@ class LinearConstraintSystemTests(unittest.TestCase):
         self.assertNotIn("presolve", mocked_linprog.call_args_list[0].kwargs["options"])
         self.assertFalse(mocked_linprog.call_args_list[1].kwargs["options"]["presolve"])
 
+    def test_minimize_retries_with_concrete_highs_solver_after_not_set(self) -> None:
+        system = self._build_one_variable_system()
+        not_set = SimpleNamespace(
+            success=False,
+            status=4,
+            message="(HiGHS Status 0: Not Set)",
+        )
+
+        with patch(
+            "multistep.src.linear_programming.linprog",
+            side_effect=[
+                not_set,
+                not_set,
+                SimpleNamespace(
+                    success=True,
+                    status=0,
+                    message="optimal",
+                    x=np.asarray([0.0]),
+                    fun=0.0,
+                ),
+            ],
+        ) as mocked_linprog:
+            result = system.minimize([1.0])
+
+        self.assertEqual(result.status, "optimal")
+        self.assertEqual(mocked_linprog.call_count, 3)
+        self.assertEqual(
+            mocked_linprog.call_args_list[2].kwargs["method"],
+            "highs-ds",
+        )
+        self.assertFalse(mocked_linprog.call_args_list[2].kwargs["options"]["presolve"])
+
     def test_maximize_retries_without_presolve_for_presolve_infeasible_status(self) -> None:
         system = self._build_one_variable_system()
 

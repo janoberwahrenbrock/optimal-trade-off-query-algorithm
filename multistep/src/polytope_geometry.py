@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from itertools import combinations
 from typing import Literal
 
 import numpy as np
@@ -197,20 +198,201 @@ def _compute_halfspace_intersections_with_retries(
     validates every returned vertex against the original constraint system.
     """
 
+    coefficients = np.asarray(halfspaces[:, :-1], dtype=float)
+    offsets = np.asarray(halfspaces[:, -1], dtype=float)
+    coefficient_norms = np.linalg.norm(coefficients, axis=1)
+    if np.any(coefficient_norms <= 0.0):
+        raise ValueError("halfspace coefficients must be non-zero")
+
+    # Qhull constructs a dual hull around the supplied interior point.  Deep
+    # posterior states can have coefficient scales and slacks that differ by
+    # many orders of magnitude.  Expressing y = center + radius * z makes the
+    # interior point the origin, the nearest supporting plane unit distance
+    # away, and every normal unit length.  This is an affine coordinate change
+    # only; intersections are transformed back and validated below.
+    normalized_coefficients = coefficients / coefficient_norms[:, None]
+    normalized_offsets = offsets / coefficient_norms
+    center_offsets = normalized_coefficients @ center + normalized_offsets
+    slacks = -center_offsets
+    conditioning_radius = float(np.min(slacks, initial=np.inf))
+    if not np.isfinite(conditioning_radius) or conditioning_radius <= 0.0:
+        raise ValueError("halfspace center is not strictly interior")
+    conditioned_halfspaces = np.column_stack(
+        (
+            normalized_coefficients,
+            center_offsets / conditioning_radius,
+        )
+    )
+    conditioned_center = np.zeros_like(center)
+
     exact_merge = "Qx " if affine_dimension > 4 else ""
     options = (None, f"{exact_merge}Q12".strip(), f"{exact_merge}Q12 QJ".strip())
     errors: list[str] = []
     for qhull_options in options:
         try:
             intersection = HalfspaceIntersection(
-                halfspaces,
-                center,
+                conditioned_halfspaces,
+                conditioned_center,
                 qhull_options=qhull_options,
             )
-            return np.asarray(intersection.intersections, dtype=float)
+            conditioned_intersections = np.asarray(
+                intersection.intersections,
+                dtype=float,
+            )
+            intersections = (
+                center + conditioning_radius * conditioned_intersections
+            )
+            if not _points_satisfy_halfspaces(
+                points=intersections,
+                halfspaces=halfspaces,
+            ):
+                intersections = _snap_intersections_to_halfspace_vertices(
+                    points=intersections,
+                    halfspaces=halfspaces,
+                    affine_dimension=affine_dimension,
+                )
+                if len(intersections) == 0 or not _points_satisfy_halfspaces(
+                    points=intersections,
+                    halfspaces=halfspaces,
+                ):
+                    errors.append(
+                        f"Qhull options {qhull_options!r} returned invalid intersections"
+                    )
+                    continue
+            return intersections
         except (QhullError, ValueError, RuntimeError) as exc:
             errors.append(str(exc))
     raise RuntimeError("; ".join(errors))
+
+
+def _points_satisfy_halfspaces(
+    points: np.ndarray,
+    halfspaces: np.ndarray,
+) -> bool:
+    """Validate ``a @ x + b <= 0`` with scale-aware roundoff bounds."""
+
+    if points.ndim != 2 or halfspaces.ndim != 2:
+        return False
+    if len(points) == 0 or halfspaces.shape[1] != points.shape[1] + 1:
+        return False
+    coefficients = halfspaces[:, :-1]
+    offsets = halfspaces[:, -1]
+    residuals = coefficients @ points.T + offsets[:, None]
+    row_norms = np.linalg.norm(coefficients, axis=1)[:, None]
+    point_norms = np.linalg.norm(points, axis=1)[None, :]
+    scales = np.maximum(
+        1.0,
+        row_norms * point_norms + np.abs(offsets)[:, None],
+    )
+    return not np.any(residuals > 1e-8 * scales)
+
+
+def _snap_intersections_to_halfspace_vertices(
+    points: np.ndarray,
+    halfspaces: np.ndarray,
+    affine_dimension: int,
+) -> np.ndarray:
+    """Recover slightly perturbed Qhull vertices from active constraints.
+
+    Qhull may return a topologically correct intersection whose coordinates
+    are just outside a nearly degenerate facet.  For each invalid point, solve
+    the closest independent supporting planes and accept the reconstruction
+    only if it satisfies every original halfspace and moves by at most a small
+    relative amount.  This does not turn arbitrary invalid points into valid
+    ones and therefore preserves the retry/failure behavior for real errors.
+    """
+
+    coefficients = np.asarray(halfspaces[:, :-1], dtype=float)
+    right_side = -np.asarray(halfspaces[:, -1], dtype=float)
+    coefficient_norms = np.linalg.norm(coefficients, axis=1)
+    recovered: list[np.ndarray] = []
+    for point in np.asarray(points, dtype=float):
+        if _points_satisfy_halfspaces(point.reshape(1, -1), halfspaces):
+            recovered.append(point)
+            continue
+
+        distances = np.abs(coefficients @ point - right_side) / coefficient_norms
+        ordered_indices = np.argsort(distances)
+        candidate = _snap_point_to_nearby_facets(
+            point=point,
+            coefficients=coefficients,
+            right_side=right_side,
+            ordered_indices=ordered_indices,
+            halfspaces=halfspaces,
+            affine_dimension=affine_dimension,
+        )
+        if candidate is None:
+            return np.empty((0, affine_dimension), dtype=float)
+        recovered.append(candidate)
+
+    return _deduplicate_rows(np.asarray(recovered), tolerance=1e-10)
+
+
+def _snap_point_to_nearby_facets(
+    point: np.ndarray,
+    coefficients: np.ndarray,
+    right_side: np.ndarray,
+    ordered_indices: np.ndarray,
+    halfspaces: np.ndarray,
+    affine_dimension: int,
+) -> np.ndarray | None:
+    selected: list[int] = []
+    current_rank = 0
+    for raw_index in ordered_indices:
+        index = int(raw_index)
+        trial = selected + [index]
+        trial_rank = int(np.linalg.matrix_rank(coefficients[trial]))
+        if trial_rank > current_rank:
+            selected.append(index)
+            current_rank = trial_rank
+        if current_rank == affine_dimension:
+            candidate = _solve_and_validate_snapped_vertex(
+                point=point,
+                active_indices=selected,
+                coefficients=coefficients,
+                right_side=right_side,
+                halfspaces=halfspaces,
+            )
+            if candidate is not None:
+                return candidate
+            break
+
+    nearby_count = min(len(ordered_indices), affine_dimension + 5)
+    nearby = [int(index) for index in ordered_indices[:nearby_count]]
+    for active_indices in combinations(nearby, affine_dimension):
+        if np.linalg.matrix_rank(coefficients[list(active_indices)]) < affine_dimension:
+            continue
+        candidate = _solve_and_validate_snapped_vertex(
+            point=point,
+            active_indices=list(active_indices),
+            coefficients=coefficients,
+            right_side=right_side,
+            halfspaces=halfspaces,
+        )
+        if candidate is not None:
+            return candidate
+    return None
+
+
+def _solve_and_validate_snapped_vertex(
+    point: np.ndarray,
+    active_indices: list[int],
+    coefficients: np.ndarray,
+    right_side: np.ndarray,
+    halfspaces: np.ndarray,
+) -> np.ndarray | None:
+    candidate, *_ = np.linalg.lstsq(
+        coefficients[active_indices],
+        right_side[active_indices],
+        rcond=None,
+    )
+    if not _points_satisfy_halfspaces(candidate.reshape(1, -1), halfspaces):
+        return None
+    displacement = float(np.linalg.norm(candidate - point))
+    scale = max(1.0, float(np.linalg.norm(point)), float(np.linalg.norm(candidate)))
+    if displacement > 1e-5 * scale:
+        return None
+    return np.asarray(candidate, dtype=float)
 
 
 def _enumerate_interval_vertices(
@@ -257,13 +439,24 @@ def _vertices_satisfy_system(
     inequality_residuals = (
         inequality_matrix @ vertices.T - inequality_right_side[:, None]
     )
-    if np.any(inequality_residuals > validation_tolerance):
+    vertex_norms = np.linalg.norm(vertices, axis=1)[None, :]
+    inequality_scales = np.maximum(
+        1.0,
+        np.linalg.norm(inequality_matrix, axis=1)[:, None] * vertex_norms
+        + np.abs(inequality_right_side)[:, None],
+    )
+    if np.any(inequality_residuals > validation_tolerance * inequality_scales):
         return False
     if equality_matrix is not None and equality_right_side is not None:
-        if np.any(
-            np.abs(equality_matrix @ vertices.T - equality_right_side[:, None])
-            > validation_tolerance
-        ):
+        equality_residuals = np.abs(
+            equality_matrix @ vertices.T - equality_right_side[:, None]
+        )
+        equality_scales = np.maximum(
+            1.0,
+            np.linalg.norm(equality_matrix, axis=1)[:, None] * vertex_norms
+            + np.abs(equality_right_side)[:, None],
+        )
+        if np.any(equality_residuals > validation_tolerance * equality_scales):
             return False
     return True
 

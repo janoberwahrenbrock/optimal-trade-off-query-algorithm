@@ -10,7 +10,7 @@ from scipy.spatial import ConvexHull, QhullError
 
 from .linear_constraints import LinearConstraintSystem
 from .models import Query, QueryOperator
-from .polytope_geometry import enumerate_polytope_vertices
+from .polytope_geometry import PolytopeVertices, enumerate_polytope_vertices
 
 
 ConstraintSystemKey = tuple[
@@ -38,6 +38,42 @@ def compute_polytope_intrinsic_volume(
         _constraint_system_key(system),
         float(tolerance),
     )
+
+
+def compute_polytope_intrinsic_volume_from_vertices(
+    system: LinearConstraintSystem,
+    polytope: PolytopeVertices,
+) -> float:
+    """Return intrinsic volume while reusing already enumerated vertices."""
+
+    if polytope.status in {"infeasible", "lower_dimensional", "point"}:
+        return 0.0
+    if polytope.status != "full_dimensional":
+        raise RuntimeError(polytope.message or f"polytope status {polytope.status}")
+
+    vertices = np.asarray(polytope.vertices, dtype=float)
+    _, _, equality_matrix, equality_right_side = system.get_solver_matrices()
+    if equality_matrix is None:
+        particular_point = np.zeros(system.variable_count, dtype=float)
+        basis = np.eye(system.variable_count, dtype=float)
+    else:
+        assert equality_right_side is not None
+        particular_point, *_ = np.linalg.lstsq(
+            equality_matrix,
+            equality_right_side,
+            rcond=None,
+        )
+        basis = null_space(equality_matrix)
+    coordinates = (vertices - particular_point) @ basis
+    dimension = coordinates.shape[1]
+    if dimension == 0:
+        return 0.0
+    if dimension == 1:
+        return float(np.ptp(coordinates[:, 0]))
+    try:
+        return float(ConvexHull(coordinates).volume)
+    except QhullError:
+        return float(ConvexHull(coordinates, qhull_options="QJ").volume)
 
 
 def compute_exact_query_answer_probabilities(
@@ -122,34 +158,7 @@ def _compute_polytope_intrinsic_volume_cached(
 ) -> float:
     system = _constraint_system_from_key(key)
     polytope = enumerate_polytope_vertices(system, tolerance=tolerance)
-    if polytope.status in {"infeasible", "lower_dimensional", "point"}:
-        return 0.0
-    if polytope.status != "full_dimensional":
-        raise RuntimeError(polytope.message or f"polytope status {polytope.status}")
-
-    vertices = np.asarray(polytope.vertices, dtype=float)
-    _, _, equality_matrix, equality_right_side = system.get_solver_matrices()
-    if equality_matrix is None:
-        particular_point = np.zeros(system.variable_count, dtype=float)
-        basis = np.eye(system.variable_count, dtype=float)
-    else:
-        assert equality_right_side is not None
-        particular_point, *_ = np.linalg.lstsq(
-            equality_matrix,
-            equality_right_side,
-            rcond=None,
-        )
-        basis = null_space(equality_matrix)
-    coordinates = (vertices - particular_point) @ basis
-    dimension = coordinates.shape[1]
-    if dimension == 0:
-        return 0.0
-    if dimension == 1:
-        return float(np.ptp(coordinates[:, 0]))
-    try:
-        return float(ConvexHull(coordinates).volume)
-    except QhullError:
-        return float(ConvexHull(coordinates, qhull_options="QJ").volume)
+    return compute_polytope_intrinsic_volume_from_vertices(system, polytope)
 
 
 def _constraint_system_key(system: LinearConstraintSystem) -> ConstraintSystemKey:

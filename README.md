@@ -182,6 +182,20 @@ Aktuelles Standardverhalten:
 - Quotientenintervalle werden standardmaessig aus Polytopecken berechnet; fuer
   degenerierte Faelle bleibt der exakte LP-Fallback aktiv.
 
+### Volumen-Konfidenz-Terminierung
+
+`OptimizedMultistepConfig.volume_confidence_threshold` ist standardmaessig auf
+`0.99` gesetzt. Ein End-to-End-Lauf darf damit terminieren, sobald ein Kandidat
+mindestens 99 Prozent des aktuell zulaessigen Gewichtsraumvolumens besitzt. Der
+exakte Kandidatensatz wird dabei nicht veraendert.
+
+`benchmark_exact_end_to_end.py` speichert dazu unter anderem
+`termination_reason`, `selected_candidate`,
+`selected_candidate_volume_share`, `residual_volume_share` und weiterhin
+`final_candidates`. Mit `--volume-confidence-threshold` laesst sich die Schwelle
+aendern. `--require-exact-termination` deaktiviert den Konfidenzstopp und wartet
+weiterhin auf genau einen exakten Kandidaten.
+
 ### Dimension-7-Benchmark
 
 ```bash

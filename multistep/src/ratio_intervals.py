@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Literal
 
 import numpy as np
@@ -10,6 +11,7 @@ from .models import AlternativenMatrix
 from .models.linear_optimization_result import LinearOptimizationResult
 from .optimality_region import build_optimality_region
 from .polytope_geometry import enumerate_polytope_vertices
+from .polytope_volume import compute_polytope_intrinsic_volume_from_vertices
 from .weight_space import build_ratio_normalized_weight_space
 
 
@@ -36,6 +38,13 @@ class GoalPairRatioIntervals(BaseModel):
             raise ValueError("goal_index_a and goal_index_b must be different")
 
         return self
+
+
+@dataclass(frozen=True)
+class RatioIntervalAnalysis:
+    ratio_intervals: list[GoalPairRatioIntervals]
+    candidate_volumes: dict[int, float] | None = None
+    candidate_volume_shares: dict[int, float] | None = None
 
 
 def get_ordered_goal_pairs(goal_count: int) -> list[tuple[int, int]]:
@@ -168,6 +177,23 @@ def compute_all_ratio_intervals(
     engine: RatioIntervalEngine = "geometry",
     geometry_tolerance: float = 1e-10,
 ) -> list[GoalPairRatioIntervals]:
+    return compute_all_ratio_interval_analysis(
+        alternatives=alternatives,
+        weight_space=weight_space,
+        candidates=candidates,
+        engine=engine,
+        geometry_tolerance=geometry_tolerance,
+    ).ratio_intervals
+
+
+def compute_all_ratio_interval_analysis(
+    alternatives: AlternativenMatrix,
+    weight_space: LinearConstraintSystem,
+    candidates: list[int],
+    engine: RatioIntervalEngine = "geometry",
+    geometry_tolerance: float = 1e-10,
+    include_candidate_volumes: bool = False,
+) -> RatioIntervalAnalysis:
     if weight_space.variable_count != alternatives.get_anzahl_spalten():
         raise ValueError(
             "weight_space must have the same number of variables as the number of goals"
@@ -179,14 +205,17 @@ def compute_all_ratio_intervals(
             weight_space=weight_space,
             candidates=candidates,
             tolerance=geometry_tolerance,
+            include_candidate_volumes=include_candidate_volumes,
         )
     if engine != "lp":
         raise ValueError("engine must be 'geometry' or 'lp'")
 
-    return _compute_all_ratio_intervals_with_lp(
-        alternatives=alternatives,
-        weight_space=weight_space,
-        candidates=candidates,
+    return RatioIntervalAnalysis(
+        ratio_intervals=_compute_all_ratio_intervals_with_lp(
+            alternatives=alternatives,
+            weight_space=weight_space,
+            candidates=candidates,
+        )
     )
 
 
@@ -235,7 +264,8 @@ def _compute_all_ratio_intervals_from_vertices(
     weight_space: LinearConstraintSystem,
     candidates: list[int],
     tolerance: float,
-) -> list[GoalPairRatioIntervals]:
+    include_candidate_volumes: bool,
+) -> RatioIntervalAnalysis:
     if tolerance <= 0.0:
         raise ValueError("geometry_tolerance must be positive")
 
@@ -245,6 +275,9 @@ def _compute_all_ratio_intervals_from_vertices(
     ] = {
         pair: {} for pair in get_ordered_goal_pairs(goal_count)
     }
+    candidate_volumes: dict[int, float] | None = (
+        {} if include_candidate_volumes else None
+    )
     for candidate_index in candidates:
         _validate_candidate_index(
             alternatives=alternatives,
@@ -259,6 +292,13 @@ def _compute_all_ratio_intervals_from_vertices(
             system=optimality_region,
             tolerance=tolerance,
         )
+        if candidate_volumes is not None:
+            candidate_volumes[int(candidate_index)] = (
+                compute_polytope_intrinsic_volume_from_vertices(
+                    system=optimality_region,
+                    polytope=polytope,
+                )
+            )
         for goal_index_a, goal_index_b in get_ordered_goal_pairs(goal_count):
             if polytope.status == "infeasible":
                 interval = _build_infeasible_ratio_interval(polytope.message)
@@ -284,16 +324,31 @@ def _compute_all_ratio_intervals_from_vertices(
                 candidate_index
             ] = interval
 
-    return [
-        GoalPairRatioIntervals(
-            goal_index_a=goal_index_a,
-            goal_index_b=goal_index_b,
-            intervals_by_candidate=intervals_by_pair_and_candidate[
-                (goal_index_a, goal_index_b)
-            ],
-        )
-        for goal_index_a, goal_index_b in get_ordered_goal_pairs(goal_count)
-    ]
+    candidate_volume_shares: dict[int, float] | None = None
+    if candidate_volumes is not None:
+        total_candidate_volume = float(sum(candidate_volumes.values()))
+        candidate_volume_shares = {
+            candidate_index: (
+                volume / total_candidate_volume
+                if total_candidate_volume > 0.0
+                else 0.0
+            )
+            for candidate_index, volume in candidate_volumes.items()
+        }
+    return RatioIntervalAnalysis(
+        ratio_intervals=[
+            GoalPairRatioIntervals(
+                goal_index_a=goal_index_a,
+                goal_index_b=goal_index_b,
+                intervals_by_candidate=intervals_by_pair_and_candidate[
+                    (goal_index_a, goal_index_b)
+                ],
+            )
+            for goal_index_a, goal_index_b in get_ordered_goal_pairs(goal_count)
+        ],
+        candidate_volumes=candidate_volumes,
+        candidate_volume_shares=candidate_volume_shares,
+    )
 
 
 def _compute_ratio_interval_from_vertices(

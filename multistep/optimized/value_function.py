@@ -37,8 +37,9 @@ from multistep.src.polytope_volume import compute_exact_query_answer_probabiliti
 from multistep.src.polytope_geometry import enumerate_polytope_vertices
 from multistep.src.query_probability import ANSWER_OPTIONS, classify_query_answer
 from multistep.src.ratio_intervals import (
+    RatioIntervalAnalysis,
     RatioIntervalEngine,
-    compute_all_ratio_intervals,
+    compute_all_ratio_interval_analysis,
     compute_ratio_bounds_for_weight_space,
 )
 from multistep.src.ratio_intervals import GoalPairRatioIntervals, RatioInterval
@@ -69,6 +70,17 @@ class CandidateAnalysis:
 
     candidates: list[int]
     ratio_intervals: list[GoalPairRatioIntervals] | None = None
+    candidate_volumes: dict[int, float] | None = None
+    candidate_volume_shares: dict[int, float] | None = None
+
+
+@dataclass(frozen=True)
+class VolumeConfidenceDecision:
+    selected_candidate: int
+    selected_candidate_volume: float
+    selected_candidate_volume_share: float
+    residual_volume: float
+    residual_volume_share: float
 
 
 @dataclass(frozen=True)
@@ -130,6 +142,7 @@ class OptimizedMultistepConfig:
     posterior_quantile_levels: tuple[float, ...] = ()
     posterior_query_objective: PosteriorQueryObjective | None = None
     posterior_query_shortlist_size: int | None = None
+    volume_confidence_threshold: float | None = 0.99
 
     def __post_init__(self) -> None:
         if self.sample_count <= 0:
@@ -260,6 +273,14 @@ class OptimizedMultistepConfig:
             raise ValueError("posterior_query_objective must be 'entropy' or 'regret'")
 
         if (
+            self.volume_confidence_threshold is not None
+            and not 0.0 < self.volume_confidence_threshold <= 1.0
+        ):
+            raise ValueError(
+                "volume_confidence_threshold must be in (0, 1] or None"
+            )
+
+        if (
             self.posterior_query_shortlist_size is not None
             and self.posterior_query_shortlist_size <= 0
         ):
@@ -280,6 +301,45 @@ class OptimizedMultistepConfig:
             raise ValueError(
                 "sample-balance and posterior-objective shortlists are mutually exclusive"
             )
+
+
+def evaluate_volume_confidence_termination(
+    candidate_analysis: CandidateAnalysis,
+    threshold: float | None,
+) -> VolumeConfidenceDecision | None:
+    """Return a decision when one candidate owns the configured volume share."""
+
+    if threshold is None:
+        return None
+    if not 0.0 < threshold <= 1.0:
+        raise ValueError("threshold must be in (0, 1] or None")
+    if not candidate_analysis.candidates:
+        return None
+
+    volumes = candidate_analysis.candidate_volumes
+    volume_shares = candidate_analysis.candidate_volume_shares
+    if volumes is None or volume_shares is None:
+        raise ValueError(
+            "candidate volumes are required for volume-confidence termination"
+        )
+
+    selected_candidate = min(
+        candidate_analysis.candidates,
+        key=lambda candidate: (-volume_shares[candidate], candidate),
+    )
+    selected_volume_share = float(volume_shares[selected_candidate])
+    if selected_volume_share < threshold:
+        return None
+
+    selected_volume = float(volumes[selected_candidate])
+    total_volume = float(sum(volumes.values()))
+    return VolumeConfidenceDecision(
+        selected_candidate=int(selected_candidate),
+        selected_candidate_volume=selected_volume,
+        selected_candidate_volume_share=selected_volume_share,
+        residual_volume=max(0.0, total_volume - selected_volume),
+        residual_volume_share=max(0.0, 1.0 - selected_volume_share),
+    )
 
 
 class OptimizedValueFunctionSession:
@@ -356,6 +416,7 @@ class OptimizedValueFunctionSession:
         self,
         answered_queries: list[AnsweredQuery],
         candidate_subset: list[int] | None = None,
+        include_candidate_volumes: bool = False,
     ) -> StateAnalysis:
         """Analyze a state once and reuse it across planning and termination."""
 
@@ -367,8 +428,15 @@ class OptimizedValueFunctionSession:
         )
         if cache_key is not None and cache_key in self._state_analysis_cache:
             increment_profile_counter("state_analysis_cache_hits")
-            self._state_analysis_cache.move_to_end(cache_key)
-            return self._state_analysis_cache[cache_key]
+            cached_analysis = self._state_analysis_cache[cache_key]
+            cached_candidate_analysis = cached_analysis.candidate_analysis
+            if (
+                not include_candidate_volumes
+                or cached_candidate_analysis is None
+                or cached_candidate_analysis.candidate_volumes is not None
+            ):
+                self._state_analysis_cache.move_to_end(cache_key)
+                return cached_analysis
 
         weight_space = build_weight_space(
             goal_count=self.alternatives.get_anzahl_spalten(),
@@ -381,6 +449,7 @@ class OptimizedValueFunctionSession:
                 weight_space=weight_space,
                 candidate_subset=candidate_subset,
                 config=self.config,
+                include_candidate_volumes=include_candidate_volumes,
             )
             if is_feasible
             else None
@@ -879,6 +948,7 @@ def compute_candidate_analysis_for_mode(
     weight_space: LinearConstraintSystem,
     candidate_subset: list[int] | None,
     config: OptimizedMultistepConfig,
+    include_candidate_volumes: bool = False,
 ) -> CandidateAnalysis:
     if config.candidate_count_mode == "closed_lp":
         return CandidateAnalysis(
@@ -896,6 +966,7 @@ def compute_candidate_analysis_for_mode(
         tolerance=config.ratio_terminal_tolerance,
         ratio_interval_engine=config.ratio_interval_engine,
         geometry_tolerance=config.geometry_tolerance,
+        include_candidate_volumes=include_candidate_volumes,
     )
 
 
@@ -920,6 +991,7 @@ def compute_ratio_relevant_candidate_analysis(
     tolerance: float = 1e-12,
     ratio_interval_engine: RatioIntervalEngine = "geometry",
     geometry_tolerance: float = 1e-10,
+    include_candidate_volumes: bool = False,
 ) -> CandidateAnalysis:
     candidates_to_check = (
         list(range(alternatives.get_anzahl_zeilen()))
@@ -927,15 +999,22 @@ def compute_ratio_relevant_candidate_analysis(
         else list(candidate_subset)
     )
     if not candidates_to_check:
-        return CandidateAnalysis(candidates=[], ratio_intervals=[])
+        return CandidateAnalysis(
+            candidates=[],
+            ratio_intervals=[],
+            candidate_volumes={},
+            candidate_volume_shares={},
+        )
 
-    ratio_intervals = _compute_all_ratio_intervals_profiled(
+    ratio_interval_analysis = _compute_all_ratio_intervals_profiled(
         alternatives=alternatives,
         weight_space=weight_space,
         candidates=candidates_to_check,
         engine=ratio_interval_engine,
         geometry_tolerance=geometry_tolerance,
+        include_candidate_volumes=include_candidate_volumes,
     )
+    ratio_intervals = ratio_interval_analysis.ratio_intervals
     relevant_candidates: set[int] = set()
     feasible_candidates: set[int] = set()
 
@@ -983,6 +1062,26 @@ def compute_ratio_relevant_candidate_analysis(
     return CandidateAnalysis(
         candidates=candidates,
         ratio_intervals=filtered_ratio_intervals,
+        candidate_volumes=(
+            None
+            if ratio_interval_analysis.candidate_volumes is None
+            else {
+                candidate_index: ratio_interval_analysis.candidate_volumes[
+                    candidate_index
+                ]
+                for candidate_index in candidates
+            }
+        ),
+        candidate_volume_shares=(
+            None
+            if ratio_interval_analysis.candidate_volume_shares is None
+            else {
+                candidate_index: ratio_interval_analysis.candidate_volume_shares[
+                    candidate_index
+                ]
+                for candidate_index in candidates
+            }
+        ),
     )
 
 
@@ -992,15 +1091,17 @@ def _compute_all_ratio_intervals_profiled(
     candidates: list[int],
     engine: RatioIntervalEngine = "geometry",
     geometry_tolerance: float = 1e-10,
-) -> list[GoalPairRatioIntervals]:
+    include_candidate_volumes: bool = False,
+) -> RatioIntervalAnalysis:
     increment_profile_counter("ratio_interval_batches")
     with profile_operation("ratio_intervals"):
-        return compute_all_ratio_intervals(
+        return compute_all_ratio_interval_analysis(
             alternatives=alternatives,
             weight_space=weight_space,
             candidates=candidates,
             engine=engine,
             geometry_tolerance=geometry_tolerance,
+            include_candidate_volumes=include_candidate_volumes,
         )
 
 
@@ -1241,7 +1342,7 @@ def _resolve_ratio_intervals(
         candidates=candidates,
         engine=config.ratio_interval_engine,
         geometry_tolerance=config.geometry_tolerance,
-    )
+    ).ratio_intervals
 
 
 def resolve_grid_depth_query_source_mode(

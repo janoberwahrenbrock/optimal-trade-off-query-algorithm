@@ -6,8 +6,10 @@ from .value_function import (
     OptimizedValueFunctionSession,
     QueryPosteriorScore,
     StateAnalysis,
+    VolumeConfidenceDecision,
     compute_ratio_relevant_candidate_set,
     compute_value_function_optimized,
+    evaluate_volume_confidence_termination,
     score_query_candidates_by_posterior,
 )
 
@@ -17,8 +19,10 @@ __all__ = [
     "OptimizedValueFunctionSession",
     "QueryPosteriorScore",
     "StateAnalysis",
+    "VolumeConfidenceDecision",
     "collect_optimization_profile",
     "compute_ratio_relevant_candidate_set",
     "compute_value_function_optimized",
+    "evaluate_volume_confidence_termination",
     "score_query_candidates_by_posterior",
 ]

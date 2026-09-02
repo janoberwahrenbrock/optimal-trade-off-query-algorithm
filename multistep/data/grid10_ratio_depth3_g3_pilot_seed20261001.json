@@ -1,0 +1,144 @@
+{
+  "settings": {
+    "goals": [
+      3
+    ],
+    "problems": 1,
+    "start_problem": 1,
+    "alternatives": 10,
+    "max_questions": 100,
+    "depth": 3,
+    "seed": 20261001,
+    "parallel_root": true,
+    "workers": 4,
+    "grid_size": 10,
+    "root_query_source": "both",
+    "depth_one_query_source": "ratio",
+    "output_json": "multistep/data/grid10_ratio_depth3_g3_pilot_seed20261001.json",
+    "lookahead_depth": 3,
+    "answer_probability_mode": "exact_volume",
+    "query_candidates": "root=both, depth_one=ratio, grid_size=10",
+    "objective": "lexicographic minimum of expected remaining candidates (E_d, ..., E_1)"
+  },
+  "results": [
+    {
+      "solved": true,
+      "question_count": 5,
+      "seconds": 226.03635554097127,
+      "initial_candidate_count": 3,
+      "final_candidates": [
+        6
+      ],
+      "target_winner": 6,
+      "final_candidate": 6,
+      "query_seconds": [
+        94.19292437500553,
+        54.80414154101163,
+        37.83710208296543,
+        25.359349499980453,
+        13.53583070798777
+      ],
+      "queries": [
+        {
+          "goal_index_a": 0,
+          "goal_index_b": 1,
+          "value": 2.9986629260681372,
+          "answer": "<",
+          "seconds": 94.19292437500553
+        },
+        {
+          "goal_index_a": 1,
+          "goal_index_b": 0,
+          "value": 28.156043873928734,
+          "answer": "<",
+          "seconds": 54.80414154101163
+        },
+        {
+          "goal_index_a": 2,
+          "goal_index_b": 1,
+          "value": 0.046415888336127795,
+          "answer": ">",
+          "seconds": 37.83710208296543
+        },
+        {
+          "goal_index_a": 2,
+          "goal_index_b": 0,
+          "value": 2.0255859405615304,
+          "answer": "<",
+          "seconds": 25.359349499980453
+        },
+        {
+          "goal_index_a": 1,
+          "goal_index_b": 0,
+          "value": 18.547521666739062,
+          "answer": "<",
+          "seconds": 13.53583070798777
+        }
+      ],
+      "volume_cache": {
+        "hits": 0,
+        "misses": 0,
+        "size": 0
+      },
+      "goal_count": 3,
+      "problem_index": 1,
+      "alternatives": [
+        [
+          0.6409027267181323,
+          0.7933204843286321,
+          0.04643436037494142
+        ],
+        [
+          0.6358003493871048,
+          0.31781602269270726,
+          0.5439272987224618
+        ],
+        [
+          0.13844189706642585,
+          0.37399732617206893,
+          0.8714748716635244
+        ],
+        [
+          0.873811402076917,
+          0.39992975283026777,
+          0.4474991436235909
+        ],
+        [
+          0.15907096971614854,
+          0.529527981724418,
+          0.1553256305628038
+        ],
+        [
+          0.376184508441207,
+          0.36929971424527064,
+          0.9254992040029205
+        ],
+        [
+          0.6957336899290043,
+          0.9341028639193951,
+          0.9979030092998493
+        ],
+        [
+          0.47646323366956944,
+          0.641152713671406,
+          0.5053291416489682
+        ],
+        [
+          0.22881062432262367,
+          0.9659669417166401,
+          0.853749420247959
+        ],
+        [
+          0.41094627261592453,
+          0.8793818992087156,
+          0.9372661161774505
+        ]
+      ],
+      "target_weights": [
+        0.28632038525504583,
+        0.5146960936193488,
+        0.1989835211256054
+      ]
+    }
+  ]
+}

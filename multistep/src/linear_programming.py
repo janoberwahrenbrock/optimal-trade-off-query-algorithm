@@ -83,6 +83,23 @@ def run_linprog_with_retries(**kwargs: Any) -> Any:
         if is_classified_linprog_result(retry_result):
             return retry_result
 
+        # Rarely, the automatic HiGHS dispatcher and its no-presolve retry
+        # both end in the native "Not Set" state for highly cut polytopes.
+        # Try both concrete HiGHS algorithms before surfacing that transient
+        # numerical failure to the caller.
+        requested_method = str(kwargs.get("method", "highs"))
+        for fallback_method in ("highs-ds", "highs-ipm"):
+            if fallback_method == requested_method:
+                continue
+            fallback_kwargs = {
+                **retry_kwargs,
+                "method": fallback_method,
+            }
+            with _suppress_native_solver_output():
+                fallback_result = linprog(**fallback_kwargs)
+            if is_classified_linprog_result(fallback_result):
+                return fallback_result
+
     if classified_status is not None:
         return result
 
