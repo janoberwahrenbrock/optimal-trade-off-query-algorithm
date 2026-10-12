@@ -1,0 +1,653 @@
+{
+  "description": "Fresh comparison of the initial implementation and the successful evening optimizations with four and eight workers.",
+  "measurement_date": "2026-10-12",
+  "original_commit": "6c48de1b9868e87eacc0a2caa4905a9e268cdc2e",
+  "successful_optimizations": [
+    "volume-derived vertex support cache",
+    "affine decomposition cache",
+    "LP setup reuse"
+  ],
+  "discarded_shared_geometry_and_full_probability_caches_removed": true,
+  "machine": {
+    "cpu": "Intel Core i7-10700",
+    "physical_cores": 8,
+    "logical_threads": 16,
+    "cpu_governor": "powersave"
+  },
+  "benchmark_environment": {
+    "python": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+    "numpy": "2.5.4",
+    "scipy": "1.18.1",
+    "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+    "multiprocessing_start_method": "forkserver",
+    "thread_environment": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "BLIS_NUM_THREADS": "1",
+      "VECLIB_MAXIMUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1"
+    }
+  },
+  "local_test_environment": {
+    "python": "3.13.4",
+    "numpy": "2.4.4",
+    "scipy": "1.17.1"
+  },
+  "settings": {
+    "problems": 5,
+    "goals": 5,
+    "alternatives": 5,
+    "seed": 20260902,
+    "depth": 2,
+    "grid_size": 10,
+    "max_questions": 100,
+    "volume_confidence_threshold": 0.99,
+    "require_exact_termination": false,
+    "answer_probability_mode": "exact_volume",
+    "root_query_source": "both",
+    "depth_one_query_source": "ratio",
+    "multiprocessing_start_method": "forkserver",
+    "numeric_atol": 0.0,
+    "numeric_rtol": 0.0
+  },
+  "execution_order": [
+    "original-w4",
+    "optimized-w8",
+    "original-w8",
+    "optimized-w4"
+  ],
+  "saved_inputs": [
+    {
+      "problem_index": 1,
+      "alternatives": [
+        [
+          0.9229635307860012,
+          0.6255785896017241,
+          0.18200229327102213,
+          0.9518737455753902,
+          0.8192126030115413
+        ],
+        [
+          0.5203770167474737,
+          0.5867659268230576,
+          0.8960596268067894,
+          0.21199515136466252,
+          0.7034927435162313
+        ],
+        [
+          0.6589174006430067,
+          0.2240629428518548,
+          0.7557852799931157,
+          0.09392871611441811,
+          0.554907304882348
+        ],
+        [
+          0.5479384909401955,
+          0.47296157937617833,
+          0.25423753719368125,
+          0.9965675805939299,
+          0.3155144857842731
+        ],
+        [
+          0.9007017324632242,
+          0.21487933626255817,
+          0.49557896508208654,
+          0.38828367278292353,
+          0.02102864980357122
+        ]
+      ],
+      "target_weights": [
+        0.2569551730417767,
+        0.0018114017748710604,
+        0.17655286323895322,
+        0.13555893931729993,
+        0.42912162262709924
+      ]
+    },
+    {
+      "problem_index": 2,
+      "alternatives": [
+        [
+          0.848861443270797,
+          0.6210258900299926,
+          0.20372555614200383,
+          0.6803632395599507,
+          0.2566887359127682
+        ],
+        [
+          0.47550676083898136,
+          0.15860109673135858,
+          0.268894243151235,
+          0.48088143927890425,
+          0.8893831123026312
+        ],
+        [
+          0.34200610297522527,
+          0.9771528987628909,
+          0.15895699324343315,
+          0.8569933135362101,
+          0.07584082446376639
+        ],
+        [
+          0.7586397460106062,
+          0.20636808830456088,
+          0.535433506696739,
+          0.8494995713371304,
+          0.6577453248239882
+        ],
+        [
+          0.5734383580926155,
+          0.8438728729764574,
+          0.7530714976732292,
+          0.3462921350887457,
+          0.6129197118028683
+        ]
+      ],
+      "target_weights": [
+        0.12601017437565443,
+        0.32341817246867854,
+        0.31326996419312403,
+        0.07801437398561271,
+        0.15928731497693036
+      ]
+    },
+    {
+      "problem_index": 3,
+      "alternatives": [
+        [
+          0.3710682953713028,
+          0.4593907557442186,
+          0.1090672701383073,
+          0.5507770466406234,
+          0.6841569658949919
+        ],
+        [
+          0.23889254770317392,
+          0.5326194424542253,
+          0.4939407801582485,
+          0.7613640924215569,
+          0.5726711372216244
+        ],
+        [
+          0.9250313333778961,
+          0.5328275636008938,
+          0.9724270470280156,
+          0.21863095883453743,
+          0.060369655411965595
+        ],
+        [
+          0.5099662397345122,
+          0.0053886779178995425,
+          0.6973861256650152,
+          0.7845873082826675,
+          0.3088782573825821
+        ],
+        [
+          0.3716749687637044,
+          0.6671524063678019,
+          0.8060133565833791,
+          0.15210773585486703,
+          0.36567328972265667
+        ]
+      ],
+      "target_weights": [
+        0.5072287805373796,
+        0.0851327358090177,
+        0.21786389301756978,
+        0.15932820251706362,
+        0.030446388118969173
+      ]
+    },
+    {
+      "problem_index": 4,
+      "alternatives": [
+        [
+          0.640349783489628,
+          0.9704319514033908,
+          0.5161283697395922,
+          0.3786637731627406,
+          0.18251394907819007
+        ],
+        [
+          0.004877528902871853,
+          0.0846475351604773,
+          0.1977380999730305,
+          0.5043052112650046,
+          0.21777174918538178
+        ],
+        [
+          0.4563543776333191,
+          0.6935925978711802,
+          0.8685672814705915,
+          0.0650646362467131,
+          0.037823084036604615
+        ],
+        [
+          0.5130422684518602,
+          0.4316530166987026,
+          0.8263707684138678,
+          0.2617893119600656,
+          0.5048962607842873
+        ],
+        [
+          0.08060339423067242,
+          0.11552836318361492,
+          0.9560600891394393,
+          0.2025037644179667,
+          0.43829391729893585
+        ]
+      ],
+      "target_weights": [
+        0.09156274382965403,
+        0.28805043687276705,
+        0.05604504983613277,
+        0.41239218579935166,
+        0.1519495836620944
+      ]
+    },
+    {
+      "problem_index": 5,
+      "alternatives": [
+        [
+          0.9139114586194609,
+          0.3405921202917177,
+          0.4434322257233876,
+          0.6131400164908272,
+          0.15067129880060748
+        ],
+        [
+          0.6235781547811927,
+          0.3683521009142602,
+          0.518907566150203,
+          0.043858871201255756,
+          0.19622446088948664
+        ],
+        [
+          0.137721221302326,
+          0.4626963610257314,
+          0.3453795276772119,
+          0.39260455055589516,
+          0.6742501262626015
+        ],
+        [
+          0.26647158513543256,
+          0.44539788486522525,
+          0.8185485267717775,
+          0.4558565521302367,
+          0.24282529441566725
+        ],
+        [
+          0.20294318585740423,
+          0.2781883987879751,
+          0.6761266375512888,
+          0.7768934417410389,
+          0.33239793712713195
+        ]
+      ],
+      "target_weights": [
+        0.3057077165903652,
+        0.03632786252460017,
+        0.20399970080721766,
+        0.30959577359134743,
+        0.14436894648646967
+      ]
+    }
+  ],
+  "stages": {
+    "original-w4": {
+      "workers": 4,
+      "total_solve_seconds": 220.4544436831493,
+      "correct_selections": 5,
+      "total_queries": 27,
+      "started_at_utc": "2026-10-12T01:30:57.205666+00:00",
+      "finished_at_utc": "2026-10-12T01:34:37.754571+00:00",
+      "problems": [
+        {
+          "problem_index": 1,
+          "seconds": 44.7284407869447,
+          "queries": 5,
+          "correct": true,
+          "observed_worker_count": 4
+        },
+        {
+          "problem_index": 2,
+          "seconds": 51.00258675101213,
+          "queries": 7,
+          "correct": true,
+          "observed_worker_count": 4
+        },
+        {
+          "problem_index": 3,
+          "seconds": 32.80196175805759,
+          "queries": 4,
+          "correct": true,
+          "observed_worker_count": 4
+        },
+        {
+          "problem_index": 4,
+          "seconds": 52.72516744607128,
+          "queries": 7,
+          "correct": true,
+          "observed_worker_count": 4
+        },
+        {
+          "problem_index": 5,
+          "seconds": 39.19628694106359,
+          "queries": 4,
+          "correct": true,
+          "observed_worker_count": 4
+        }
+      ],
+      "wall_phases_seconds": {
+        "total": 220.4544436831493,
+        "state_analysis_and_candidate_volumes": 0.4266794266877696,
+        "query_planning_including_pool_overhead_and_wait": 219.9827081807889,
+        "other_including_answer_simulation_termination_and_session_lifecycle": 0.045056075672619045
+      },
+      "worker_cumulative_operations_seconds": {
+        "exact_volume_probabilities": 774.8017870677868,
+        "ratio_intervals": 66.45208509336226
+      },
+      "worker_cumulative_other_task_seconds": 23.03720576898195,
+      "worker_cumulative_active_seconds": 864.291077930131,
+      "raw_results_sha256": "0e711e82aabbfca2aa0ae5cf6dda24773d6464ccb13d8a097acede74be7c4822"
+    },
+    "original-w8": {
+      "workers": 8,
+      "total_solve_seconds": 138.85265919798985,
+      "correct_selections": 5,
+      "total_queries": 27,
+      "started_at_utc": "2026-10-12T01:35:41.020911+00:00",
+      "finished_at_utc": "2026-10-12T01:37:59.880560+00:00",
+      "problems": [
+        {
+          "problem_index": 1,
+          "seconds": 27.590356788015924,
+          "queries": 5,
+          "correct": true,
+          "observed_worker_count": 8
+        },
+        {
+          "problem_index": 2,
+          "seconds": 32.97845810500439,
+          "queries": 7,
+          "correct": true,
+          "observed_worker_count": 8
+        },
+        {
+          "problem_index": 3,
+          "seconds": 20.92891127197072,
+          "queries": 4,
+          "correct": true,
+          "observed_worker_count": 8
+        },
+        {
+          "problem_index": 4,
+          "seconds": 32.92544291599188,
+          "queries": 7,
+          "correct": true,
+          "observed_worker_count": 8
+        },
+        {
+          "problem_index": 5,
+          "seconds": 24.429490117006935,
+          "queries": 4,
+          "correct": true,
+          "observed_worker_count": 8
+        }
+      ],
+      "wall_phases_seconds": {
+        "total": 138.85265919798985,
+        "state_analysis_and_candidate_volumes": 0.45508004329167306,
+        "query_planning_including_pool_overhead_and_wait": 138.338930639904,
+        "other_including_answer_simulation_termination_and_session_lifecycle": 0.05864851479418576
+      },
+      "worker_cumulative_operations_seconds": {
+        "exact_volume_probabilities": 958.9174566218862,
+        "ratio_intervals": 83.05297248228453
+      },
+      "worker_cumulative_other_task_seconds": 29.58522001595702,
+      "worker_cumulative_active_seconds": 1071.5556491201278,
+      "raw_results_sha256": "2e00829453724b853eb9128f25e4ac554cd210630023d31089d3babafe2895e2"
+    },
+    "optimized-w4": {
+      "workers": 4,
+      "total_solve_seconds": 80.89920586673543,
+      "correct_selections": 5,
+      "total_queries": 27,
+      "started_at_utc": "2026-10-12T01:38:06.363574+00:00",
+      "finished_at_utc": "2026-10-12T01:39:27.269617+00:00",
+      "problems": [
+        {
+          "problem_index": 1,
+          "seconds": 16.51609008491505,
+          "queries": 5,
+          "correct": true,
+          "observed_worker_count": 4
+        },
+        {
+          "problem_index": 2,
+          "seconds": 18.645249801920727,
+          "queries": 7,
+          "correct": true,
+          "observed_worker_count": 4
+        },
+        {
+          "problem_index": 3,
+          "seconds": 12.4041926600039,
+          "queries": 4,
+          "correct": true,
+          "observed_worker_count": 4
+        },
+        {
+          "problem_index": 4,
+          "seconds": 18.889590039965697,
+          "queries": 7,
+          "correct": true,
+          "observed_worker_count": 4
+        },
+        {
+          "problem_index": 5,
+          "seconds": 14.444083279930055,
+          "queries": 4,
+          "correct": true,
+          "observed_worker_count": 4
+        }
+      ],
+      "wall_phases_seconds": {
+        "total": 80.89920586673543,
+        "state_analysis_and_candidate_volumes": 0.2283964263042435,
+        "query_planning_including_pool_overhead_and_wait": 80.62028806866147,
+        "other_including_answer_simulation_termination_and_session_lifecycle": 0.050521371769718826
+      },
+      "worker_cumulative_operations_seconds": {
+        "exact_volume_probabilities": 258.58510208292864,
+        "ratio_intervals": 40.05416160915047
+      },
+      "worker_cumulative_other_task_seconds": 15.1368653671816,
+      "worker_cumulative_active_seconds": 313.7761290592607,
+      "raw_results_sha256": "7c6d8c88a21d3f6e3c08e2f35dc6879ff3abf93e101c46b1530b21102a42874c"
+    },
+    "optimized-w8": {
+      "workers": 8,
+      "total_solve_seconds": 50.22381745593157,
+      "correct_selections": 5,
+      "total_queries": 27,
+      "started_at_utc": "2026-10-12T01:34:44.309908+00:00",
+      "finished_at_utc": "2026-10-12T01:35:34.540974+00:00",
+      "problems": [
+        {
+          "problem_index": 1,
+          "seconds": 9.6864088679431,
+          "queries": 5,
+          "correct": true,
+          "observed_worker_count": 8
+        },
+        {
+          "problem_index": 2,
+          "seconds": 11.713267724961042,
+          "queries": 7,
+          "correct": true,
+          "observed_worker_count": 8
+        },
+        {
+          "problem_index": 3,
+          "seconds": 7.816209285054356,
+          "queries": 4,
+          "correct": true,
+          "observed_worker_count": 8
+        },
+        {
+          "problem_index": 4,
+          "seconds": 11.957878215936944,
+          "queries": 7,
+          "correct": true,
+          "observed_worker_count": 8
+        },
+        {
+          "problem_index": 5,
+          "seconds": 9.050053362036124,
+          "queries": 4,
+          "correct": true,
+          "observed_worker_count": 8
+        }
+      ],
+      "wall_phases_seconds": {
+        "total": 50.22381745593157,
+        "state_analysis_and_candidate_volumes": 0.24742976820562035,
+        "query_planning_including_pool_overhead_and_wait": 49.9088121248642,
+        "other_including_answer_simulation_termination_and_session_lifecycle": 0.06757556286174804
+      },
+      "worker_cumulative_operations_seconds": {
+        "exact_volume_probabilities": 312.96245312783867,
+        "ratio_intervals": 49.38188154855743
+      },
+      "worker_cumulative_other_task_seconds": 19.424942765501328,
+      "worker_cumulative_active_seconds": 381.76927744189743,
+      "raw_results_sha256": "228b622419b572a395ec86776eecabe8e6ac79fbecda933a3c161268a9d69c75"
+    }
+  },
+  "effects": {
+    "optimizations_w4": {
+      "before": "original-w4",
+      "after": "optimized-w4",
+      "seconds_saved": 139.55523781641386,
+      "time_reduction_percent": 63.303436068175266,
+      "speedup": 2.725050775483532
+    },
+    "optimizations_w8": {
+      "before": "original-w8",
+      "after": "optimized-w8",
+      "seconds_saved": 88.62884174205828,
+      "time_reduction_percent": 63.82941619841973,
+      "speedup": 2.764677522170131
+    },
+    "original_workers4_to8": {
+      "before": "original-w4",
+      "after": "original-w8",
+      "seconds_saved": 81.60178448515944,
+      "time_reduction_percent": 37.01525953472843,
+      "speedup": 1.587686148443175
+    },
+    "optimized_workers4_to8": {
+      "before": "optimized-w4",
+      "after": "optimized-w8",
+      "seconds_saved": 30.675388410803862,
+      "time_reduction_percent": 37.91803403031566,
+      "speedup": 1.610773731760229
+    },
+    "original4_to_optimized8": {
+      "before": "original-w4",
+      "after": "optimized-w8",
+      "seconds_saved": 170.23062622721773,
+      "time_reduction_percent": 77.21805166780112,
+      "speedup": 4.389440206861716
+    }
+  },
+  "comparisons_against_original_w4": {
+    "original-w8": {
+      "all_compared_results_match": true,
+      "same_query_trajectory_and_selection": true,
+      "compared_numeric_values": 492,
+      "hex_equal_numeric_values": 492,
+      "probability_values_compared": 81,
+      "hex_equal_probability_values": 81,
+      "max_absolute_difference": 0.0
+    },
+    "optimized-w4": {
+      "all_compared_results_match": true,
+      "same_query_trajectory_and_selection": true,
+      "compared_numeric_values": 492,
+      "hex_equal_numeric_values": 492,
+      "probability_values_compared": 81,
+      "hex_equal_probability_values": 81,
+      "max_absolute_difference": 0.0
+    },
+    "optimized-w8": {
+      "all_compared_results_match": true,
+      "same_query_trajectory_and_selection": true,
+      "compared_numeric_values": 492,
+      "hex_equal_numeric_values": 492,
+      "probability_values_compared": 81,
+      "hex_equal_probability_values": 81,
+      "max_absolute_difference": 0.0
+    }
+  },
+  "optimized_source_and_test_sha256": {
+    "multistep/src/__init__.py": "53c160358bd4ee0dd9ab201e090dda812a050f9491580c0960eb4e1249eb01cc",
+    "multistep/src/affine_geometry.py": "1318c15e6baa14522b3cffc82c02983b37226037aecdaa7ac80a3709038b49a5",
+    "multistep/src/alternative_utility.py": "68d8fdf91103f5cfacf5ff3715d4536e3dcb140792a73b942eec5020ef86e75b",
+    "multistep/src/candidates.py": "f9d65f44056143af9d55589c42e61e2a267582ad79c9f244b5f46184b73af1ba",
+    "multistep/src/grid_query_candidates.py": "bacc5e7210ca3d5acdeecb01dbb9e496553efbe3a291ef37dffff3461c38c475",
+    "multistep/src/linear_constraints.py": "0256fdbeb903bcf5fc0564d74466d7b35890f6c4c476520cbae2cf5d286ac0df",
+    "multistep/src/linear_programming.py": "e7e054c5c45a4c2068e55db7ef57b2d871b5c2ff2b9897f9b0e16a10c4abf739",
+    "multistep/src/models/__init__.py": "4d35b26c4cfb93b5d6aecc1cea88d0813508bd79f1f2d78c37e80e68577514c2",
+    "multistep/src/models/alternativen_matrix.py": "d931a31e67375a1a3c845fd35be09605e0ab7db4bab8991793575e67d3bcbede",
+    "multistep/src/models/answered_query.py": "3077673db3a97e2128cfc3d4dd9732d11717aca6870fbf64f5241b639b6c1f3c",
+    "multistep/src/models/linear_optimization_result.py": "847ea72fce60add2e1cdc2adfba91fde3c4e4eda3fdbf9c7c5091d1f0b9924dd",
+    "multistep/src/models/query.py": "373a8e27cd53ea76d27a18b408d55db9a71128d649a0772b1ed025072af22385",
+    "multistep/src/onestep_query_candidates.py": "f617a882076719f63f617435a7f143dbee9b5b3473cfbfde79918e81034e6b47",
+    "multistep/src/optimality_region.py": "7776edd3831f6b8869e853b07892461ed83df98d3de961453d2c6c7df41544ae",
+    "multistep/src/polytope_geometry.py": "06e1ad3ffb3665a846a5e33bc1b3b75d1e863eaaa3da63a3098ade003f38a801",
+    "multistep/src/polytope_volume.py": "7e1f11573296067f51157097a0656c95cef4d7017dcb58f22d53e0965028df40",
+    "multistep/src/query_probability.py": "fb1e07af7fbba526317bf79298a55176a437800b2fe4ec7ed4977c2c82f1721c",
+    "multistep/src/ratio_intervals.py": "606dfaa046beaeb840281f929754202bfdc9084e68b1ca7481b0fc69548c1c8f",
+    "multistep/src/reusable_highs.py": "fd398e25e576daaa2bd761ce2d909d3ebe12f7807433af2df45b0a3c28b5eb4e",
+    "multistep/src/sampling.py": "bbd4bf4d4d65d36b3d30bb1e81bbbc97904bdeb7b2d5242365707c52180d1211",
+    "multistep/src/value_function.py": "7bf13a6377be241806467f3b15023149a8f9abf29373fd14cb5bd691f88f04fa",
+    "multistep/src/weight_space.py": "318a14f4e2637f1c20137bc70c3e94e4728c4dc6bc66147fedc502525b45da5d",
+    "multistep/tests/test_affine_geometry.py": "475f86a23314a051e286f60a0688bc82853fcd24972d0c5c27ea1f0a1e1bfc62",
+    "multistep/tests/test_alternative_utility.py": "5334dea0181b81e6ab33fd2aa9aa5ee555b99ab9c3ba11813494fc3a6c8e99ad",
+    "multistep/tests/test_candidates.py": "4e618b7dce59d6feb6ffbad772e802b35287c0c7f42a7e9fa6a9d155a5c201e9",
+    "multistep/tests/test_depth2_capacity_grid.py": "68790b2cf2537c2ba80523c8c0aeec6573f59107b7a64ab0b0433caa26717b8f",
+    "multistep/tests/test_grid_query_candidates.py": "b7f1a827fd591e61855dc574fd71bc815ae31d17a57cda0d562fddc8880cf6ab",
+    "multistep/tests/test_linear_constraints.py": "bda81a3f1db33631bf94076995ec6fb266140d45f446f948f3918aea865536a9",
+    "multistep/tests/test_onestep_query_candidates.py": "9d6a7ac74d80c221b6757b2c661777a400ca651126166c1148d9d09f78577cfe",
+    "multistep/tests/test_optimality_region.py": "d83acdb5950fb535245869b7df1b6fb28ace33ceecd8da5583a38a8f43dd0723",
+    "multistep/tests/test_optimized_value_function.py": "5a591de9f79c4d1f227904f249bc6e165f1d3720070e7f9644a85774f9c6084b",
+    "multistep/tests/test_polytope_geometry.py": "6bc07f818c0afc8acee389732a97f6533ecfac835bd6ffcc4eb4dd9ca201a56e",
+    "multistep/tests/test_polytope_volume.py": "f38cf82e51814795eda698b0205b59f62304944bb80dbe55d67907952603c674",
+    "multistep/tests/test_query_probability.py": "664462508b5311a02dd285201b953fab864be2a35995ee40e4a80a096c1f5997",
+    "multistep/tests/test_ratio_intervals.py": "9f29c7550baa65e029c2b57aa7135fa493b38cdb9c272f4a6717d979a941803a",
+    "multistep/tests/test_reusable_highs.py": "80bf118b54532fbacfa30422f7f1721ea945ad68f492d883e8db76454a8c72fd",
+    "multistep/tests/test_sampling.py": "087a0eb2e554162f826eec511dbd74b4e4da0b669fcfd84f4493970b9f91eb80",
+    "multistep/tests/test_value_function.py": "bb01f0ec5c4b28d65d702e05c152f51fcb587f2d4ab0a9d9ea353871fe7843ec",
+    "multistep/tests/test_volume_confidence_termination.py": "4a855f719188300091874453f0795eb112004a5dd7bcd8d226689ec2e3cb5145",
+    "multistep/tests/test_weight_space.py": "b22650d4d34529eed210be09408bb3ef75dd885ffbe0eeabbf44be50b0cb7079"
+  },
+  "validation": {
+    "unit_tests_after_removing_failed_caches": "154 passed in 3.910 seconds",
+    "live_source_and_tests_identical_to_measured_snapshot": true,
+    "frozen_sources_checked_before_and_after_runs": true,
+    "independent_final_result_reviews": 2
+  },
+  "timing_semantics": {
+    "elapsed": "Sum of per-problem solve times, including pool startup, worker initialization and shutdown; excludes main-process imports before solve, input preparation and report I/O.",
+    "worker_operations": "Cumulative active task wall seconds across processes; not elapsed total or CPU seconds.",
+    "instrumentation": "Identical lightweight counters and timers; included overhead not separately quantified."
+  },
+  "comparison_scope": "Recorded query/candidate/selection/termination trajectories and numeric values, including selected-query probabilities; all compared values require float.hex identity. Unchosen recursive query trees are not fully compared.",
+  "statistical_scope": "One replay per saved problem and condition; no statistical significance claim.",
+  "local_artifact_directory": "outputs/benchmarks/bench-i7/20261012-g5-a5-evening-optimizations-workers4-vs8"
+}

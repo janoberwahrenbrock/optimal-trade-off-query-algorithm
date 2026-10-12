@@ -5,9 +5,9 @@ from itertools import combinations
 from typing import Literal
 
 import numpy as np
-from scipy.linalg import null_space
 from scipy.spatial import HalfspaceIntersection, QhullError
 
+from .affine_geometry import get_affine_decomposition
 from .linear_constraints import LinearConstraintSystem
 from .linear_programming import (
     LINPROG_OPTIONS,
@@ -57,20 +57,13 @@ def enumerate_polytope_vertices(
         system.get_solver_matrices()
     )
     variable_count = system.variable_count
-    if equality_matrix is None:
-        particular_point = np.zeros(variable_count, dtype=float)
-        affine_basis = np.eye(variable_count, dtype=float)
-    else:
-        assert equality_right_side is not None
-        particular_point, *_ = np.linalg.lstsq(
-            equality_matrix,
-            equality_right_side,
-            rcond=None,
-        )
-        equality_residual = equality_matrix @ particular_point - equality_right_side
-        if np.max(np.abs(equality_residual), initial=0.0) > 10.0 * tolerance:
-            return _empty_result("infeasible", 0, "inconsistent equalities")
-        affine_basis = null_space(equality_matrix)
+    affine = get_affine_decomposition(
+        variable_count, equality_matrix, equality_right_side
+    )
+    if affine.equality_residual > 10.0 * tolerance:
+        return _empty_result("infeasible", 0, "inconsistent equalities")
+    particular_point = affine.particular_point
+    affine_basis = affine.basis
 
     affine_dimension = int(affine_basis.shape[1])
     if inequality_matrix is None:
@@ -98,7 +91,7 @@ def enumerate_polytope_vertices(
     if affine_dimension == 0:
         return PolytopeVertices(
             status="point",
-            vertices=particular_point.reshape(1, variable_count),
+            vertices=particular_point.reshape(1, variable_count).copy(),
             affine_dimension=0,
             interior_radius=0.0,
         )

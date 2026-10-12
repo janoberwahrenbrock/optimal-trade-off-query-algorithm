@@ -6,6 +6,12 @@ from typing import Any
 
 from scipy.optimize import linprog
 
+from .reusable_highs import (
+    clear_reusable_highs_cache,
+    reusable_highs_cache_info,
+    try_reusable_highs,
+)
+
 from .models.linear_optimization_result import OptimizationStatus
 
 
@@ -19,6 +25,18 @@ LINPROG_OPTIONS_WITHOUT_PRESOLVE = {
     **LINPROG_OPTIONS,
     "presolve": False,
 }
+
+_ORIGINAL_LINPROG = linprog
+
+
+def _run_linprog(**kwargs: Any) -> Any:
+    # Preserve explicit overrides of the public solver, including retry tests.
+    if linprog is _ORIGINAL_LINPROG:
+        result = try_reusable_highs(kwargs)
+        if result is not None:
+            return result
+    with _suppress_native_solver_output():
+        return linprog(**kwargs)
 
 
 def classify_linprog_failure(
@@ -59,8 +77,7 @@ def is_classified_linprog_result(result: Any) -> bool:
 
 
 def run_linprog_with_retries(**kwargs: Any) -> Any:
-    with _suppress_native_solver_output():
-        result = linprog(**kwargs)
+    result = _run_linprog(**kwargs)
     if result.success:
         return result
 
@@ -78,8 +95,7 @@ def run_linprog_with_retries(**kwargs: Any) -> Any:
             **kwargs,
             "options": LINPROG_OPTIONS_WITHOUT_PRESOLVE,
         }
-        with _suppress_native_solver_output():
-            retry_result = linprog(**retry_kwargs)
+        retry_result = _run_linprog(**retry_kwargs)
         if is_classified_linprog_result(retry_result):
             return retry_result
 
@@ -95,8 +111,7 @@ def run_linprog_with_retries(**kwargs: Any) -> Any:
                 **retry_kwargs,
                 "method": fallback_method,
             }
-            with _suppress_native_solver_output():
-                fallback_result = linprog(**fallback_kwargs)
+            fallback_result = _run_linprog(**fallback_kwargs)
             if is_classified_linprog_result(fallback_result):
                 return fallback_result
 
