@@ -16,6 +16,8 @@ from .weight_space import build_ratio_normalized_weight_space
 
 
 RatioIntervalEngine = Literal["geometry", "lp"]
+_MAX_BATCHED_RATIO_ELEMENTS = 1_048_576  # At most 8 MiB for the float64 ratio array.
+_MAX_VECTOR_VERTICES_PER_PAIR = 4
 
 
 class RatioInterval(BaseModel):
@@ -299,16 +301,20 @@ def _compute_all_ratio_intervals_from_vertices(
                     polytope=polytope,
                 )
             )
+        geometric_intervals = (
+            _compute_ratio_intervals_from_vertices(
+                vertices=polytope.vertices,
+                goal_count=goal_count,
+                tolerance=tolerance,
+            )
+            if polytope.status in {"full_dimensional", "point"}
+            else None
+        )
         for goal_index_a, goal_index_b in get_ordered_goal_pairs(goal_count):
             if polytope.status == "infeasible":
                 interval = _build_infeasible_ratio_interval(polytope.message)
-            elif polytope.status in {"full_dimensional", "point"}:
-                interval = _compute_ratio_interval_from_vertices(
-                    vertices=polytope.vertices,
-                    goal_index_a=goal_index_a,
-                    goal_index_b=goal_index_b,
-                    tolerance=tolerance,
-                )
+            elif geometric_intervals is not None:
+                interval = geometric_intervals[(goal_index_a, goal_index_b)]
             else:
                 # Exact fallback for degenerate or numerically difficult
                 # regions.  The fast path is therefore an optimization only;
@@ -349,6 +355,139 @@ def _compute_all_ratio_intervals_from_vertices(
         candidate_volumes=candidate_volumes,
         candidate_volume_shares=candidate_volume_shares,
     )
+
+
+def _compute_ratio_intervals_from_vertices(
+    vertices: np.ndarray,
+    goal_count: int,
+    tolerance: float,
+) -> dict[tuple[int, int], RatioInterval]:
+    """Compute all direct goal-pair ratios with broadcasted NumPy operations."""
+
+    goal_pairs = get_ordered_goal_pairs(goal_count)
+    if not (
+        type(vertices) is np.ndarray
+        and vertices.ndim == 2
+        and vertices.shape == (len(vertices), goal_count)
+        and len(vertices) > 0
+        and vertices.dtype == np.dtype(np.float64)
+        and np.all(np.isfinite(vertices))
+    ):
+        return {
+            (goal_index_a, goal_index_b): _compute_ratio_interval_from_vertices(
+                vertices=vertices,
+                goal_index_a=goal_index_a,
+                goal_index_b=goal_index_b,
+                tolerance=tolerance,
+            )
+            for goal_index_a, goal_index_b in goal_pairs
+        }
+
+    # Larger vertex tensors cost more to reduce than the prepared pair loops.
+    # Dispatch only by array size, preserving every direct ratio and interval.
+    if (
+        len(vertices) > _MAX_VECTOR_VERTICES_PER_PAIR * len(goal_pairs)
+        or len(vertices) * goal_count * goal_count > _MAX_BATCHED_RATIO_ELEMENTS
+    ):
+        return _compute_prepared_ratio_intervals_from_vertices(
+            vertices, goal_count, tolerance, goal_pairs
+        )
+
+    positive_masks = vertices > tolerance
+    nonpositive_masks = vertices <= tolerance
+    has_positive = np.any(positive_masks, axis=0)
+    pair_mask = ~np.eye(goal_count, dtype=bool)
+    ratio_mask = positive_masks[:, None, :] & pair_mask[None, :, :]
+    ratios = np.empty((len(vertices), goal_count, goal_count), dtype=np.float64)
+    np.divide(
+        vertices[:, :, None], vertices[:, None, :],
+        out=ratios, where=ratio_mask,
+    )
+    lower_values = np.min(ratios, axis=0, where=ratio_mask, initial=np.inf)
+    upper_values = np.max(ratios, axis=0, where=ratio_mask, initial=-np.inf)
+    unbounded_pairs = np.any(
+        positive_masks[:, :, None] & nonpositive_masks[:, None, :], axis=0
+    )
+    intervals: dict[tuple[int, int], RatioInterval] = {}
+    for goal_index_a, goal_index_b in goal_pairs:
+        if not has_positive[goal_index_b]:
+            intervals[(goal_index_a, goal_index_b)] = _build_infeasible_ratio_interval(
+                "ratio denominator is zero throughout the candidate region"
+            )
+            continue
+
+        lower_value = max(0.0, float(lower_values[goal_index_a, goal_index_b]))
+        lower = LinearOptimizationResult(
+            status="optimal",
+            objective_sense="min",
+            optimal_value=lower_value,
+        )
+        has_unbounded_vertex = bool(unbounded_pairs[goal_index_a, goal_index_b])
+        if has_unbounded_vertex:
+            upper = LinearOptimizationResult(
+                status="unbounded",
+                objective_sense="max",
+            )
+        else:
+            upper = LinearOptimizationResult(
+                status="optimal",
+                objective_sense="max",
+                optimal_value=max(0.0, float(upper_values[goal_index_a, goal_index_b])),
+            )
+        intervals[(goal_index_a, goal_index_b)] = RatioInterval(lower=lower, upper=upper)
+    return intervals
+
+
+def _compute_prepared_ratio_intervals_from_vertices(
+    vertices: np.ndarray,
+    goal_count: int,
+    tolerance: float,
+    goal_pairs: list[tuple[int, int]],
+) -> dict[tuple[int, int], RatioInterval]:
+    """Retain the prepared pair calculations for large finite geometries."""
+
+    columns = [vertices[:, goal_index] for goal_index in range(goal_count)]
+    positive_masks = vertices > tolerance
+    nonpositive_masks = vertices <= tolerance
+    has_positive = np.any(positive_masks, axis=0)
+    positive_denominators = [
+        column[positive_masks[:, goal_index]]
+        for goal_index, column in enumerate(columns)
+    ]
+    intervals: dict[tuple[int, int], RatioInterval] = {}
+    for goal_index_a, goal_index_b in goal_pairs:
+        if not has_positive[goal_index_b]:
+            intervals[(goal_index_a, goal_index_b)] = _build_infeasible_ratio_interval(
+                "ratio denominator is zero throughout the candidate region"
+            )
+            continue
+
+        ratios = (
+            columns[goal_index_a][positive_masks[:, goal_index_b]]
+            / positive_denominators[goal_index_b]
+        )
+        lower_value = max(0.0, float(np.min(ratios)))
+        lower = LinearOptimizationResult(
+            status="optimal",
+            objective_sense="min",
+            optimal_value=lower_value,
+        )
+        has_unbounded_vertex = bool(
+            np.any(nonpositive_masks[:, goal_index_b] & positive_masks[:, goal_index_a])
+        )
+        if has_unbounded_vertex:
+            upper = LinearOptimizationResult(
+                status="unbounded",
+                objective_sense="max",
+            )
+        else:
+            upper = LinearOptimizationResult(
+                status="optimal",
+                objective_sense="max",
+                optimal_value=max(0.0, float(np.max(ratios))),
+            )
+        intervals[(goal_index_a, goal_index_b)] = RatioInterval(lower=lower, upper=upper)
+    return intervals
 
 
 def _compute_ratio_interval_from_vertices(

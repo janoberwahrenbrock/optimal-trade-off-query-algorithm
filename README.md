@@ -124,7 +124,9 @@ Die implementierten Laufzeitoptimierungen, Profiling-Zähler, Benchmarks,
 verworfenen Optimierungsversuche und optionalen approximativen Begrenzungen
 sind in
 [`multistep/docs/performance_optimizations.md`](multistep/docs/performance_optimizations.md)
-dokumentiert.
+dokumentiert. Der [Performance-Zwischenstand vom 12. Oktober 2026](multistep/docs/performance_checkpoint_20261012.md)
+verknüpft die behaltenen Optimierungen, verworfenen Versuche und kompakten
+Benchmark-Ergebnisse des aktuellen Stands.
 
 ### Terminierungsanalyse
 

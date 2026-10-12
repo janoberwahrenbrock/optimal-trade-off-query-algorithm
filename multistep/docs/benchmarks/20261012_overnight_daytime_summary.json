@@ -1,0 +1,2336 @@
+{
+  "schema_version": 1,
+  "kind": "compact_historical_evidence_snapshot",
+  "measurement_date": "2026-10-12",
+  "source_report_status": "completed_evidence_report_no_new_decisions",
+  "accepted_stack": "S06 + E12",
+  "base_commit": "074fbf9d3c09ae1318155a15f549833df661a9b3",
+  "canonical_source_fingerprint": "d1a36969125c2ebcbb84d4bdcebf62da91e94e76d3581f029261e1b86583c60d",
+  "configuration": {
+    "sample_count": 1000,
+    "burn_in": 200,
+    "thinning": 5,
+    "random_seed": null,
+    "sampling_chain_count": 1,
+    "equality_tol": 0.0,
+    "grid_size": 10,
+    "min_query_value": 0.001,
+    "max_query_value": 100.0,
+    "grid_spacing": "log",
+    "query_epsilon": 0.001,
+    "skip_zero_probability_branches": true,
+    "pass_candidate_subset": true,
+    "reuse_conditioned_samples": false,
+    "min_conditioned_sample_count": 50,
+    "use_ratio_terminal_counts": true,
+    "ratio_terminal_tolerance": 1e-12,
+    "canonical_grid_goal_pairs_only": false,
+    "filter_answered_query_candidates": true,
+    "answered_query_abs_tolerance": 1e-12,
+    "answered_query_rel_tolerance": 1e-09,
+    "answer_support_tolerance": 1e-09,
+    "answer_probability_smoothing": 1.0,
+    "answer_probability_mode": "exact_volume",
+    "parallelize_root": true,
+    "max_workers": 8,
+    "candidate_count_mode": "ratio_relevant",
+    "include_ratio_queries_on_grid_depths": true,
+    "grid_depth_query_source_mode": "both",
+    "depth_one_query_source_mode": "ratio",
+    "repair_zero_terminal_counts": true,
+    "validate_ratio_terminal_counts": false,
+    "max_query_candidates_per_state": null,
+    "adaptive_depth_candidate_threshold": null,
+    "ratio_interval_engine": "geometry",
+    "geometry_tolerance": 1e-10,
+    "posterior_quantile_levels": [],
+    "posterior_query_objective": null,
+    "posterior_query_shortlist_size": null,
+    "volume_confidence_threshold": 0.99
+  },
+  "configuration_fingerprint": "1df85d4c617ccbe32a1fc3e03e32e2987d3383478b5aa491e95e3b27e894d28d",
+  "fixed_settings": {
+    "goals": 5,
+    "alternatives": 5,
+    "grid_size": 10,
+    "root_query_source": "both",
+    "depth_one_query_source": "ratio",
+    "depth": 2,
+    "answer_probability_mode": "exact_volume",
+    "workers": 8,
+    "max_questions": 100,
+    "volume_confidence_threshold": 0.99
+  },
+  "runtime_environment": {
+    "hostname": "machine",
+    "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+    "python": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+    "numpy": "2.5.4",
+    "scipy": "1.18.1",
+    "multiprocessing_start_method": "forkserver",
+    "thread_environment": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "BLIS_NUM_THREADS": "1",
+      "VECLIB_MAXIMUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1"
+    }
+  },
+  "seeds": {
+    "primary": 20260902,
+    "holdout": 20261012,
+    "third": 20261013
+  },
+  "timing_definition": "Summe der zehn gespeicherten solve_problem-Laufzeiten pro regulärem Lauf.",
+  "percent_formula": "100 * (1 - candidate_median_seconds / control_median_seconds)",
+  "night_incremental": {
+    "S01": {
+      "decision": {
+        "path": "experiments/s01-core-stack/decision.json",
+        "sha256": "5d854e3e4cb33ccac746dfd453a124f90b68205b2597df483259c4bbaa40ff1d"
+      },
+      "root_decision_text": "keep exact S01 stack locally",
+      "components": [
+        "e01-branch-keys",
+        "e02-compact-lp",
+        "e03-byte-dedup",
+        "e06-direct-csc"
+      ],
+      "comparison": {
+        "path": "pending-review/compare-stack-review/s01-command-guard-20261012T0546Z/comparison.json",
+        "sha256": "791c57937eeeacb8f008e6462f6b3699d2309bafe8f3c2dda8283c672a499097"
+      },
+      "suites": {
+        "counts": {
+          "multistep": 180,
+          "onestep": 6
+        },
+        "source_fingerprint": "8abc41e4e780f50fc8b49f8d5fdd8ae86bd985b4e9abd0bb0a19cd7d7eb439d2",
+        "evidence": {
+          "path": "experiments/s01-core-stack/canonical-adoption-checks.json",
+          "sha256": "739e05e95327c36de0d4b2c356c144be88719cba3f8d9a8a9b9a779c1f7f0b6f"
+        },
+        "scope": "Inherited recorded full suites; no suites are rerun by this builder."
+      },
+      "datasets": {
+        "primary": {
+          "seed": 20260902,
+          "controls": {
+            "values": [
+              129.2008884252282,
+              133.06652974395547,
+              133.01686341618188,
+              132.77865163900424
+            ],
+            "median": 132.89775752759306
+          },
+          "candidates": {
+            "values": [
+              116.73304488207214,
+              117.54854519991204,
+              118.17813972081058
+            ],
+            "median": 117.54854519991204
+          },
+          "control_paths": [
+            "baseline/primary-r12.json",
+            "baseline/primary-r13.json",
+            "baseline/primary-r14.json",
+            "baseline/primary-r15.json"
+          ],
+          "candidate_paths": [
+            "experiments/s01-core-stack/primary-r1.json",
+            "experiments/s01-core-stack/primary-r2.json",
+            "experiments/s01-core-stack/primary-r3.json"
+          ],
+          "median_time_reduction_percent": 11.549639823301094,
+          "control_evidence": [
+            {
+              "path": "baseline/primary-r12.json",
+              "sha256": "58116ffb50d69cf9206fcc39a22d82f9a62d85b85ac1ce37ef892331d650c5f6"
+            },
+            {
+              "path": "baseline/primary-r13.json",
+              "sha256": "e6ce675991da28c85fd81c2f81ee7188b172130fd0f8f9dfd6fb51e5aa497e42"
+            },
+            {
+              "path": "baseline/primary-r14.json",
+              "sha256": "c5103040001c110c10f06baa6a6bbf88ade4f27b6a5cb7605ebbd62dbb3447a3"
+            },
+            {
+              "path": "baseline/primary-r15.json",
+              "sha256": "8b53c22d7aa3d664563940d24e2048cf3d17108b3444008ec791df212d402c51"
+            }
+          ],
+          "candidate_evidence": [
+            {
+              "path": "experiments/s01-core-stack/primary-r1.json",
+              "sha256": "c93ffa2b84a82d5519e4599a4c992728a0434fd966a97cf323b85277661ac1fb"
+            },
+            {
+              "path": "experiments/s01-core-stack/primary-r2.json",
+              "sha256": "099c754b28e844e563b6a53405a7a739a6e14fd0688dd488b02a299ec2327fdb"
+            },
+            {
+              "path": "experiments/s01-core-stack/primary-r3.json",
+              "sha256": "de4652a13e7360dd238530ceb7b266304c8d0d8e04856c11439180420d3c0325"
+            }
+          ]
+        },
+        "holdout": {
+          "seed": 20261012,
+          "controls": {
+            "values": [
+              121.25490043498576,
+              121.51392369112,
+              121.5502923449967,
+              122.26091779116541
+            ],
+            "median": 121.53210801805835
+          },
+          "candidates": {
+            "values": [
+              107.16033024003264,
+              107.08148167317268,
+              107.01410971174482
+            ],
+            "median": 107.08148167317268
+          },
+          "control_paths": [
+            "baseline/holdout-r5.json",
+            "baseline/holdout-r6.json",
+            "baseline/holdout-r7.json",
+            "baseline/holdout-r8.json"
+          ],
+          "candidate_paths": [
+            "experiments/s01-core-stack/holdout-r1.json",
+            "experiments/s01-core-stack/holdout-r2.json",
+            "experiments/s01-core-stack/holdout-r3.json"
+          ],
+          "median_time_reduction_percent": 11.890377432388878,
+          "control_evidence": [
+            {
+              "path": "baseline/holdout-r5.json",
+              "sha256": "67ce44a02be54595a6a92a81d927e34e9ede11f02967eb032de56426cdf632c7"
+            },
+            {
+              "path": "baseline/holdout-r6.json",
+              "sha256": "b08baf1b8fdb18c3ede35c046537f517bddb7057d5a5ff2f921bf647e70bd579"
+            },
+            {
+              "path": "baseline/holdout-r7.json",
+              "sha256": "245235b5e3ace0b1f67a048adf2e502e4f2a43a7648403dea9b474e0ae367f36"
+            },
+            {
+              "path": "baseline/holdout-r8.json",
+              "sha256": "86f5b2d5e0a50ebde690b71e894564baee42af77df5e72d78f01418842889fd7"
+            }
+          ],
+          "candidate_evidence": [
+            {
+              "path": "experiments/s01-core-stack/holdout-r1.json",
+              "sha256": "21076bc1da7fa7230126a8b0442fb6525423deaf4e7395d4bd15cf650ec0c64e"
+            },
+            {
+              "path": "experiments/s01-core-stack/holdout-r2.json",
+              "sha256": "42418133b4e10d010832c075b3bbc43720a28ca328bb5b5d919cbc43a7e46c25"
+            },
+            {
+              "path": "experiments/s01-core-stack/holdout-r3.json",
+              "sha256": "7b1e686ae37f2fa516af558b2770ea3d0721a783c973f1c3025327b78a1b6b7a"
+            }
+          ]
+        }
+      },
+      "deep_validation": [
+        {
+          "path": "experiments/s01-core-stack/deep-primary-r1.json",
+          "flags": [
+            "deep_verify"
+          ],
+          "performance_excluded": true,
+          "complete": true,
+          "independent_comparison": {
+            "reference_path": "baseline/primary-r1.json",
+            "scope": "saved semantic fields + complete ordered root digests",
+            "float_values_compared": 1505,
+            "float_hex_mismatches": 0,
+            "mismatch_count": 0,
+            "mismatches": [],
+            "root_digest_records_compared": 75,
+            "deep_digest_records_compared": 0,
+            "all_saved_results_match": true
+          },
+          "independent_deep_comparison": {
+            "reference_path": "baseline/deep-primary-r1.json",
+            "scope": "saved semantic fields + complete ordered root digests",
+            "float_values_compared": 1505,
+            "float_hex_mismatches": 0,
+            "mismatch_count": 0,
+            "mismatches": [],
+            "root_digest_records_compared": 75,
+            "deep_digest_records_compared": 15155,
+            "all_saved_results_match": true
+          }
+        },
+        {
+          "path": "experiments/s01-core-stack/deep-holdout-r1.json",
+          "flags": [
+            "deep_verify"
+          ],
+          "performance_excluded": true,
+          "complete": true,
+          "independent_comparison": {
+            "reference_path": "baseline/holdout-r1.json",
+            "scope": "saved semantic fields + complete ordered root digests",
+            "float_values_compared": 1469,
+            "float_hex_mismatches": 0,
+            "mismatch_count": 0,
+            "mismatches": [],
+            "root_digest_records_compared": 73,
+            "deep_digest_records_compared": 0,
+            "all_saved_results_match": true
+          },
+          "independent_deep_comparison": {
+            "reference_path": "baseline/deep-holdout-r1.json",
+            "scope": "saved semantic fields + complete ordered root digests",
+            "float_values_compared": 1469,
+            "float_hex_mismatches": 0,
+            "mismatch_count": 0,
+            "mismatches": [],
+            "root_digest_records_compared": 73,
+            "deep_digest_records_compared": 14224,
+            "all_saved_results_match": true
+          }
+        }
+      ]
+    },
+    "S02": {
+      "decision": {
+        "path": "experiments/s02-partial-support-stack/decision.json",
+        "sha256": "1d953c5529ff6e983ca6205ef721d096963b7277c2db8ac303efd60cf575cad2"
+      },
+      "root_decision_text": "keep exact S02 stack locally",
+      "components": [
+        "e01-branch-keys",
+        "e02-compact-lp",
+        "e03-byte-dedup",
+        "e06-direct-csc",
+        "e14-partial-support"
+      ],
+      "comparison": {
+        "path": "experiments/s02-partial-support-stack/paired-analysis-command-guard-v3/comparison.json",
+        "sha256": "8e54dc257f0bdc2763cb327cc8e460fe6f803e014a2fbc4b2094c8a936f93c65"
+      },
+      "suites": {
+        "counts": {
+          "multistep": 188,
+          "onestep": 6
+        },
+        "source_fingerprint": "429539ced0e3168791991de9d36a524fbb2616a78475ca46afa8851ecda61158",
+        "evidence": {
+          "path": "experiments/s02-partial-support-stack/canonical-adoption-checks.json",
+          "sha256": "0acad4ab68808a3f82b34382370f5b527b44f2724887213191c96101433ca30a"
+        },
+        "scope": "Inherited recorded full suites; no suites are rerun by this builder."
+      },
+      "datasets": {
+        "primary": {
+          "seed": 20260902,
+          "controls": {
+            "values": [
+              116.91101690614596,
+              117.28246960893739,
+              117.34797016810626,
+              118.01929509290494
+            ],
+            "median": 117.31521988852182
+          },
+          "candidates": {
+            "values": [
+              111.84654161112849,
+              111.5892152300803,
+              111.69986511417665
+            ],
+            "median": 111.69986511417665
+          },
+          "control_paths": [
+            "experiments/s01-core-stack/primary-r4.json",
+            "experiments/s01-core-stack/primary-r5.json",
+            "experiments/s01-core-stack/primary-r6.json",
+            "experiments/s01-core-stack/primary-r7.json"
+          ],
+          "candidate_paths": [
+            "experiments/s02-partial-support-stack/primary-r1.json",
+            "experiments/s02-partial-support-stack/primary-r2.json",
+            "experiments/s02-partial-support-stack/primary-r3.json"
+          ],
+          "median_time_reduction_percent": 4.786552656749176,
+          "control_evidence": [
+            {
+              "path": "experiments/s01-core-stack/primary-r4.json",
+              "sha256": "92dd75766fcccc4ec750d3308277c32c7adb17f41078f4697aa9d603e124e113"
+            },
+            {
+              "path": "experiments/s01-core-stack/primary-r5.json",
+              "sha256": "925dfc0420a4e746307fc2fd841e4b4cae58f93d2c5d07f703cd204b6707cbcd"
+            },
+            {
+              "path": "experiments/s01-core-stack/primary-r6.json",
+              "sha256": "50d4de7ac70dece5ac8b0d158438f6d103a869db85923898bc8f92dd1659b0fa"
+            },
+            {
+              "path": "experiments/s01-core-stack/primary-r7.json",
+              "sha256": "eb6d75b72b28a6b403aed9e46a240db390b029d95a4d3efc1d2a1480019f9a28"
+            }
+          ],
+          "candidate_evidence": [
+            {
+              "path": "experiments/s02-partial-support-stack/primary-r1.json",
+              "sha256": "abd1bddd06c20c30a1fa427ca55528e8aa35154a83234306a05ec02eddc01d32"
+            },
+            {
+              "path": "experiments/s02-partial-support-stack/primary-r2.json",
+              "sha256": "a5497c2c9888b70dd7732c737b38478918e419c4029112749fb8efc8eee90709"
+            },
+            {
+              "path": "experiments/s02-partial-support-stack/primary-r3.json",
+              "sha256": "47092df44f840ad35bdd3d3758a4a0560b5c9b8ca77c5b4afac0f32a3232bdc5"
+            }
+          ]
+        },
+        "holdout": {
+          "seed": 20261012,
+          "controls": {
+            "values": [
+              106.89925601705909,
+              107.15568155806977,
+              107.07619998068549,
+              107.134112062864
+            ],
+            "median": 107.10515602177475
+          },
+          "candidates": {
+            "values": [
+              103.20432575198356,
+              102.68912459723651,
+              102.71731413877569
+            ],
+            "median": 102.71731413877569
+          },
+          "control_paths": [
+            "experiments/s01-core-stack/holdout-r4.json",
+            "experiments/s01-core-stack/holdout-r5.json",
+            "experiments/s01-core-stack/holdout-r6.json",
+            "experiments/s01-core-stack/holdout-r7.json"
+          ],
+          "candidate_paths": [
+            "experiments/s02-partial-support-stack/holdout-r1.json",
+            "experiments/s02-partial-support-stack/holdout-r2.json",
+            "experiments/s02-partial-support-stack/holdout-r3.json"
+          ],
+          "median_time_reduction_percent": 4.096760647178366,
+          "control_evidence": [
+            {
+              "path": "experiments/s01-core-stack/holdout-r4.json",
+              "sha256": "efffced1f825426ed671d0168a057f9e64505b751c5e9ac6abe522e3731f2433"
+            },
+            {
+              "path": "experiments/s01-core-stack/holdout-r5.json",
+              "sha256": "2a4946e668b4f65462811a6d495eb62a08ae570c3bfba560d786100ee70bb920"
+            },
+            {
+              "path": "experiments/s01-core-stack/holdout-r6.json",
+              "sha256": "c2b084c17cbc10464f46007a892f00ce5a8116d040d50d58c8df37c3e73b4c7a"
+            },
+            {
+              "path": "experiments/s01-core-stack/holdout-r7.json",
+              "sha256": "f9d0d3a2793f0ad42bd0fbfb6665c783066b750d4d42a49a319307f60e4ec182"
+            }
+          ],
+          "candidate_evidence": [
+            {
+              "path": "experiments/s02-partial-support-stack/holdout-r1.json",
+              "sha256": "e898f56d2d8477c6b98092a7a32dfa765266a8753a072e52f0c0caea13e19e7f"
+            },
+            {
+              "path": "experiments/s02-partial-support-stack/holdout-r2.json",
+              "sha256": "c8f0787f78ab5f2fcee230ba758ea7b1618bedfd2076a491d5d2e8d361c864d6"
+            },
+            {
+              "path": "experiments/s02-partial-support-stack/holdout-r3.json",
+              "sha256": "4b0e2031a45e0c896bc929ad132339bdb7084c8f5c5d9a1214c21def9673c4bc"
+            }
+          ]
+        }
+      },
+      "deep_validation": [
+        {
+          "path": "experiments/s02-partial-support-stack/deep-primary-r1.json",
+          "flags": [
+            "deep_verify"
+          ],
+          "performance_excluded": true,
+          "complete": true,
+          "independent_comparison": {
+            "reference_path": "baseline/primary-r1.json",
+            "scope": "saved semantic fields + complete ordered root digests",
+            "float_values_compared": 1505,
+            "float_hex_mismatches": 0,
+            "mismatch_count": 0,
+            "mismatches": [],
+            "root_digest_records_compared": 75,
+            "deep_digest_records_compared": 0,
+            "all_saved_results_match": true
+          },
+          "independent_deep_comparison": {
+            "reference_path": "baseline/deep-primary-r1.json",
+            "scope": "saved semantic fields + complete ordered root digests",
+            "float_values_compared": 1505,
+            "float_hex_mismatches": 0,
+            "mismatch_count": 0,
+            "mismatches": [],
+            "root_digest_records_compared": 75,
+            "deep_digest_records_compared": 15155,
+            "all_saved_results_match": true
+          }
+        },
+        {
+          "path": "experiments/s02-partial-support-stack/deep-holdout-r1.json",
+          "flags": [
+            "deep_verify"
+          ],
+          "performance_excluded": true,
+          "complete": true,
+          "independent_comparison": {
+            "reference_path": "baseline/holdout-r1.json",
+            "scope": "saved semantic fields + complete ordered root digests",
+            "float_values_compared": 1469,
+            "float_hex_mismatches": 0,
+            "mismatch_count": 0,
+            "mismatches": [],
+            "root_digest_records_compared": 73,
+            "deep_digest_records_compared": 0,
+            "all_saved_results_match": true
+          },
+          "independent_deep_comparison": {
+            "reference_path": "baseline/deep-holdout-r1.json",
+            "scope": "saved semantic fields + complete ordered root digests",
+            "float_values_compared": 1469,
+            "float_hex_mismatches": 0,
+            "mismatch_count": 0,
+            "mismatches": [],
+            "root_digest_records_compared": 73,
+            "deep_digest_records_compared": 14224,
+            "all_saved_results_match": true
+          }
+        }
+      ]
+    },
+    "S03": {
+      "decision": {
+        "path": "experiments/s03-ratio-stack/decision.json",
+        "sha256": "603825c0bdc27e74bc7639cad1b3b696f92e4b7fc452dd1c099f291c7daccd4a"
+      },
+      "root_decision_text": "keep exact S03 stack locally",
+      "components": [
+        "e01-branch-keys",
+        "e02-compact-lp",
+        "e03-byte-dedup",
+        "e06-direct-csc",
+        "e14-partial-support",
+        "e05-guarded-ratio-vectorization with e04 batch primitives"
+      ],
+      "comparison": {
+        "path": "experiments/s03-ratio-stack/paired-analysis-v2/comparison.json",
+        "sha256": "facf1a82cb706da54938bacd31594928e6cffec506cdf48897d0aa537c3defcd"
+      },
+      "suites": {
+        "counts": {
+          "multistep": 209,
+          "onestep": 6
+        },
+        "source_fingerprint": "ad7b110a9e5fb69fcc09c3e8b11d2b4a83b20396d1978388df70bf11e944bb7b",
+        "evidence": {
+          "path": "experiments/s03-ratio-stack/canonical-adoption-checks.json",
+          "sha256": "f36c8b14b92fa19283f8e1d8d8676a957ff8916cbf4eda5a2bb6a10483495ce0"
+        },
+        "scope": "Inherited recorded full suites; no suites are rerun by this builder."
+      },
+      "datasets": {
+        "primary": {
+          "seed": 20260902,
+          "controls": {
+            "values": [
+              111.4424713406479,
+              111.00037121970672,
+              111.23836423200555,
+              111.42780825390946
+            ],
+            "median": 111.3330862429575
+          },
+          "candidates": {
+            "values": [
+              108.66269942710642,
+              109.44104635587428,
+              108.89124973700382
+            ],
+            "median": 108.89124973700382
+          },
+          "control_paths": [
+            "experiments/s02-partial-support-stack/primary-r4.json",
+            "experiments/s02-partial-support-stack/primary-r5.json",
+            "experiments/s02-partial-support-stack/primary-r6.json",
+            "experiments/s02-partial-support-stack/primary-r7.json"
+          ],
+          "candidate_paths": [
+            "experiments/s03-ratio-stack/primary-r1.json",
+            "experiments/s03-ratio-stack/primary-r2.json",
+            "experiments/s03-ratio-stack/primary-r3.json"
+          ],
+          "median_time_reduction_percent": 2.193271190403334,
+          "control_evidence": [
+            {
+              "path": "experiments/s02-partial-support-stack/primary-r4.json",
+              "sha256": "7514e774a4347975f63125982910f0b87bda7f898e1d56d60f7c410159dea030"
+            },
+            {
+              "path": "experiments/s02-partial-support-stack/primary-r5.json",
+              "sha256": "6e9904905f60bbf4b330e5c4430926055ffe0ea6ef56a83128f6a936a304ef8d"
+            },
+            {
+              "path": "experiments/s02-partial-support-stack/primary-r6.json",
+              "sha256": "417dcb6f03df3d8707cab3d06a4c905e2a5d78a3d89900d149fb5535d4833717"
+            },
+            {
+              "path": "experiments/s02-partial-support-stack/primary-r7.json",
+              "sha256": "abc93bfd2b87a8b42f6b0a812ed35a5e8a74864f4fdd74996714f9acc6f44cdc"
+            }
+          ],
+          "candidate_evidence": [
+            {
+              "path": "experiments/s03-ratio-stack/primary-r1.json",
+              "sha256": "5c074db4088471067b4f22a1a624b84bf63020b2708e3d071201b576bdae3db4"
+            },
+            {
+              "path": "experiments/s03-ratio-stack/primary-r2.json",
+              "sha256": "a9c842cde7169282285440f972c89c6c59987fd07a833474a68d71a0a19d3915"
+            },
+            {
+              "path": "experiments/s03-ratio-stack/primary-r3.json",
+              "sha256": "c439a91a3c1412be52d0cb7c4d02f602a7b40b63d3ee5bc73d804050d325002b"
+            }
+          ]
+        },
+        "holdout": {
+          "seed": 20261012,
+          "controls": {
+            "values": [
+              103.56246052484494,
+              103.21401340723969,
+              102.9272890171269,
+              103.1799084598897
+            ],
+            "median": 103.1969609335647
+          },
+          "candidates": {
+            "values": [
+              100.67300205095671,
+              101.39776160486508,
+              100.40336181304883
+            ],
+            "median": 100.67300205095671
+          },
+          "control_paths": [
+            "experiments/s02-partial-support-stack/holdout-r4.json",
+            "experiments/s02-partial-support-stack/holdout-r5.json",
+            "experiments/s02-partial-support-stack/holdout-r6.json",
+            "experiments/s02-partial-support-stack/holdout-r7.json"
+          ],
+          "candidate_paths": [
+            "experiments/s03-ratio-stack/holdout-r1.json",
+            "experiments/s03-ratio-stack/holdout-r2.json",
+            "experiments/s03-ratio-stack/holdout-r3.json"
+          ],
+          "median_time_reduction_percent": 2.445768615446764,
+          "control_evidence": [
+            {
+              "path": "experiments/s02-partial-support-stack/holdout-r4.json",
+              "sha256": "14ebfeb8f20f992a9bf5c4a9de94b305ccc090e22c4e16388ce0b4f521babbe1"
+            },
+            {
+              "path": "experiments/s02-partial-support-stack/holdout-r5.json",
+              "sha256": "80cf7b178c1700240464d4034e093dd4e74a3af7b5e9efc61f3c5cdbbaf5c908"
+            },
+            {
+              "path": "experiments/s02-partial-support-stack/holdout-r6.json",
+              "sha256": "59c27d2ee791cc2ba2bb2d626cfda9bcb30afac0b9a6639d4cd74f861e201bdd"
+            },
+            {
+              "path": "experiments/s02-partial-support-stack/holdout-r7.json",
+              "sha256": "674edb042b00fedcc12d32aec25fada5d47a4a1baef17a87aac3621e16dc811b"
+            }
+          ],
+          "candidate_evidence": [
+            {
+              "path": "experiments/s03-ratio-stack/holdout-r1.json",
+              "sha256": "c4c2b7f9a2b3ecd72c5013e2b37ea2269dc42f15aab497665b7ffe16b92bc559"
+            },
+            {
+              "path": "experiments/s03-ratio-stack/holdout-r2.json",
+              "sha256": "209b1e395b14dfd8db514d6ac3b15639ec1391c2b8cb97e30d3d2975e3dbae99"
+            },
+            {
+              "path": "experiments/s03-ratio-stack/holdout-r3.json",
+              "sha256": "17e89add6615dc78daa2e334d988a31c3bf60b2b21dd3ed4e234b30cdcc76208"
+            }
+          ]
+        }
+      },
+      "deep_validation": [
+        {
+          "path": "experiments/s03-ratio-stack/deep-primary-r1.json",
+          "flags": [
+            "deep_verify"
+          ],
+          "performance_excluded": true,
+          "complete": true,
+          "independent_comparison": {
+            "reference_path": "baseline/primary-r1.json",
+            "scope": "saved semantic fields + complete ordered root digests",
+            "float_values_compared": 1505,
+            "float_hex_mismatches": 0,
+            "mismatch_count": 0,
+            "mismatches": [],
+            "root_digest_records_compared": 75,
+            "deep_digest_records_compared": 0,
+            "all_saved_results_match": true
+          },
+          "independent_deep_comparison": {
+            "reference_path": "baseline/deep-primary-r1.json",
+            "scope": "saved semantic fields + complete ordered root digests",
+            "float_values_compared": 1505,
+            "float_hex_mismatches": 0,
+            "mismatch_count": 0,
+            "mismatches": [],
+            "root_digest_records_compared": 75,
+            "deep_digest_records_compared": 15155,
+            "all_saved_results_match": true
+          }
+        },
+        {
+          "path": "experiments/s03-ratio-stack/deep-holdout-r1.json",
+          "flags": [
+            "deep_verify"
+          ],
+          "performance_excluded": true,
+          "complete": true,
+          "independent_comparison": {
+            "reference_path": "baseline/holdout-r1.json",
+            "scope": "saved semantic fields + complete ordered root digests",
+            "float_values_compared": 1469,
+            "float_hex_mismatches": 0,
+            "mismatch_count": 0,
+            "mismatches": [],
+            "root_digest_records_compared": 73,
+            "deep_digest_records_compared": 0,
+            "all_saved_results_match": true
+          },
+          "independent_deep_comparison": {
+            "reference_path": "baseline/deep-holdout-r1.json",
+            "scope": "saved semantic fields + complete ordered root digests",
+            "float_values_compared": 1469,
+            "float_hex_mismatches": 0,
+            "mismatch_count": 0,
+            "mismatches": [],
+            "root_digest_records_compared": 73,
+            "deep_digest_records_compared": 14224,
+            "all_saved_results_match": true
+          }
+        }
+      ]
+    },
+    "S06": {
+      "decision": {
+        "path": "experiments/s06-ratio-continuous-stack/decision.json",
+        "sha256": "b223a124db1a62b4c792fa1c9c5cbdc8a5937f53f61d05352cb0e0f6ef63d8bc"
+      },
+      "root_decision_text": "keep exact S06 locally after recovery of already completed measurements",
+      "components": [
+        "all retained S03 components",
+        "e17 guarded private continuous LP result checker"
+      ],
+      "comparison": {
+        "path": "experiments/s06-ratio-continuous-stack/paired-analysis-v2-recovery/comparison.json",
+        "sha256": "544b238cbc4614032a981e3057a8effcf1feadb7e170a757a07b365990eda92c"
+      },
+      "suites": {
+        "counts": {
+          "multistep": 218,
+          "onestep": 6
+        },
+        "source_fingerprint": "a83fed3d865341162b15865536f3d87e753a06bb5bd567ce913b0597367b9571",
+        "evidence": {
+          "path": "experiments/s06-ratio-continuous-stack/canonical-adoption-checks.json",
+          "sha256": "645cc2540948f7a029177ada3ddfae28b52e5d4086db8a512723d573a6ec4b90"
+        },
+        "scope": "Inherited recorded full suites; no suites are rerun by this builder."
+      },
+      "datasets": {
+        "primary": {
+          "seed": 20260902,
+          "controls": {
+            "values": [
+              109.70471951412037,
+              109.26196110795718,
+              108.92974859580863,
+              108.48430185415782
+            ],
+            "median": 109.0958548518829
+          },
+          "candidates": {
+            "values": [
+              106.01254057697952,
+              105.00697179487906,
+              105.52431248908397
+            ],
+            "median": 105.52431248908397
+          },
+          "control_paths": [
+            "experiments/s03-ratio-stack/primary-r8.json",
+            "experiments/s03-ratio-stack/primary-r9.json",
+            "experiments/s03-ratio-stack/primary-r10.json",
+            "experiments/s03-ratio-stack/primary-r11.json"
+          ],
+          "candidate_paths": [
+            "experiments/s06-ratio-continuous-stack/primary-r1.json",
+            "experiments/s06-ratio-continuous-stack/primary-r2.json",
+            "experiments/s06-ratio-continuous-stack/primary-r3.json"
+          ],
+          "median_time_reduction_percent": 3.2737654126712146,
+          "control_evidence": [
+            {
+              "path": "experiments/s03-ratio-stack/primary-r8.json",
+              "sha256": "7b48a403fda43a1e37f5a3c5d2ed9777ed23269bf7bacec6891a2440a6e73e71"
+            },
+            {
+              "path": "experiments/s03-ratio-stack/primary-r9.json",
+              "sha256": "8919b9f67b460487a1af94a416b572df0d201525f665600fafcf663160e93758"
+            },
+            {
+              "path": "experiments/s03-ratio-stack/primary-r10.json",
+              "sha256": "953095d61e30756eb715386e48c0ce2b99120628cb95f528795320c88f12bf46"
+            },
+            {
+              "path": "experiments/s03-ratio-stack/primary-r11.json",
+              "sha256": "4c8c831086cffa6d1ad6c47cb3916512a0c1204cddcae9ad8553979af722fc79"
+            }
+          ],
+          "candidate_evidence": [
+            {
+              "path": "experiments/s06-ratio-continuous-stack/primary-r1.json",
+              "sha256": "ed4ed48f6176a33827dbdfcae98ee8b1e1ad02d407b6ea16b699ae6fc5d5094f"
+            },
+            {
+              "path": "experiments/s06-ratio-continuous-stack/primary-r2.json",
+              "sha256": "b92559395e8a27cbdb5a1732a876351646b0fe69145ec3cd48acefd8a1ad2d57"
+            },
+            {
+              "path": "experiments/s06-ratio-continuous-stack/primary-r3.json",
+              "sha256": "d771734d1dc3cbddfdb2ad0dc015ffc86161caa6413ca39acae91ae5358bbefb"
+            }
+          ]
+        },
+        "holdout": {
+          "seed": 20261012,
+          "controls": {
+            "values": [
+              101.0673895617947,
+              101.45183390623424,
+              100.33358838886488,
+              100.36266790307127
+            ],
+            "median": 100.71502873243298
+          },
+          "candidates": {
+            "values": [
+              97.66544299921952,
+              98.1462817551801,
+              98.05272421310656
+            ],
+            "median": 98.05272421310656
+          },
+          "control_paths": [
+            "experiments/s03-ratio-stack/holdout-r8.json",
+            "experiments/s03-ratio-stack/holdout-r9.json",
+            "experiments/s03-ratio-stack/holdout-r10.json",
+            "experiments/s03-ratio-stack/holdout-r11.json"
+          ],
+          "candidate_paths": [
+            "experiments/s06-ratio-continuous-stack/holdout-r1.json",
+            "experiments/s06-ratio-continuous-stack/holdout-r2.json",
+            "experiments/s06-ratio-continuous-stack/holdout-r3.json"
+          ],
+          "median_time_reduction_percent": 2.643403425321267,
+          "control_evidence": [
+            {
+              "path": "experiments/s03-ratio-stack/holdout-r8.json",
+              "sha256": "b90253d2c490fc94f263c7fa7c901220b84b24067de0d1efa9e901d5ac557467"
+            },
+            {
+              "path": "experiments/s03-ratio-stack/holdout-r9.json",
+              "sha256": "630bdccb6144b2f6433fc6677419d55794528e39a526086963c07db9e7035dd5"
+            },
+            {
+              "path": "experiments/s03-ratio-stack/holdout-r10.json",
+              "sha256": "949d1d499c392b12db25fbd0285df6cf442c6c0411e9c610842ed08345683441"
+            },
+            {
+              "path": "experiments/s03-ratio-stack/holdout-r11.json",
+              "sha256": "30d48fc6d5f1b384222c32f2ebae528213667440cd9a62dbecf987915d79df66"
+            }
+          ],
+          "candidate_evidence": [
+            {
+              "path": "experiments/s06-ratio-continuous-stack/holdout-r1.json",
+              "sha256": "d9fd8510c4a64053d1fa4a2953b01f6ee15ec873d022182b8f4318e962dd8981"
+            },
+            {
+              "path": "experiments/s06-ratio-continuous-stack/holdout-r2.json",
+              "sha256": "a5d656c8826951ba476ebbc7f5853ac60ca5f245951220434d11cca6abbed7a9"
+            },
+            {
+              "path": "experiments/s06-ratio-continuous-stack/holdout-r3.json",
+              "sha256": "2f0695c516e67ed29bd64b1a49d396f138f8c9a88b9c3bc89dcef10b551ac9b8"
+            }
+          ]
+        }
+      },
+      "deep_validation": [
+        {
+          "path": "experiments/s06-ratio-continuous-stack/deep-primary-r1.json",
+          "flags": [
+            "deep_verify"
+          ],
+          "performance_excluded": true,
+          "complete": true,
+          "independent_comparison": {
+            "reference_path": "baseline/primary-r1.json",
+            "scope": "saved semantic fields + complete ordered root digests",
+            "float_values_compared": 1505,
+            "float_hex_mismatches": 0,
+            "mismatch_count": 0,
+            "mismatches": [],
+            "root_digest_records_compared": 75,
+            "deep_digest_records_compared": 0,
+            "all_saved_results_match": true
+          },
+          "independent_deep_comparison": {
+            "reference_path": "baseline/deep-primary-r1.json",
+            "scope": "saved semantic fields + complete ordered root digests",
+            "float_values_compared": 1505,
+            "float_hex_mismatches": 0,
+            "mismatch_count": 0,
+            "mismatches": [],
+            "root_digest_records_compared": 75,
+            "deep_digest_records_compared": 15155,
+            "all_saved_results_match": true
+          }
+        },
+        {
+          "path": "experiments/s06-ratio-continuous-stack/deep-holdout-r1.json",
+          "flags": [
+            "deep_verify"
+          ],
+          "performance_excluded": true,
+          "complete": true,
+          "independent_comparison": {
+            "reference_path": "baseline/holdout-r1.json",
+            "scope": "saved semantic fields + complete ordered root digests",
+            "float_values_compared": 1469,
+            "float_hex_mismatches": 0,
+            "mismatch_count": 0,
+            "mismatches": [],
+            "root_digest_records_compared": 73,
+            "deep_digest_records_compared": 0,
+            "all_saved_results_match": true
+          },
+          "independent_deep_comparison": {
+            "reference_path": "baseline/deep-holdout-r1.json",
+            "scope": "saved semantic fields + complete ordered root digests",
+            "float_values_compared": 1469,
+            "float_hex_mismatches": 0,
+            "mismatch_count": 0,
+            "mismatches": [],
+            "root_digest_records_compared": 73,
+            "deep_digest_records_compared": 14224,
+            "all_saved_results_match": true
+          }
+        }
+      ]
+    }
+  },
+  "daytime": {
+    "e09-size2": {
+      "label": "Chunkgröße 2",
+      "comparison": {
+        "path": "experiments/daytime-20261012/e09-size2-on-s06/paired-analysis-v2/comparison.json",
+        "sha256": "a5961ecef8ea7303f85f57a003980157b1dd28de5b0d290866fe0fd2837d8223"
+      },
+      "decision": {
+        "decision": "reject",
+        "reason": "Die vollständigen Laufzeiten sind in beiden Problemsätzen leicht höher; kein robuster Gesamtgewinn.",
+        "source_fingerprint": "759ad6d8b6c666bf9d8aebcbbab6efa874f696a1449fb88b7e164f9d7edb18b0",
+        "comparison_sha256": "a5961ecef8ea7303f85f57a003980157b1dd28de5b0d290866fe0fd2837d8223",
+        "decision_path": "experiments/daytime-20261012/e09-size2-on-s06/decision.json",
+        "decision_sha256": "ca596b073a7617207ea7971d9b52f754bce15f924c90f60568104a593e75a729",
+        "original_reason": "Both full-input medians are slower and samples overlap controls; no robust elapsed benefit."
+      },
+      "suites": {
+        "counts": {
+          "multistep": 226,
+          "onestep": 6
+        },
+        "source_fingerprint": "759ad6d8b6c666bf9d8aebcbbab6efa874f696a1449fb88b7e164f9d7edb18b0",
+        "evidence": {
+          "path": "experiments/daytime-20261012/e09-size2-on-s06/implementation.json",
+          "sha256": "c81258fb384c05328dc9011005ad7fa89b799425bf40ede88597be76f1ba090b"
+        },
+        "scope": "Inherited recorded full suites; no suites are rerun by this builder."
+      },
+      "datasets": {
+        "primary": {
+          "seed": 20260902,
+          "controls": {
+            "values": [
+              104.9571443758905,
+              106.32695395406336,
+              105.40355124510825,
+              105.413028235198
+            ],
+            "median": 105.40828974015312
+          },
+          "candidates": {
+            "values": [
+              105.96151696890593,
+              104.95133320789319,
+              105.71877668285742
+            ],
+            "median": 105.71877668285742
+          },
+          "control_paths": [
+            "experiments/s06-ratio-continuous-stack/primary-r20.json",
+            "experiments/s06-ratio-continuous-stack/primary-r21.json",
+            "experiments/s06-ratio-continuous-stack/primary-r22.json",
+            "experiments/s06-ratio-continuous-stack/primary-r23.json"
+          ],
+          "candidate_paths": [
+            "experiments/daytime-20261012/e09-size2-on-s06/primary-r1.json",
+            "experiments/daytime-20261012/e09-size2-on-s06/primary-r2.json",
+            "experiments/daytime-20261012/e09-size2-on-s06/primary-r3.json"
+          ],
+          "median_time_reduction_percent": -0.2945564750834073,
+          "control_evidence": [
+            {
+              "path": "experiments/s06-ratio-continuous-stack/primary-r20.json",
+              "sha256": "ad0ca187284abcbb54e5471b3bac39886d5a9b2df50eaea452d167744cdd5af8"
+            },
+            {
+              "path": "experiments/s06-ratio-continuous-stack/primary-r21.json",
+              "sha256": "f61b1b4b926b1d96430ca10eb6d893da05794564e92ec93dbfa6702db4948164"
+            },
+            {
+              "path": "experiments/s06-ratio-continuous-stack/primary-r22.json",
+              "sha256": "5424932f7c9037b03b3aad52b8e0fda1dcaf980fdd21e834784134ebad05abf9"
+            },
+            {
+              "path": "experiments/s06-ratio-continuous-stack/primary-r23.json",
+              "sha256": "9394fc0d0bdf931bcf263512809eb92b70c126c205e08fd4c6e305e24ca7336d"
+            }
+          ],
+          "candidate_evidence": [
+            {
+              "path": "experiments/daytime-20261012/e09-size2-on-s06/primary-r1.json",
+              "sha256": "85d7582a4d545e3fb1af756d13e113b324273d879379bd7a9461755bafe6f149"
+            },
+            {
+              "path": "experiments/daytime-20261012/e09-size2-on-s06/primary-r2.json",
+              "sha256": "700f8b6ff57749cda617b2cc27041f67075d013eb492df658f2e60edb120b48e"
+            },
+            {
+              "path": "experiments/daytime-20261012/e09-size2-on-s06/primary-r3.json",
+              "sha256": "a62823033ec41274f86a1db37657746f279a124ace6c4e206ab530fa81c028a7"
+            }
+          ]
+        },
+        "holdout": {
+          "seed": 20261012,
+          "controls": {
+            "values": [
+              97.84593140822835,
+              97.70401405391749,
+              97.80253984092269,
+              98.1882279108977
+            ],
+            "median": 97.82423562457552
+          },
+          "candidates": {
+            "values": [
+              97.62765591591597,
+              97.92747240094468,
+              98.061682968284
+            ],
+            "median": 97.92747240094468
+          },
+          "control_paths": [
+            "experiments/s06-ratio-continuous-stack/holdout-r20.json",
+            "experiments/s06-ratio-continuous-stack/holdout-r21.json",
+            "experiments/s06-ratio-continuous-stack/holdout-r22.json",
+            "experiments/s06-ratio-continuous-stack/holdout-r23.json"
+          ],
+          "candidate_paths": [
+            "experiments/daytime-20261012/e09-size2-on-s06/holdout-r1.json",
+            "experiments/daytime-20261012/e09-size2-on-s06/holdout-r2.json",
+            "experiments/daytime-20261012/e09-size2-on-s06/holdout-r3.json"
+          ],
+          "median_time_reduction_percent": -0.1055329241368641,
+          "control_evidence": [
+            {
+              "path": "experiments/s06-ratio-continuous-stack/holdout-r20.json",
+              "sha256": "8fde967165127d4d5125ba0854df5aef52c4451c0f9dbf6638e725b31a262a2b"
+            },
+            {
+              "path": "experiments/s06-ratio-continuous-stack/holdout-r21.json",
+              "sha256": "9ec177155e9cbc2b55d06065af21c5735547c1ac4d96b54d0a38f8a1b7b7a568"
+            },
+            {
+              "path": "experiments/s06-ratio-continuous-stack/holdout-r22.json",
+              "sha256": "732f428cac01365ebb884ff2fb122feb497f6b23c68d7ea584c2b6acd09df438"
+            },
+            {
+              "path": "experiments/s06-ratio-continuous-stack/holdout-r23.json",
+              "sha256": "b517a2b6a3c45a69573a2e26c16f5c0f19d8535dc5af0db419c4b5123cf2c366"
+            }
+          ],
+          "candidate_evidence": [
+            {
+              "path": "experiments/daytime-20261012/e09-size2-on-s06/holdout-r1.json",
+              "sha256": "73c026a55729f9269a817f235387e3260a7e46fe8631a74be26489270b73e43e"
+            },
+            {
+              "path": "experiments/daytime-20261012/e09-size2-on-s06/holdout-r2.json",
+              "sha256": "5e16cd7ef30d0581638d1264ddb953e070849235d72a9ddf7cc10a515cbebf2b"
+            },
+            {
+              "path": "experiments/daytime-20261012/e09-size2-on-s06/holdout-r3.json",
+              "sha256": "403a3494bb8236bd305b9ad75260de3d4b6befc18e57fedff5dcd3201aae0b8c"
+            }
+          ]
+        }
+      },
+      "deep_validation": [
+        {
+          "path": "experiments/daytime-20261012/e09-size2-on-s06/deep-primary-r1.json",
+          "flags": [
+            "deep_verify"
+          ],
+          "performance_excluded": true,
+          "complete": true,
+          "independent_comparison": {
+            "reference_path": "baseline/primary-r1.json",
+            "scope": "saved semantic fields + complete ordered root digests",
+            "float_values_compared": 1505,
+            "float_hex_mismatches": 0,
+            "mismatch_count": 0,
+            "mismatches": [],
+            "root_digest_records_compared": 75,
+            "deep_digest_records_compared": 0,
+            "all_saved_results_match": true
+          },
+          "independent_deep_comparison": {
+            "reference_path": "baseline/deep-primary-r1.json",
+            "scope": "saved semantic fields + complete ordered root digests",
+            "float_values_compared": 1505,
+            "float_hex_mismatches": 0,
+            "mismatch_count": 0,
+            "mismatches": [],
+            "root_digest_records_compared": 75,
+            "deep_digest_records_compared": 15155,
+            "all_saved_results_match": true
+          }
+        },
+        {
+          "path": "experiments/daytime-20261012/e09-size2-on-s06/deep-holdout-r1.json",
+          "flags": [
+            "deep_verify"
+          ],
+          "performance_excluded": true,
+          "complete": true,
+          "independent_comparison": {
+            "reference_path": "baseline/holdout-r1.json",
+            "scope": "saved semantic fields + complete ordered root digests",
+            "float_values_compared": 1469,
+            "float_hex_mismatches": 0,
+            "mismatch_count": 0,
+            "mismatches": [],
+            "root_digest_records_compared": 73,
+            "deep_digest_records_compared": 0,
+            "all_saved_results_match": true
+          },
+          "independent_deep_comparison": {
+            "reference_path": "baseline/deep-holdout-r1.json",
+            "scope": "saved semantic fields + complete ordered root digests",
+            "float_values_compared": 1469,
+            "float_hex_mismatches": 0,
+            "mismatch_count": 0,
+            "mismatches": [],
+            "root_digest_records_compared": 73,
+            "deep_digest_records_compared": 14224,
+            "all_saved_results_match": true
+          }
+        }
+      ]
+    },
+    "e09-size4": {
+      "label": "Chunkgröße 4",
+      "comparison": {
+        "path": "experiments/daytime-20261012/e09-size4-on-s06/paired-analysis-v2/comparison.json",
+        "sha256": "327d0e9a49dc01924f589e8dc743d7fbe926aeb93fe91f001842be0ff8f3fece"
+      },
+      "decision": {
+        "decision": "reject",
+        "reason": "Alle Kandidatenläufe sind in beiden Problemsätzen langsamer als sämtliche Kontrollläufe.",
+        "source_fingerprint": "bf7c2127e06d4961ca9e46f931c4b134bd9133f64e2e8371c4f3e60718243619",
+        "comparison_sha256": "327d0e9a49dc01924f589e8dc743d7fbe926aeb93fe91f001842be0ff8f3fece",
+        "decision_path": "experiments/daytime-20261012/e09-size4-on-s06/decision.json",
+        "decision_sha256": "52edc8c312fe1166b5c6397f9b621ab15069843362cce3932703541548e4c4c2",
+        "original_reason": "All candidate samples are slower than every control in both datasets."
+      },
+      "suites": {
+        "counts": {
+          "multistep": 226,
+          "onestep": 6
+        },
+        "source_fingerprint": "bf7c2127e06d4961ca9e46f931c4b134bd9133f64e2e8371c4f3e60718243619",
+        "evidence": {
+          "path": "experiments/daytime-20261012/e09-size4-on-s06/implementation.json",
+          "sha256": "2859d56ec32a344fe75ab3371c26a5c8868eaff1da74aa53dd74123e166975e8"
+        },
+        "scope": "Inherited recorded full suites; no suites are rerun by this builder."
+      },
+      "datasets": {
+        "primary": {
+          "seed": 20260902,
+          "controls": {
+            "values": [
+              104.9571443758905,
+              106.32695395406336,
+              105.40355124510825,
+              105.413028235198
+            ],
+            "median": 105.40828974015312
+          },
+          "candidates": {
+            "values": [
+              107.86756117118057,
+              107.30748896789737,
+              108.05143507895991
+            ],
+            "median": 107.86756117118057
+          },
+          "control_paths": [
+            "experiments/s06-ratio-continuous-stack/primary-r20.json",
+            "experiments/s06-ratio-continuous-stack/primary-r21.json",
+            "experiments/s06-ratio-continuous-stack/primary-r22.json",
+            "experiments/s06-ratio-continuous-stack/primary-r23.json"
+          ],
+          "candidate_paths": [
+            "experiments/daytime-20261012/e09-size4-on-s06/primary-r1.json",
+            "experiments/daytime-20261012/e09-size4-on-s06/primary-r2.json",
+            "experiments/daytime-20261012/e09-size4-on-s06/primary-r3.json"
+          ],
+          "median_time_reduction_percent": -2.3330911042100277,
+          "control_evidence": [
+            {
+              "path": "experiments/s06-ratio-continuous-stack/primary-r20.json",
+              "sha256": "ad0ca187284abcbb54e5471b3bac39886d5a9b2df50eaea452d167744cdd5af8"
+            },
+            {
+              "path": "experiments/s06-ratio-continuous-stack/primary-r21.json",
+              "sha256": "f61b1b4b926b1d96430ca10eb6d893da05794564e92ec93dbfa6702db4948164"
+            },
+            {
+              "path": "experiments/s06-ratio-continuous-stack/primary-r22.json",
+              "sha256": "5424932f7c9037b03b3aad52b8e0fda1dcaf980fdd21e834784134ebad05abf9"
+            },
+            {
+              "path": "experiments/s06-ratio-continuous-stack/primary-r23.json",
+              "sha256": "9394fc0d0bdf931bcf263512809eb92b70c126c205e08fd4c6e305e24ca7336d"
+            }
+          ],
+          "candidate_evidence": [
+            {
+              "path": "experiments/daytime-20261012/e09-size4-on-s06/primary-r1.json",
+              "sha256": "9bebb64ac92d317b9bf3ec689535c0edeb4095bb6b57bd8c9f053b60964045a8"
+            },
+            {
+              "path": "experiments/daytime-20261012/e09-size4-on-s06/primary-r2.json",
+              "sha256": "5d33167f9b4b62643178a92b1fa9dfe7370b359b31e2a3974c3236a84f61ac14"
+            },
+            {
+              "path": "experiments/daytime-20261012/e09-size4-on-s06/primary-r3.json",
+              "sha256": "25c452d644a9fb2031e0a74054ba5d4011a90125a92d67f755e19169f60119e7"
+            }
+          ]
+        },
+        "holdout": {
+          "seed": 20261012,
+          "controls": {
+            "values": [
+              97.84593140822835,
+              97.70401405391749,
+              97.80253984092269,
+              98.1882279108977
+            ],
+            "median": 97.82423562457552
+          },
+          "candidates": {
+            "values": [
+              99.68709713895805,
+              99.1780770738842,
+              100.09650015295483
+            ],
+            "median": 99.68709713895805
+          },
+          "control_paths": [
+            "experiments/s06-ratio-continuous-stack/holdout-r20.json",
+            "experiments/s06-ratio-continuous-stack/holdout-r21.json",
+            "experiments/s06-ratio-continuous-stack/holdout-r22.json",
+            "experiments/s06-ratio-continuous-stack/holdout-r23.json"
+          ],
+          "candidate_paths": [
+            "experiments/daytime-20261012/e09-size4-on-s06/holdout-r1.json",
+            "experiments/daytime-20261012/e09-size4-on-s06/holdout-r2.json",
+            "experiments/daytime-20261012/e09-size4-on-s06/holdout-r3.json"
+          ],
+          "median_time_reduction_percent": -1.9042944751765933,
+          "control_evidence": [
+            {
+              "path": "experiments/s06-ratio-continuous-stack/holdout-r20.json",
+              "sha256": "8fde967165127d4d5125ba0854df5aef52c4451c0f9dbf6638e725b31a262a2b"
+            },
+            {
+              "path": "experiments/s06-ratio-continuous-stack/holdout-r21.json",
+              "sha256": "9ec177155e9cbc2b55d06065af21c5735547c1ac4d96b54d0a38f8a1b7b7a568"
+            },
+            {
+              "path": "experiments/s06-ratio-continuous-stack/holdout-r22.json",
+              "sha256": "732f428cac01365ebb884ff2fb122feb497f6b23c68d7ea584c2b6acd09df438"
+            },
+            {
+              "path": "experiments/s06-ratio-continuous-stack/holdout-r23.json",
+              "sha256": "b517a2b6a3c45a69573a2e26c16f5c0f19d8535dc5af0db419c4b5123cf2c366"
+            }
+          ],
+          "candidate_evidence": [
+            {
+              "path": "experiments/daytime-20261012/e09-size4-on-s06/holdout-r1.json",
+              "sha256": "11f2c1a27d13356c225eb158933d1b3ab12501db8c092b5c3f96385dba41f7b0"
+            },
+            {
+              "path": "experiments/daytime-20261012/e09-size4-on-s06/holdout-r2.json",
+              "sha256": "120583c75b30f504d6135d18ec292ba6b6f8f258c1f7a60cea86d991ad83d894"
+            },
+            {
+              "path": "experiments/daytime-20261012/e09-size4-on-s06/holdout-r3.json",
+              "sha256": "0d45eab8864df87f53fb68d26fe6832a7c4fc0125e8246e4d5b1b689827d1c5b"
+            }
+          ]
+        }
+      },
+      "deep_validation": [
+        {
+          "path": "experiments/daytime-20261012/e09-size4-on-s06/deep-primary-r1.json",
+          "flags": [
+            "deep_verify"
+          ],
+          "performance_excluded": true,
+          "complete": true,
+          "independent_comparison": {
+            "reference_path": "baseline/primary-r1.json",
+            "scope": "saved semantic fields + complete ordered root digests",
+            "float_values_compared": 1505,
+            "float_hex_mismatches": 0,
+            "mismatch_count": 0,
+            "mismatches": [],
+            "root_digest_records_compared": 75,
+            "deep_digest_records_compared": 0,
+            "all_saved_results_match": true
+          },
+          "independent_deep_comparison": {
+            "reference_path": "baseline/deep-primary-r1.json",
+            "scope": "saved semantic fields + complete ordered root digests",
+            "float_values_compared": 1505,
+            "float_hex_mismatches": 0,
+            "mismatch_count": 0,
+            "mismatches": [],
+            "root_digest_records_compared": 75,
+            "deep_digest_records_compared": 15155,
+            "all_saved_results_match": true
+          }
+        },
+        {
+          "path": "experiments/daytime-20261012/e09-size4-on-s06/deep-holdout-r1.json",
+          "flags": [
+            "deep_verify"
+          ],
+          "performance_excluded": true,
+          "complete": true,
+          "independent_comparison": {
+            "reference_path": "baseline/holdout-r1.json",
+            "scope": "saved semantic fields + complete ordered root digests",
+            "float_values_compared": 1469,
+            "float_hex_mismatches": 0,
+            "mismatch_count": 0,
+            "mismatches": [],
+            "root_digest_records_compared": 73,
+            "deep_digest_records_compared": 0,
+            "all_saved_results_match": true
+          },
+          "independent_deep_comparison": {
+            "reference_path": "baseline/deep-holdout-r1.json",
+            "scope": "saved semantic fields + complete ordered root digests",
+            "float_values_compared": 1469,
+            "float_hex_mismatches": 0,
+            "mismatch_count": 0,
+            "mismatches": [],
+            "root_digest_records_compared": 73,
+            "deep_digest_records_compared": 14224,
+            "all_saved_results_match": true
+          }
+        }
+      ]
+    },
+    "e10": {
+      "label": "Lokale Wiederverwendung von Normen",
+      "comparison": {
+        "path": "experiments/daytime-20261012/e10-on-s06/paired-analysis-v2/comparison.json",
+        "sha256": "eebade0dbd3cac91ee4323be624068984fed75b4e22134466fadb54788967039"
+      },
+      "decision": {
+        "decision": "reject",
+        "reason": "Die kleinen Medianvorteile liegen in überlappenden Messbereichen; das vorab festgelegte Kriterium wird nicht in beiden Problemsätzen erfüllt.",
+        "source_fingerprint": "1cd76c28f8d40904801abb64141ced6bb35c02d7aef4b178105924b4e2cd2189",
+        "comparison_sha256": "eebade0dbd3cac91ee4323be624068984fed75b4e22134466fadb54788967039",
+        "decision_path": "experiments/daytime-20261012/e10-on-s06/decision.json",
+        "decision_sha256": "f9e2194102281c3769fe93fbe733ab9b7e482f2e9ed76381d98d7136ad2953e2",
+        "original_reason": "The median decreases are within overlapping observed control/candidate ranges; not all bracketing ratios are below 1."
+      },
+      "suites": {
+        "counts": {
+          "multistep": 223,
+          "onestep": 6
+        },
+        "source_fingerprint": "1cd76c28f8d40904801abb64141ced6bb35c02d7aef4b178105924b4e2cd2189",
+        "evidence": {
+          "path": "experiments/daytime-20261012/e10-on-s06/implementation.json",
+          "sha256": "f2981f037e9d65b6da258e77ee5f9847080f4f8ba385ff748bfbe2591749b1a4"
+        },
+        "scope": "Inherited recorded full suites; no suites are rerun by this builder."
+      },
+      "datasets": {
+        "primary": {
+          "seed": 20260902,
+          "controls": {
+            "values": [
+              104.9571443758905,
+              106.32695395406336,
+              105.40355124510825,
+              105.413028235198
+            ],
+            "median": 105.40828974015312
+          },
+          "candidates": {
+            "values": [
+              104.79974480113015,
+              105.25037769705523,
+              105.86991228314582
+            ],
+            "median": 105.25037769705523
+          },
+          "control_paths": [
+            "experiments/s06-ratio-continuous-stack/primary-r20.json",
+            "experiments/s06-ratio-continuous-stack/primary-r21.json",
+            "experiments/s06-ratio-continuous-stack/primary-r22.json",
+            "experiments/s06-ratio-continuous-stack/primary-r23.json"
+          ],
+          "candidate_paths": [
+            "experiments/daytime-20261012/e10-on-s06/primary-r1.json",
+            "experiments/daytime-20261012/e10-on-s06/primary-r2.json",
+            "experiments/daytime-20261012/e10-on-s06/primary-r3.json"
+          ],
+          "median_time_reduction_percent": 0.14980989017767676,
+          "control_evidence": [
+            {
+              "path": "experiments/s06-ratio-continuous-stack/primary-r20.json",
+              "sha256": "ad0ca187284abcbb54e5471b3bac39886d5a9b2df50eaea452d167744cdd5af8"
+            },
+            {
+              "path": "experiments/s06-ratio-continuous-stack/primary-r21.json",
+              "sha256": "f61b1b4b926b1d96430ca10eb6d893da05794564e92ec93dbfa6702db4948164"
+            },
+            {
+              "path": "experiments/s06-ratio-continuous-stack/primary-r22.json",
+              "sha256": "5424932f7c9037b03b3aad52b8e0fda1dcaf980fdd21e834784134ebad05abf9"
+            },
+            {
+              "path": "experiments/s06-ratio-continuous-stack/primary-r23.json",
+              "sha256": "9394fc0d0bdf931bcf263512809eb92b70c126c205e08fd4c6e305e24ca7336d"
+            }
+          ],
+          "candidate_evidence": [
+            {
+              "path": "experiments/daytime-20261012/e10-on-s06/primary-r1.json",
+              "sha256": "eb64467fdcaa7f5d39447325ce899fd3e698f8ab99e0f4ec2937cded44f7cbe4"
+            },
+            {
+              "path": "experiments/daytime-20261012/e10-on-s06/primary-r2.json",
+              "sha256": "f5954580e73d4c980b7c36de0139f8229799430b3a64cc3c87b72170e0c2866f"
+            },
+            {
+              "path": "experiments/daytime-20261012/e10-on-s06/primary-r3.json",
+              "sha256": "6d036ef727e9440966cdf0ded11dee48aa5176f1f85f686df7c4ceb6e6cc07e3"
+            }
+          ]
+        },
+        "holdout": {
+          "seed": 20261012,
+          "controls": {
+            "values": [
+              97.84593140822835,
+              97.70401405391749,
+              97.80253984092269,
+              98.1882279108977
+            ],
+            "median": 97.82423562457552
+          },
+          "candidates": {
+            "values": [
+              97.33071842999198,
+              97.41910199925769,
+              97.79622159420978
+            ],
+            "median": 97.41910199925769
+          },
+          "control_paths": [
+            "experiments/s06-ratio-continuous-stack/holdout-r20.json",
+            "experiments/s06-ratio-continuous-stack/holdout-r21.json",
+            "experiments/s06-ratio-continuous-stack/holdout-r22.json",
+            "experiments/s06-ratio-continuous-stack/holdout-r23.json"
+          ],
+          "candidate_paths": [
+            "experiments/daytime-20261012/e10-on-s06/holdout-r1.json",
+            "experiments/daytime-20261012/e10-on-s06/holdout-r2.json",
+            "experiments/daytime-20261012/e10-on-s06/holdout-r3.json"
+          ],
+          "median_time_reduction_percent": 0.4141444323394805,
+          "control_evidence": [
+            {
+              "path": "experiments/s06-ratio-continuous-stack/holdout-r20.json",
+              "sha256": "8fde967165127d4d5125ba0854df5aef52c4451c0f9dbf6638e725b31a262a2b"
+            },
+            {
+              "path": "experiments/s06-ratio-continuous-stack/holdout-r21.json",
+              "sha256": "9ec177155e9cbc2b55d06065af21c5735547c1ac4d96b54d0a38f8a1b7b7a568"
+            },
+            {
+              "path": "experiments/s06-ratio-continuous-stack/holdout-r22.json",
+              "sha256": "732f428cac01365ebb884ff2fb122feb497f6b23c68d7ea584c2b6acd09df438"
+            },
+            {
+              "path": "experiments/s06-ratio-continuous-stack/holdout-r23.json",
+              "sha256": "b517a2b6a3c45a69573a2e26c16f5c0f19d8535dc5af0db419c4b5123cf2c366"
+            }
+          ],
+          "candidate_evidence": [
+            {
+              "path": "experiments/daytime-20261012/e10-on-s06/holdout-r1.json",
+              "sha256": "97fc35aa57b935aff7914e5e6bb09fbaa8f711364a1cc3806fbb2fefadbfd0a1"
+            },
+            {
+              "path": "experiments/daytime-20261012/e10-on-s06/holdout-r2.json",
+              "sha256": "857cbac2fdd043539724f819eebdb96acc631bc0b63712fc84129ead884eb408"
+            },
+            {
+              "path": "experiments/daytime-20261012/e10-on-s06/holdout-r3.json",
+              "sha256": "5ac6fc8c8094a18206c8c31ec8e65b0eac1e992bf98fa15a18499c41b5b59c3c"
+            }
+          ]
+        }
+      },
+      "deep_validation": [
+        {
+          "path": "experiments/daytime-20261012/e10-on-s06/deep-primary-r1.json",
+          "flags": [
+            "deep_verify"
+          ],
+          "performance_excluded": true,
+          "complete": true,
+          "independent_comparison": {
+            "reference_path": "baseline/primary-r1.json",
+            "scope": "saved semantic fields + complete ordered root digests",
+            "float_values_compared": 1505,
+            "float_hex_mismatches": 0,
+            "mismatch_count": 0,
+            "mismatches": [],
+            "root_digest_records_compared": 75,
+            "deep_digest_records_compared": 0,
+            "all_saved_results_match": true
+          },
+          "independent_deep_comparison": {
+            "reference_path": "baseline/deep-primary-r1.json",
+            "scope": "saved semantic fields + complete ordered root digests",
+            "float_values_compared": 1505,
+            "float_hex_mismatches": 0,
+            "mismatch_count": 0,
+            "mismatches": [],
+            "root_digest_records_compared": 75,
+            "deep_digest_records_compared": 15155,
+            "all_saved_results_match": true
+          }
+        },
+        {
+          "path": "experiments/daytime-20261012/e10-on-s06/deep-holdout-r1.json",
+          "flags": [
+            "deep_verify"
+          ],
+          "performance_excluded": true,
+          "complete": true,
+          "independent_comparison": {
+            "reference_path": "baseline/holdout-r1.json",
+            "scope": "saved semantic fields + complete ordered root digests",
+            "float_values_compared": 1469,
+            "float_hex_mismatches": 0,
+            "mismatch_count": 0,
+            "mismatches": [],
+            "root_digest_records_compared": 73,
+            "deep_digest_records_compared": 0,
+            "all_saved_results_match": true
+          },
+          "independent_deep_comparison": {
+            "reference_path": "baseline/deep-holdout-r1.json",
+            "scope": "saved semantic fields + complete ordered root digests",
+            "float_values_compared": 1469,
+            "float_hex_mismatches": 0,
+            "mismatch_count": 0,
+            "mismatches": [],
+            "root_digest_records_compared": 73,
+            "deep_digest_records_compared": 14224,
+            "all_saved_results_match": true
+          }
+        }
+      ]
+    },
+    "e12": {
+      "label": "Masken für unendliche LP-Grenzen",
+      "comparison": {
+        "path": "experiments/daytime-20261012/e12-on-s06/paired-analysis-v2/comparison.json",
+        "sha256": "f96d93bd832c9b43f36827ce26e3578808e74c65f66903e9555ebcbc572571c5"
+      },
+      "decision": {
+        "decision": "keep",
+        "reason": "Alle drei Kandidatenläufe liegen in beiden Problemsätzen unter sämtlichen vier Kontrollen; alle Kontrollklammer-Verhältnisse sind kleiner als1. Gespeicherte Ergebnisse und vollständige rekursive Bewertungen sind identisch; alle Suites bestehen.",
+        "source_fingerprint": "d1a36969125c2ebcbb84d4bdcebf62da91e94e76d3581f029261e1b86583c60d",
+        "comparison_sha256": "f96d93bd832c9b43f36827ce26e3578808e74c65f66903e9555ebcbc572571c5",
+        "decision_path": "experiments/daytime-20261012/e12-on-s06/decision.json",
+        "decision_sha256": "bf5351558853ed5b4f633544f1b8aa579fce541a17185685c2081126806f09fc",
+        "original_reason": "All three candidate samples are below every one of four controls in each dataset; all bracketing ratios are below 1, with exact saved outcomes and complete passing suites."
+      },
+      "suites": {
+        "counts": {
+          "multistep": 224,
+          "onestep": 6
+        },
+        "source_fingerprint": "d1a36969125c2ebcbb84d4bdcebf62da91e94e76d3581f029261e1b86583c60d",
+        "evidence": {
+          "path": "experiments/daytime-20261012/e12-on-s06/implementation.json",
+          "sha256": "4cc7b5e70ece91da20692b4ea199bbd9cd5f7be2e30dc9b87a398bc798ef1e2e"
+        },
+        "scope": "Inherited recorded full suites; no suites are rerun by this builder."
+      },
+      "datasets": {
+        "primary": {
+          "seed": 20260902,
+          "controls": {
+            "values": [
+              104.9571443758905,
+              106.32695395406336,
+              105.40355124510825,
+              105.413028235198
+            ],
+            "median": 105.40828974015312
+          },
+          "candidates": {
+            "values": [
+              104.44084271392785,
+              104.47474960889667,
+              104.81444934313186
+            ],
+            "median": 104.47474960889667
+          },
+          "control_paths": [
+            "experiments/s06-ratio-continuous-stack/primary-r20.json",
+            "experiments/s06-ratio-continuous-stack/primary-r21.json",
+            "experiments/s06-ratio-continuous-stack/primary-r22.json",
+            "experiments/s06-ratio-continuous-stack/primary-r23.json"
+          ],
+          "candidate_paths": [
+            "experiments/daytime-20261012/e12-on-s06/primary-r1.json",
+            "experiments/daytime-20261012/e12-on-s06/primary-r2.json",
+            "experiments/daytime-20261012/e12-on-s06/primary-r3.json"
+          ],
+          "median_time_reduction_percent": 0.8856420434842138,
+          "control_evidence": [
+            {
+              "path": "experiments/s06-ratio-continuous-stack/primary-r20.json",
+              "sha256": "ad0ca187284abcbb54e5471b3bac39886d5a9b2df50eaea452d167744cdd5af8"
+            },
+            {
+              "path": "experiments/s06-ratio-continuous-stack/primary-r21.json",
+              "sha256": "f61b1b4b926b1d96430ca10eb6d893da05794564e92ec93dbfa6702db4948164"
+            },
+            {
+              "path": "experiments/s06-ratio-continuous-stack/primary-r22.json",
+              "sha256": "5424932f7c9037b03b3aad52b8e0fda1dcaf980fdd21e834784134ebad05abf9"
+            },
+            {
+              "path": "experiments/s06-ratio-continuous-stack/primary-r23.json",
+              "sha256": "9394fc0d0bdf931bcf263512809eb92b70c126c205e08fd4c6e305e24ca7336d"
+            }
+          ],
+          "candidate_evidence": [
+            {
+              "path": "experiments/daytime-20261012/e12-on-s06/primary-r1.json",
+              "sha256": "bcc0b848979eddf1c000258ff1ad4983dcf78f77471ed8665cddf807b3193e1c"
+            },
+            {
+              "path": "experiments/daytime-20261012/e12-on-s06/primary-r2.json",
+              "sha256": "5f3b481867e9f08e49eb2ed55d906f4bee6f6c0931ab5c06ad3a9817e48336f2"
+            },
+            {
+              "path": "experiments/daytime-20261012/e12-on-s06/primary-r3.json",
+              "sha256": "71d45e18fc9e2d382777e7e5f1f0f203f5f9dd629ba4c8190f32780eed4fa456"
+            }
+          ]
+        },
+        "holdout": {
+          "seed": 20261012,
+          "controls": {
+            "values": [
+              97.84593140822835,
+              97.70401405391749,
+              97.80253984092269,
+              98.1882279108977
+            ],
+            "median": 97.82423562457552
+          },
+          "candidates": {
+            "values": [
+              97.54012449015863,
+              97.41572999767959,
+              96.79252827167511
+            ],
+            "median": 97.41572999767959
+          },
+          "control_paths": [
+            "experiments/s06-ratio-continuous-stack/holdout-r20.json",
+            "experiments/s06-ratio-continuous-stack/holdout-r21.json",
+            "experiments/s06-ratio-continuous-stack/holdout-r22.json",
+            "experiments/s06-ratio-continuous-stack/holdout-r23.json"
+          ],
+          "candidate_paths": [
+            "experiments/daytime-20261012/e12-on-s06/holdout-r1.json",
+            "experiments/daytime-20261012/e12-on-s06/holdout-r2.json",
+            "experiments/daytime-20261012/e12-on-s06/holdout-r3.json"
+          ],
+          "median_time_reduction_percent": 0.41759143251951514,
+          "control_evidence": [
+            {
+              "path": "experiments/s06-ratio-continuous-stack/holdout-r20.json",
+              "sha256": "8fde967165127d4d5125ba0854df5aef52c4451c0f9dbf6638e725b31a262a2b"
+            },
+            {
+              "path": "experiments/s06-ratio-continuous-stack/holdout-r21.json",
+              "sha256": "9ec177155e9cbc2b55d06065af21c5735547c1ac4d96b54d0a38f8a1b7b7a568"
+            },
+            {
+              "path": "experiments/s06-ratio-continuous-stack/holdout-r22.json",
+              "sha256": "732f428cac01365ebb884ff2fb122feb497f6b23c68d7ea584c2b6acd09df438"
+            },
+            {
+              "path": "experiments/s06-ratio-continuous-stack/holdout-r23.json",
+              "sha256": "b517a2b6a3c45a69573a2e26c16f5c0f19d8535dc5af0db419c4b5123cf2c366"
+            }
+          ],
+          "candidate_evidence": [
+            {
+              "path": "experiments/daytime-20261012/e12-on-s06/holdout-r1.json",
+              "sha256": "fe1febcdb7c28f5164c6ca669ac129675b27308dfcd1281b2a030bc31011722c"
+            },
+            {
+              "path": "experiments/daytime-20261012/e12-on-s06/holdout-r2.json",
+              "sha256": "b9f650756546b0695fe7e86d7bb371221bc673f4220167ed00ef2154c4f87384"
+            },
+            {
+              "path": "experiments/daytime-20261012/e12-on-s06/holdout-r3.json",
+              "sha256": "ab081ee7b8ab5dc14e4c763dde557d693b14b926c03f2febd9c019fc3d21aae1"
+            }
+          ]
+        }
+      },
+      "deep_validation": [
+        {
+          "path": "experiments/daytime-20261012/e12-on-s06/deep-primary-r1.json",
+          "flags": [
+            "deep_verify"
+          ],
+          "performance_excluded": true,
+          "complete": true,
+          "independent_comparison": {
+            "reference_path": "baseline/primary-r1.json",
+            "scope": "saved semantic fields + complete ordered root digests",
+            "float_values_compared": 1505,
+            "float_hex_mismatches": 0,
+            "mismatch_count": 0,
+            "mismatches": [],
+            "root_digest_records_compared": 75,
+            "deep_digest_records_compared": 0,
+            "all_saved_results_match": true
+          },
+          "independent_deep_comparison": {
+            "reference_path": "baseline/deep-primary-r1.json",
+            "scope": "saved semantic fields + complete ordered root digests",
+            "float_values_compared": 1505,
+            "float_hex_mismatches": 0,
+            "mismatch_count": 0,
+            "mismatches": [],
+            "root_digest_records_compared": 75,
+            "deep_digest_records_compared": 15155,
+            "all_saved_results_match": true
+          }
+        },
+        {
+          "path": "experiments/daytime-20261012/e12-on-s06/deep-holdout-r1.json",
+          "flags": [
+            "deep_verify"
+          ],
+          "performance_excluded": true,
+          "complete": true,
+          "independent_comparison": {
+            "reference_path": "baseline/holdout-r1.json",
+            "scope": "saved semantic fields + complete ordered root digests",
+            "float_values_compared": 1469,
+            "float_hex_mismatches": 0,
+            "mismatch_count": 0,
+            "mismatches": [],
+            "root_digest_records_compared": 73,
+            "deep_digest_records_compared": 0,
+            "all_saved_results_match": true
+          },
+          "independent_deep_comparison": {
+            "reference_path": "baseline/deep-holdout-r1.json",
+            "scope": "saved semantic fields + complete ordered root digests",
+            "float_values_compared": 1469,
+            "float_hex_mismatches": 0,
+            "mismatch_count": 0,
+            "mismatches": [],
+            "root_digest_records_compared": 73,
+            "deep_digest_records_compared": 14224,
+            "all_saved_results_match": true
+          }
+        }
+      ]
+    }
+  },
+  "shared_unique_s06_control_count": 8,
+  "shared_s06_controls": {
+    "primary": {
+      "paths": [
+        "experiments/s06-ratio-continuous-stack/primary-r20.json",
+        "experiments/s06-ratio-continuous-stack/primary-r21.json",
+        "experiments/s06-ratio-continuous-stack/primary-r22.json",
+        "experiments/s06-ratio-continuous-stack/primary-r23.json"
+      ],
+      "values": [
+        104.9571443758905,
+        106.32695395406336,
+        105.40355124510825,
+        105.413028235198
+      ]
+    },
+    "holdout": {
+      "paths": [
+        "experiments/s06-ratio-continuous-stack/holdout-r20.json",
+        "experiments/s06-ratio-continuous-stack/holdout-r21.json",
+        "experiments/s06-ratio-continuous-stack/holdout-r22.json",
+        "experiments/s06-ratio-continuous-stack/holdout-r23.json"
+      ],
+      "values": [
+        97.84593140822835,
+        97.70401405391749,
+        97.80253984092269,
+        98.1882279108977
+      ]
+    }
+  },
+  "final_direct_actual074": {
+    "comparison": {
+      "path": "final-daytime/paired-analysis-v2/comparison.json",
+      "sha256": "7a6b61200439f0e97d37a87a375f9058fd708d3c8af5a49638f3ae1fa02416e1"
+    },
+    "source_fingerprint": "d1a36969125c2ebcbb84d4bdcebf62da91e94e76d3581f029261e1b86583c60d",
+    "inherited_full_suites": {
+      "counts": {
+        "multistep": 224,
+        "onestep": 6
+      },
+      "source_fingerprint": "d1a36969125c2ebcbb84d4bdcebf62da91e94e76d3581f029261e1b86583c60d",
+      "evidence": {
+        "path": "experiments/daytime-20261012/e12-on-s06/canonical-adoption-checks.json",
+        "sha256": "8bb40a6136f4cabd4254e485ce13149462d8ee50dc3683c76ee7e0af79da4bbc"
+      },
+      "scope": "Inherited recorded full suites; no suites are rerun by this builder."
+    },
+    "baseline_commit": "074fbf9d3c09ae1318155a15f549833df661a9b3",
+    "datasets": {
+      "primary": {
+        "seed": 20260902,
+        "controls": {
+          "values": [
+            132.92585273005534,
+            133.0058379988186,
+            132.69185891223606,
+            132.94833832688164
+          ],
+          "median": 132.9370955284685
+        },
+        "candidates": {
+          "values": [
+            104.70858989993576,
+            104.87166039971635,
+            106.77066553710029
+          ],
+          "median": 104.87166039971635
+        },
+        "control_paths": [
+          "baseline/primary-r40.json",
+          "baseline/primary-r41.json",
+          "baseline/primary-r42.json",
+          "baseline/primary-r43.json"
+        ],
+        "candidate_paths": [
+          "final-daytime/primary-r1.json",
+          "final-daytime/primary-r2.json",
+          "final-daytime/primary-r3.json"
+        ],
+        "median_time_reduction_percent": 21.111816094057755,
+        "control_evidence": [
+          {
+            "path": "baseline/primary-r40.json",
+            "sha256": "45812dd771f11fca6aac134b6bb7bd39514ddfe6a907ad363790abe45b31b8d3"
+          },
+          {
+            "path": "baseline/primary-r41.json",
+            "sha256": "43dce98c06a7fb6061784af5585413abaa7a8ddbc188b9c1965032328f19f6cc"
+          },
+          {
+            "path": "baseline/primary-r42.json",
+            "sha256": "969ea23606e076900b909afada454a32f6ff41db4a2d2de21d69120a2560c306"
+          },
+          {
+            "path": "baseline/primary-r43.json",
+            "sha256": "46b646d4715bf7bc2f5f65099cedd5c69daf141f0b462a0c80fe33e9c7e63980"
+          }
+        ],
+        "candidate_evidence": [
+          {
+            "path": "final-daytime/primary-r1.json",
+            "sha256": "b129bf5fb7b4b9de3f43fb40596ebf87c822228a889bf20e653c302b62887995"
+          },
+          {
+            "path": "final-daytime/primary-r2.json",
+            "sha256": "d237acd0ca2e982c7f7aa9bd98b6ed2b1c2f94d61a133ee6c7e83a4c48e25432"
+          },
+          {
+            "path": "final-daytime/primary-r3.json",
+            "sha256": "c45af04c14ea8ee0477d7dda8e8e74f25ad3dfa375c6b399f6f31b69092bdfda"
+          }
+        ]
+      },
+      "holdout": {
+        "seed": 20261012,
+        "controls": {
+          "values": [
+            121.52841252915096,
+            123.2496932396898,
+            121.41847632988356,
+            121.730600364157
+          ],
+          "median": 121.62950644665398
+        },
+        "candidates": {
+          "values": [
+            97.92032994306646,
+            97.55567786982283,
+            98.14454124809708
+          ],
+          "median": 97.92032994306646
+        },
+        "control_paths": [
+          "baseline/holdout-r40.json",
+          "baseline/holdout-r41.json",
+          "baseline/holdout-r42.json",
+          "baseline/holdout-r43.json"
+        ],
+        "candidate_paths": [
+          "final-daytime/holdout-r1.json",
+          "final-daytime/holdout-r2.json",
+          "final-daytime/holdout-r3.json"
+        ],
+        "median_time_reduction_percent": 19.492948048741965,
+        "control_evidence": [
+          {
+            "path": "baseline/holdout-r40.json",
+            "sha256": "f950127b22196c901c3623ce526ac001ccd2b474bcb647f62cea29465110a36d"
+          },
+          {
+            "path": "baseline/holdout-r41.json",
+            "sha256": "a633c189150cc8034656d593f7b82bf0ff7fac539194bbcb38bc252951a5eb25"
+          },
+          {
+            "path": "baseline/holdout-r42.json",
+            "sha256": "b5ee99937dc9832f9b584f7b9c0a9fb2c6da3c1ebd1c7cda76c890ea0df1709e"
+          },
+          {
+            "path": "baseline/holdout-r43.json",
+            "sha256": "11d23d2255fdf32589ea42f31b98f275d7e8a508f86663c26caab7b98e0e945c"
+          }
+        ],
+        "candidate_evidence": [
+          {
+            "path": "final-daytime/holdout-r1.json",
+            "sha256": "00aef71be21daa65f43cf5317bb09977c34f79cdaea19cd362ec911f666db42e"
+          },
+          {
+            "path": "final-daytime/holdout-r2.json",
+            "sha256": "2607f00a71ae8fee2d99858b959d7eafefcae18a07f98a3fa4759708e789693e"
+          },
+          {
+            "path": "final-daytime/holdout-r3.json",
+            "sha256": "fa47186769b09a7804cac01677223afa8fab5468f561748d3d238ba68ec0e0d9"
+          }
+        ]
+      }
+    },
+    "deep_validation": [
+      {
+        "path": "final-daytime/deep-primary-r1.json",
+        "flags": [
+          "deep_verify"
+        ],
+        "performance_excluded": true,
+        "complete": true,
+        "independent_comparison": {
+          "reference_path": "baseline/primary-r1.json",
+          "scope": "saved semantic fields + complete ordered root digests",
+          "float_values_compared": 1505,
+          "float_hex_mismatches": 0,
+          "mismatch_count": 0,
+          "mismatches": [],
+          "root_digest_records_compared": 75,
+          "deep_digest_records_compared": 0,
+          "all_saved_results_match": true
+        },
+        "independent_deep_comparison": {
+          "reference_path": "baseline/deep-primary-r1.json",
+          "scope": "saved semantic fields + complete ordered root digests",
+          "float_values_compared": 1505,
+          "float_hex_mismatches": 0,
+          "mismatch_count": 0,
+          "mismatches": [],
+          "root_digest_records_compared": 75,
+          "deep_digest_records_compared": 15155,
+          "all_saved_results_match": true
+        }
+      },
+      {
+        "path": "final-daytime/deep-holdout-r1.json",
+        "flags": [
+          "deep_verify"
+        ],
+        "performance_excluded": true,
+        "complete": true,
+        "independent_comparison": {
+          "reference_path": "baseline/holdout-r1.json",
+          "scope": "saved semantic fields + complete ordered root digests",
+          "float_values_compared": 1469,
+          "float_hex_mismatches": 0,
+          "mismatch_count": 0,
+          "mismatches": [],
+          "root_digest_records_compared": 73,
+          "deep_digest_records_compared": 0,
+          "all_saved_results_match": true
+        },
+        "independent_deep_comparison": {
+          "reference_path": "baseline/deep-holdout-r1.json",
+          "scope": "saved semantic fields + complete ordered root digests",
+          "float_values_compared": 1469,
+          "float_hex_mismatches": 0,
+          "mismatch_count": 0,
+          "mismatches": [],
+          "root_digest_records_compared": 73,
+          "deep_digest_records_compared": 14224,
+          "all_saved_results_match": true
+        }
+      }
+    ],
+    "incremental_gains_are_not_added": true
+  },
+  "third_validation": {
+    "evidence": {
+      "path": "pending-review/daytime-final-third-audit/actual-v2-final-20261012T141750.849404Z/third-audit.json",
+      "sha256": "7aed363d031544cee693dec2da9a60ef8f21fd994bd8c0f89607a6fdcabcdf94"
+    },
+    "audit": {
+      "status": "third_dataset_saved_float_root_deep_evidence_verified",
+      "seed": 20261013,
+      "cases_compared": 10,
+      "input_float_hex_values_verified": 300,
+      "ordered_comparison": {
+        "float_values_compared": 1746,
+        "float_hex_mismatches": 0,
+        "mismatch_count": 0,
+        "mismatches": []
+      },
+      "complete_root_recursive_comparison": {
+        "reference_path": "baseline/deep-final-daytime-validation-r1.json",
+        "scope": "saved semantic fields + complete ordered root digests",
+        "float_values_compared": 1746,
+        "float_hex_mismatches": 0,
+        "mismatch_count": 0,
+        "mismatches": [],
+        "root_digest_records_compared": 90,
+        "deep_digest_records_compared": 16917,
+        "all_saved_results_match": true
+      },
+      "input_adapter": {
+        "original_input_configuration_field_present": false,
+        "original_input_bytes_and_manifest_unchanged": true,
+        "original_analyzer_without_adapter_would_report": "saved_input_configuration_fingerprint_invalid",
+        "adapter": "Memory view adds exactly the SHA-pinned 40-field Holdout configuration, after its fingerprint equals the original input fingerprint. Raw.configuration is separately required to match every field exactly.",
+        "ignored_audit_errors": []
+      },
+      "records": [
+        {
+          "path": "baseline/deep-final-daytime-validation-r1.json",
+          "source_fingerprint": "0c0baec102c1367b1e023db9ef2b647ef5693b2f6478fc8f8a8ea0284cc0c2fe",
+          "diagnostic_flags": [
+            "deep_verify"
+          ],
+          "correct_cases": 10,
+          "actual_workers_per_case": [
+            8,
+            8,
+            8,
+            8,
+            8,
+            8,
+            8,
+            8,
+            8,
+            0
+          ]
+        },
+        {
+          "path": "final-daytime/deep-final-validation-r1.json",
+          "source_fingerprint": "d1a36969125c2ebcbb84d4bdcebf62da91e94e76d3581f029261e1b86583c60d",
+          "diagnostic_flags": [
+            "deep_verify"
+          ],
+          "correct_cases": 10,
+          "actual_workers_per_case": [
+            8,
+            8,
+            8,
+            8,
+            8,
+            8,
+            8,
+            8,
+            8,
+            0
+          ]
+        }
+      ]
+    }
+  },
+  "experiment_ledger": [
+    {
+      "id": "E01",
+      "change": "branch-key reuse",
+      "status": "retained as part of S01",
+      "evidence": "experiments/s01-core-stack/decision.json"
+    },
+    {
+      "id": "E02",
+      "change": "compact private LP results",
+      "status": "retained as part of S01",
+      "evidence": "experiments/s01-core-stack/decision.json"
+    },
+    {
+      "id": "E03",
+      "change": "byte row deduplication",
+      "status": "retained as part of S01",
+      "evidence": "experiments/s01-core-stack/decision.json"
+    },
+    {
+      "id": "E04",
+      "change": "batch ratio intermediates",
+      "status": "no standalone adoption; primitives included in E05 combined candidate",
+      "evidence": "experiments/e04-batched-ratios/"
+    },
+    {
+      "id": "E05",
+      "change": "guarded ratio vectorization",
+      "status": "retained as part of S03; direct gains2.1933%/2.4458% against acceptedS02",
+      "evidence": "experiments/s03-ratio-stack/decision.json"
+    },
+    {
+      "id": "E06",
+      "change": "direct CSC preparation",
+      "status": "retained as part of S01",
+      "evidence": "experiments/s01-core-stack/decision.json"
+    },
+    {
+      "id": "E07",
+      "change": "map conversion keys",
+      "status": "rejected local; unsafe semantics or negligible safe gain; no remote run",
+      "evidence": "experiments/e07-map-keys/"
+    },
+    {
+      "id": "E08",
+      "change": "prepared volume arrays",
+      "status": "deferred local; no remote timing or performance rejection",
+      "evidence": "experiments/e08-prepared-volume/"
+    },
+    {
+      "id": "E09",
+      "change": "process chunk size2/4",
+      "status": "rejected daytime on S06: chunk2 and chunk4 slower; no canonical adoption",
+      "evidence": "daytime-root-decision.json"
+    },
+    {
+      "id": "E10",
+      "change": "local norm reuse",
+      "status": "rejected daytime on S06: overlapping small decreases, no robust full-runtime gain",
+      "evidence": "daytime-root-decision.json"
+    },
+    {
+      "id": "E11",
+      "change": "LP input cache",
+      "status": "rejected local; key/miss overhead; no production or remote adoption",
+      "evidence": "experiments/e11-lp-input-cache/"
+    },
+    {
+      "id": "E12",
+      "change": "direct infinity masks",
+      "status": "retained daytime on S06: exact float64 infinity mask simplification; all full-input candidate times below all controls in both sets",
+      "evidence": "daytime-root-decision.json"
+    },
+    {
+      "id": "E13",
+      "change": "HighsLp template reuse",
+      "status": "rejected local audit; opaque native state and negligible constructor cost",
+      "evidence": "experiments/e13-template-reuse/"
+    },
+    {
+      "id": "E14",
+      "change": "partial support LP reuse",
+      "status": "retained as part of S02; direct gains4.7866%/4.0968% against S01",
+      "evidence": "experiments/s02-partial-support-stack/decision.json"
+    },
+    {
+      "id": "E15",
+      "change": "larger native model cache",
+      "status": "observational only on Bench; virtual512 avoids0.0966% misses; no capacity change",
+      "evidence": "experiments/e15-model-capacity-audit/remote-s01-case8/"
+    },
+    {
+      "id": "E16",
+      "change": "geometry allocations",
+      "status": "rejected local; guarded prototype slower; no remote claim",
+      "evidence": "experiments/e16-geometry-allocation-audit/"
+    },
+    {
+      "id": "E17",
+      "change": "guarded continuous LP checker",
+      "status": "retained as part of S06 after completed measurement recovery; direct gain3.2738%/2.6434% vs S03",
+      "evidence": "experiments/s06-ratio-continuous-stack/decision.json"
+    },
+    {
+      "id": "E18",
+      "change": "fresh S02 hotspot audit",
+      "status": "observational audit; no further >=1% whole-relevant safe hypothesis established; no production candidate or remote performance rejection",
+      "evidence": "experiments/e18-s02-hotspot-audit/AUDIT.md"
+    }
+  ],
+  "status_policy": "Prepared/pending/deferred is not a measured failure; no standalone micro result is a whole benchmark gain. E04 primitives only evaluated with E05, no standalone retention claim. All timing gains use constant full configuration.",
+  "final_components": [
+    "S01: weniger LP-/Constraint-Verwaltung (E01/E02/E03/E06)",
+    "S02: bekannte Supportgrenzen wiederverwenden (E14)",
+    "S03: Ratiointervalle gebündelt berechnen (E05/E04)",
+    "S06: kontinuierliche LP-Ergebnisse spezialisiert prüfen (E17)",
+    "E12: float64-Infinity-Masken vereinfachen"
+  ],
+  "root_decision_evidence": {
+    "path": "daytime-final-root-decision.json",
+    "sha256": "7dad04e93db0ff81d6979f9aae33423837b5941ae02e8e5ef004215120fb2730"
+  },
+  "limitations": [
+    "Nachtgewinne sind inkrementelle Vergleiche und werden weder addiert noch als gemessener Gesamtgewinn multipliziert.",
+    "Der Gesamtgewinn stammt ausschließlich aus dem frischen direkten Vergleich actual074 gegen final.",
+    "Die vier Tagesvarianten teilen acht eindeutige S06-Kontrollläufe; dies sind keine 32 unabhängigen Kontrollen.",
+    "Warmup, Deep-, Native- und cProfile-Läufe zählen nicht als reguläre Laufzeitmessungen.",
+    "Kumulierte/inclusive Worker- und Profilerzeiten überlappen; sie sind keine additiven Anteile der Walltime und liefern keinen Kausalitätsbeweis.",
+    "Bitgenaue gespeicherte Ergebnisse und Root-/rekursive Digests gelten für die getesteten Fälle und sind kein mathematischer Universalbeweis.",
+    "Python-Quellbytes und alle gehashten Evidenzdateien werden vor/nach dem Bericht kontrolliert; vollständige Dateimodi und Canonical-Adoption sind separate Root-Nachweise."
+  ],
+  "raw_evidence": [
+    {
+      "path": "outputs/benchmarks/bench-i7/20261012-overnight-exact-optimization/freshreports/end-daytime-v2/report.json",
+      "sha256": "7841b4bdbdd0331c9f0e226ca16294f4708cde0ad54c05760400756c573f9c58"
+    },
+    {
+      "path": "outputs/benchmarks/bench-i7/20261012-overnight-exact-optimization/experiment-ledger.json",
+      "sha256": "3a22a3da5e70b09dced604ad80935759dccc4072cbf110fa856293f9fd4d4cd5"
+    },
+    {
+      "path": "outputs/benchmarks/bench-i7/20261012-overnight-exact-optimization/daytime-final-root-decision.json",
+      "sha256": "7dad04e93db0ff81d6979f9aae33423837b5941ae02e8e5ef004215120fb2730"
+    }
+  ],
+  "snapshot_scope": "Numerical timing arrays, source identities, fixed configuration, decisions and finite validation receipts only. Source archives, raw logs, complete profiler data and full source manifests are not embedded. Per-run timing evidence SHA256 references are stored alongside their dataset arrays; each stage also retains comparison, decision and suite-receipt references.",
+  "source_fingerprints": {
+    "experiments/s06-ratio-continuous-stack/repo": "a83fed3d865341162b15865536f3d87e753a06bb5bd567ce913b0597367b9571",
+    "experiments/daytime-20261012/e09-size2-on-s06/repo": "759ad6d8b6c666bf9d8aebcbbab6efa874f696a1449fb88b7e164f9d7edb18b0",
+    "baseline/repo": "0c0baec102c1367b1e023db9ef2b647ef5693b2f6478fc8f8a8ea0284cc0c2fe",
+    "experiments/daytime-20261012/e09-size4-on-s06/repo": "bf7c2127e06d4961ca9e46f931c4b134bd9133f64e2e8371c4f3e60718243619",
+    "experiments/daytime-20261012/e10-on-s06/repo": "1cd76c28f8d40904801abb64141ced6bb35c02d7aef4b178105924b4e2cd2189",
+    "experiments/daytime-20261012/e12-on-s06/repo": "d1a36969125c2ebcbb84d4bdcebf62da91e94e76d3581f029261e1b86583c60d",
+    "experiments/s01-core-stack/repo": "8abc41e4e780f50fc8b49f8d5fdd8ae86bd985b4e9abd0bb0a19cd7d7eb439d2",
+    "experiments/s02-partial-support-stack/repo": "429539ced0e3168791991de9d36a524fbb2616a78475ca46afa8851ecda61158",
+    "experiments/s03-ratio-stack/repo": "ad7b110a9e5fb69fcc09c3e8b11d2b4a83b20396d1978388df70bf11e944bb7b",
+    "final-daytime/repo": "d1a36969125c2ebcbb84d4bdcebf62da91e94e76d3581f029261e1b86583c60d"
+  }
+}

@@ -40,6 +40,10 @@ _vertex_cache_hits = 0
 _vertex_cache_misses = 0
 _vertex_support_hits = 0
 _vertex_support_fallbacks = 0
+_vertex_partial_support_hits = 0
+_vertex_partial_lower_hits = 0
+_vertex_partial_upper_hits = 0
+_vertex_partial_avoided_lps = 0
 
 
 class PolytopeVertexCacheInfo(NamedTuple):
@@ -51,6 +55,13 @@ class PolytopeVertexCacheInfo(NamedTuple):
     currbytes: int
     support_hits: int
     support_fallbacks: int
+
+
+class PolytopePartialSupportCacheInfo(NamedTuple):
+    partial_hits: int
+    lower_hits: int
+    upper_hits: int
+    avoided_lps: int
 
 
 def compute_polytope_intrinsic_volume(
@@ -117,18 +128,28 @@ def compute_exact_query_answer_probabilities(
     objective = [0.0] * weight_space.variable_count
     objective[int(query.ziel_index_a)] = 1.0
     objective[int(query.ziel_index_b)] = -float(query.value)
-    support = _query_support_from_cached_vertices(weight_space, objective, tolerance)
-    if support is None:
-        lower = weight_space.minimize(objective)
-        upper = weight_space.maximize(objective)
-        if lower.status != "optimal" or upper.status != "optimal":
+    constraint_key = _constraint_system_key(weight_space)
+    support = _query_support_from_cached_vertices(
+        weight_space, objective, tolerance,
+        constraint_key=constraint_key, allow_partial=True,
+    )
+    lower_value, upper_value = (None, None) if support is None else support
+    if lower_value is None or upper_value is None:
+        lower = weight_space.minimize(objective) if lower_value is None else None
+        upper = weight_space.maximize(objective) if upper_value is None else None
+        if (lower is not None and lower.status != "optimal") or (
+            upper is not None and upper.status != "optimal"
+        ):
             raise RuntimeError("cannot determine exact query support")
-        if lower.optimal_value is None or upper.optimal_value is None:
+        if (lower is not None and lower.optimal_value is None) or (
+            upper is not None and upper.optimal_value is None
+        ):
             raise RuntimeError("query support optimization has no value")
-        lower_value = float(lower.optimal_value)
-        upper_value = float(upper.optimal_value)
-    else:
-        lower_value, upper_value = support
+        if lower is not None:
+            lower_value = float(lower.optimal_value)
+        if upper is not None:
+            upper_value = float(upper.optimal_value)
+    assert lower_value is not None and upper_value is not None
     if lower_value >= -tolerance and upper_value <= tolerance:
         return {"<": 0.0, "=": 1.0, ">": 0.0}
     if lower_value >= -tolerance:
@@ -136,25 +157,30 @@ def compute_exact_query_answer_probabilities(
     if upper_value <= tolerance:
         return {"<": 1.0, "=": 0.0, ">": 0.0}
 
-    total_volume = compute_polytope_intrinsic_volume(
-        weight_space,
-        tolerance=tolerance,
+    total_volume = _compute_polytope_intrinsic_volume_cached(
+        constraint_key, float(tolerance)
     )
     if total_volume <= 0.0:
         raise RuntimeError("weight space has no positive intrinsic volume")
 
-    less_system = _copy_constraint_system(weight_space)
-    less_system.add_inequality(objective, 0.0)
-    greater_system = _copy_constraint_system(weight_space)
-    greater_system.add_inequality([-value for value in objective], 0.0)
-    less_volume = compute_polytope_intrinsic_volume(
-        less_system,
-        tolerance=tolerance,
+    # These signatures are identical to copying the system, appending the
+    # cutting inequality and converting the copy back to a signature. Reuse
+    # the immutable prefix while retaining every coefficient and row order.
+    inequalities, inequality_right_side, equalities, equality_right_side = constraint_key
+    less_key: ConstraintSystemKey = (
+        inequalities + (tuple(objective),),
+        inequality_right_side + (0.0,),
+        equalities,
+        equality_right_side,
     )
-    greater_volume = compute_polytope_intrinsic_volume(
-        greater_system,
-        tolerance=tolerance,
+    greater_key: ConstraintSystemKey = (
+        inequalities + (tuple(-value for value in objective),),
+        inequality_right_side + (0.0,),
+        equalities,
+        equality_right_side,
     )
+    less_volume = _compute_polytope_intrinsic_volume_cached(less_key, float(tolerance))
+    greater_volume = _compute_polytope_intrinsic_volume_cached(greater_key, float(tolerance))
     raw = np.asarray([less_volume, greater_volume], dtype=float) / total_volume
     raw = np.maximum(raw, 0.0)
     probability_sum = float(np.sum(raw))
@@ -173,6 +199,8 @@ def compute_exact_query_answer_probabilities(
 def clear_polytope_volume_cache() -> None:
     global _vertex_cache_bytes, _vertex_cache_hits, _vertex_cache_misses
     global _vertex_support_hits, _vertex_support_fallbacks
+    global _vertex_partial_support_hits, _vertex_partial_lower_hits
+    global _vertex_partial_upper_hits, _vertex_partial_avoided_lps
     _compute_polytope_intrinsic_volume_cached.cache_clear()
     clear_affine_geometry_cache()
     with _vertex_cache_lock:
@@ -182,6 +210,10 @@ def clear_polytope_volume_cache() -> None:
         _vertex_cache_misses = 0
         _vertex_support_hits = 0
         _vertex_support_fallbacks = 0
+        _vertex_partial_support_hits = 0
+        _vertex_partial_lower_hits = 0
+        _vertex_partial_upper_hits = 0
+        _vertex_partial_avoided_lps = 0
 
 
 def polytope_volume_cache_info():
@@ -213,22 +245,50 @@ def polytope_vertex_cache_info() -> PolytopeVertexCacheInfo:
         )
 
 
+def polytope_partial_support_cache_info() -> PolytopePartialSupportCacheInfo:
+    """Report support attempts reusing exactly one cached geometric bound.
+
+    Legacy ``support_hits`` still requires both bounds and ``support_fallbacks``
+    still includes partial attempts. ``lower_hits``/``upper_hits`` count the
+    retained geometric bound, even if the remaining LP later fails. Each
+    partial attempt avoids one support optimization, not its possible native
+    retry attempts. This report preserves the original vertex-cache info schema.
+    """
+
+    with _vertex_cache_lock:
+        return PolytopePartialSupportCacheInfo(
+            partial_hits=_vertex_partial_support_hits,
+            lower_hits=_vertex_partial_lower_hits,
+            upper_hits=_vertex_partial_upper_hits,
+            avoided_lps=_vertex_partial_avoided_lps,
+        )
+
+
 def _query_support_from_cached_vertices(
     weight_space: LinearConstraintSystem,
     objective: list[float],
     tolerance: float,
-) -> tuple[float, float] | None:
+    *,
+    constraint_key: ConstraintSystemKey | None = None,
+    allow_partial: bool = False,
+) -> tuple[float | None, float | None] | None:
     """Reuse existing complete geometry, without enumerating on a cache miss.
 
     Linear objectives attain their extrema at vertices of a bounded polytope.
     Geometry is less precise than the support decision's default tolerance,
     however: the enumerator validates vertices with a scale-aware 1e-8 bound.
-    Keep the original LP path when either extremum is near the cutting plane,
-    including forced equality and degenerate states.
+    The default retains the original all-or-nothing helper behavior. An
+    explicit partial request retains a bound only under the same margin;
+    uncertain extrema are returned as None for the original LP calculation.
+    Nonfinite extrema, forced equality, and degenerate states keep both LPs.
     """
 
     global _vertex_support_hits, _vertex_support_fallbacks
-    polytope = _cached_polytope_vertices(_constraint_system_key(weight_space), tolerance)
+    global _vertex_partial_support_hits, _vertex_partial_lower_hits
+    global _vertex_partial_upper_hits, _vertex_partial_avoided_lps
+    if constraint_key is None:
+        constraint_key = _constraint_system_key(weight_space)
+    polytope = _cached_polytope_vertices(constraint_key, tolerance)
     if polytope is None:
         return None
     values = polytope.vertices @ np.asarray(objective, dtype=float)
@@ -237,14 +297,23 @@ def _query_support_from_cached_vertices(
     coordinate_scale = max(1.0, float(np.max(np.abs(polytope.vertices))))
     objective_scale = max(1.0, float(np.sum(np.abs(objective))))
     margin = max(100.0 * tolerance, 1e-8) * coordinate_scale * objective_scale
-    if (
-        not np.isfinite(lower_value)
-        or not np.isfinite(upper_value)
-        or abs(lower_value) <= margin
-        or abs(upper_value) <= margin
-    ):
+    finite = np.isfinite(lower_value) and np.isfinite(upper_value)
+    lower_uncertain = abs(lower_value) <= margin
+    upper_uncertain = abs(upper_value) <= margin
+    if not finite or lower_uncertain or upper_uncertain:
         with _vertex_cache_lock:
             _vertex_support_fallbacks += 1
+            if allow_partial and finite and lower_uncertain != upper_uncertain:
+                _vertex_partial_support_hits += 1
+                _vertex_partial_avoided_lps += 1
+                if lower_uncertain:
+                    _vertex_partial_upper_hits += 1
+                else:
+                    _vertex_partial_lower_hits += 1
+                return (
+                    None if lower_uncertain else lower_value,
+                    None if upper_uncertain else upper_value,
+                )
         return None
     with _vertex_cache_lock:
         _vertex_support_hits += 1
@@ -338,9 +407,3 @@ def _constraint_system_from_key(key: ConstraintSystemKey) -> LinearConstraintSys
         equalities_left_side=[list(row) for row in equalities],
         equalities_right_side=list(equality_right_side),
     )
-
-
-def _copy_constraint_system(system: LinearConstraintSystem) -> LinearConstraintSystem:
-    copied = LinearConstraintSystem()
-    copied.add_constraint_system(system)
-    return copied

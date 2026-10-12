@@ -103,6 +103,7 @@ def enumerate_polytope_vertices(
         )
 
     center_result = run_linprog_with_retries(
+        _internal_compact_result=True,
         c=np.concatenate((np.zeros(affine_dimension), [-1.0])),
         A_ub=np.column_stack((reduced_matrix, projected_norms)),
         b_ub=reduced_right_side,
@@ -416,7 +417,25 @@ def _enumerate_interval_vertices(
 
 def _deduplicate_rows(values: np.ndarray, tolerance: float) -> np.ndarray:
     decimals = max(0, int(-np.log10(tolerance)))
-    _, indices = np.unique(np.round(values, decimals=decimals), axis=0, return_index=True)
+    rounded = np.round(values, decimals=decimals)
+    if (
+        type(values) is np.ndarray
+        and values.ndim == 2
+        and values.shape[1] > 0
+        and values.dtype == np.dtype(np.float64)
+        and np.all(np.isfinite(rounded))
+    ):
+        # Float row equality treats both zero signs as equal.  Normalize only
+        # the temporary comparison array, retaining the original first row's
+        # values and order in the returned vertices.
+        rounded[rounded == 0.0] = 0.0
+        row_bytes = np.ascontiguousarray(rounded).view(
+            np.dtype((np.void, rounded.dtype.itemsize * rounded.shape[1]))
+        ).reshape(-1)
+        _, indices = np.unique(row_bytes, return_index=True)
+    else:
+        # Preserve NumPy's existing dtype, shape and nonfinite-value semantics.
+        _, indices = np.unique(rounded, axis=0, return_index=True)
     return values[np.sort(indices)]
 
 

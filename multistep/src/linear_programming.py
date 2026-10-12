@@ -29,10 +29,13 @@ LINPROG_OPTIONS_WITHOUT_PRESOLVE = {
 _ORIGINAL_LINPROG = linprog
 
 
-def _run_linprog(**kwargs: Any) -> Any:
+def _run_linprog(*, _internal_compact_result: bool = False, **kwargs: Any) -> Any:
     # Preserve explicit overrides of the public solver, including retry tests.
     if linprog is _ORIGINAL_LINPROG:
-        result = try_reusable_highs(kwargs)
+        result = try_reusable_highs(
+            kwargs, compact_result=_internal_compact_result,
+            _internal_continuous_check=_internal_compact_result,
+        )
         if result is not None:
             return result
     with _suppress_native_solver_output():
@@ -76,8 +79,18 @@ def is_classified_linprog_result(result: Any) -> bool:
     )
 
 
-def run_linprog_with_retries(**kwargs: Any) -> Any:
-    result = _run_linprog(**kwargs)
+def run_linprog_with_retries(
+    *,
+    _internal_compact_result: bool = False,
+    **kwargs: Any,
+) -> Any:
+    """Run the unchanged LP retry sequence.
+
+    The private compact flag is used only by project callers that need primal
+    values and status. It never reaches the public SciPy fallback; default
+    callers receive the original complete OptimizeResult, including marginals.
+    """
+    result = _run_linprog(_internal_compact_result=_internal_compact_result, **kwargs)
     if result.success:
         return result
 
@@ -95,7 +108,9 @@ def run_linprog_with_retries(**kwargs: Any) -> Any:
             **kwargs,
             "options": LINPROG_OPTIONS_WITHOUT_PRESOLVE,
         }
-        retry_result = _run_linprog(**retry_kwargs)
+        retry_result = _run_linprog(
+            _internal_compact_result=_internal_compact_result, **retry_kwargs,
+        )
         if is_classified_linprog_result(retry_result):
             return retry_result
 
@@ -111,7 +126,9 @@ def run_linprog_with_retries(**kwargs: Any) -> Any:
                 **retry_kwargs,
                 "method": fallback_method,
             }
-            fallback_result = _run_linprog(**fallback_kwargs)
+            fallback_result = _run_linprog(
+                _internal_compact_result=_internal_compact_result, **fallback_kwargs,
+            )
             if is_classified_linprog_result(fallback_result):
                 return fallback_result
 

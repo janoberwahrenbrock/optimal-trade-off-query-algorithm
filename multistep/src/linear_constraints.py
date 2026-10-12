@@ -109,6 +109,7 @@ class LinearConstraintSystem(BaseModel):
             self.get_solver_matrices()
         )
         result = run_linprog_with_retries(
+            _internal_compact_result=True,
             c=objective,
             A_ub=inequality_matrix,
             b_ub=inequality_right_side,
@@ -182,6 +183,7 @@ class LinearConstraintSystem(BaseModel):
             self.get_solver_matrices()
         )
         result = run_linprog_with_retries(
+            _internal_compact_result=True,
             c=[0.0] * self.variable_count,
             A_ub=inequality_matrix,
             b_ub=inequality_right_side,

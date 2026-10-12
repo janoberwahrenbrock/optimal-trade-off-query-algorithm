@@ -173,6 +173,7 @@ def find_relative_interior_point(
     objective = np.zeros(system.variable_count + 1, dtype=float)
     objective[-1] = -1.0
     result = run_linprog_with_retries(
+        _internal_compact_result=True,
         c=objective,
         A_ub=augmented_inequalities,
         b_ub=inequality_right_side,

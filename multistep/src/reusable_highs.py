@@ -18,6 +18,14 @@ import numpy as np
 from scipy.optimize import OptimizeResult
 from scipy.sparse import csc_array, issparse
 
+from .continuous_lp_validation import check_private_continuous_result
+
+try:
+    from scipy.sparse import get_index_dtype as _get_index_dtype
+except ImportError:
+    # Sparse-array preparation is optional independently of the native adapter.
+    _get_index_dtype = None
+
 try:
     from scipy.optimize._highspy import _core as _h
     from scipy.optimize._linprog_highs import _highs_to_scipy_status_message
@@ -56,6 +64,12 @@ class _Model:
     options_key: tuple[Any, ...]
     size: int
     template: Any
+
+
+class _CSCData(NamedTuple):
+    data: np.ndarray
+    indices: np.ndarray
+    indptr: np.ndarray
 
 
 class _State:
@@ -141,7 +155,48 @@ def _array_key(array: np.ndarray) -> tuple[Any, ...]:
     return array.shape, array.dtype.str, array.tobytes()
 
 
-def _solve(state: _State, kwargs: dict[str, Any]) -> OptimizeResult:
+def _replace_highs_infinities(array: np.ndarray) -> None:
+    """Replace the same infinity sentinels after input cleaning, in-place."""
+    if type(array) is np.ndarray and array.dtype == np.dtype(float):
+        array[array == np.inf] = _h.kHighsInf
+        array[array == -np.inf] = -_h.kHighsInf
+    else:
+        # Preserve NumPy dispatch and exceptions for unusual private inputs.
+        array[np.isposinf(array)] = _h.kHighsInf
+        array[np.isneginf(array)] = -_h.kHighsInf
+
+
+def _constraint_matrix_csc(a_ub: np.ndarray, a_eq: np.ndarray) -> Any:
+    """Prepare the same CSC arrays after SciPy has validated the dense inputs.
+
+    The previous dense-to-COO-to-CSC conversion contains no duplicates: each
+    nonzero is stored once, with ascending row indices within each column.
+    Scanning the transpose obtains exactly that order without intermediate
+    sparse objects or any arithmetic on matrix coefficients.
+    """
+    stacked = np.vstack((a_ub, a_eq))
+    if _get_index_dtype is None or stacked.dtype != np.dtype(np.float64):
+        return csc_array(stacked)
+    transposed = stacked.T
+    columns, rows = transposed.nonzero()
+    index_dtype = _get_index_dtype(maxval=max(*stacked.shape, len(rows)))
+    # nonzero coordinates can be strided views, including empty int64 arrays.
+    # The previous compressed constructor owns a contiguous indices array.
+    indices = np.array(rows, dtype=index_dtype, copy=True)
+    indptr = np.empty(stacked.shape[1] + 1, dtype=index_dtype)
+    indptr[0] = 0
+    counts = np.bincount(columns, minlength=stacked.shape[1])
+    np.cumsum(counts, dtype=index_dtype, out=indptr[1:])
+    return _CSCData(transposed[columns, rows], indices, indptr)
+
+
+def _solve(
+    state: _State,
+    kwargs: dict[str, Any],
+    *,
+    compact_result: bool = False,
+    _internal_continuous_check: bool = False,
+) -> OptimizeResult:
     # Keep SciPy's validation and default bounds, including rejection of NaNs.
     lp = _clean_inputs(_LPProblem(
         kwargs["c"], kwargs.get("A_ub"), kwargs.get("b_ub"),
@@ -168,13 +223,12 @@ def _solve(state: _State, kwargs: dict[str, Any]) -> OptimizeResult:
         _require_ok(model.solver.passModel(model.template))
     else:
         state.model_misses += 1
-        matrix = csc_array(np.vstack((a_ub, a_eq)))
+        matrix = _constraint_matrix_csc(a_ub, a_eq)
         rhs = np.concatenate((b_ub, b_eq))
         lhs = np.concatenate((np.full_like(b_ub, -np.inf), b_eq))
         lower, upper = bounds.T.copy()
         for array in (rhs, lhs, lower, upper):
-            array[np.isposinf(array)] = _h.kHighsInf
-            array[np.isneginf(array)] = -_h.kHighsInf
+            _replace_highs_infinities(array)
         size = sum(array.nbytes for array in (a_ub, b_ub, a_eq, b_eq, bounds,
                                              matrix.data, matrix.indices, matrix.indptr))
         # Recycle one native instance with the same options when a new model
@@ -217,34 +271,52 @@ def _solve(state: _State, kwargs: dict[str, Any]) -> OptimizeResult:
     else:
         state.bytes -= model.size
     _require_ok(model.solver.run())
-    return _result(model.solver, lp)
+    return _result(model.solver, lp, compact_result=compact_result,
+                   _internal_continuous_check=_internal_continuous_check)
 
 
-def _result(solver: Any, lp: Any) -> OptimizeResult:
+def _result(solver: Any, lp: Any, *, compact_result: bool = False,
+            _internal_continuous_check: bool = False) -> OptimizeResult:
     c, _, b_ub, _, b_eq, bounds, _, _ = lp
     native_status = solver.getModelStatus()
     info = solver.getInfo()
     native_message = solver.modelStatusToString(native_status)
     x = fun = slack = con = marg_ineq = marg_eq = marg_lower = marg_upper = None
     if native_status == _h.HighsModelStatus.kOptimal:
-        solution, basis = solver.getSolution(), solver.getBasis()
+        solution = solver.getSolution()
         x = np.asarray(solution.col_value)
         fun = info.objective_function_value
         all_slack = np.concatenate((b_ub, b_eq)) - solution.row_value
         slack, con = all_slack[:len(b_ub)], all_slack[len(b_ub):]
-        dual = np.asarray(solution.row_dual)
-        marg_ineq, marg_eq = dual[:len(b_ub)], dual[len(b_ub):]
-        marg_lower, marg_upper = np.zeros(len(c)), np.zeros(len(c))
-        for index, basis_status in enumerate(basis.col_status):
-            if basis_status == _h.HighsBasisStatus.kLower:
-                marg_lower[index] = solution.col_dual[index]
-            elif basis_status == _h.HighsBasisStatus.kUpper:
-                marg_upper[index] = solution.col_dual[index]
+        if not compact_result:
+            basis = solver.getBasis()
+            dual = np.asarray(solution.row_dual)
+            marg_ineq, marg_eq = dual[:len(b_ub)], dual[len(b_ub):]
+            marg_lower, marg_upper = np.zeros(len(c)), np.zeros(len(c))
+            for index, basis_status in enumerate(basis.col_status):
+                if basis_status == _h.HighsBasisStatus.kLower:
+                    marg_lower[index] = solution.col_dual[index]
+                elif basis_status == _h.HighsBasisStatus.kUpper:
+                    marg_upper[index] = solution.col_dual[index]
     else:
         native_message = (f"model_status is {native_message}; primal_status is "
                           f"{solver.solutionStatusToString(info.primal_solution_status)}")
     status, message = _highs_to_scipy_status_message(native_status, native_message)
-    status, message = _check_result(x, fun, status, slack, con, bounds, 1e-9, message, None)
+    if compact_result and _internal_continuous_check:
+        status, message = check_private_continuous_result(
+            _check_result, x, fun, status, slack, con, bounds, 1e-9, message, None,
+        )
+    else:
+        status, message = _check_result(x, fun, status, slack, con, bounds, 1e-9, message, None)
+    if compact_result:
+        # Production callers consume the primal solution and classified status
+        # only. Keep SciPy's complete primal validation above, but avoid basis,
+        # dual and nested-result work that none of those callers use.
+        return OptimizeResult(
+            x=x, fun=fun, slack=slack, con=con, status=status, message=message,
+            success=status == 0, nit=info.simplex_iteration_count or info.ipm_iteration_count,
+            crossover_nit=info.crossover_iteration_count,
+        )
     lower, upper = bounds.T
     # Match SciPy's finite sentinel in bound residuals.
     lower = np.where(np.isneginf(lower), -_h.kHighsInf, lower)
@@ -260,7 +332,12 @@ def _result(solver: Any, lp: Any) -> OptimizeResult:
     )
 
 
-def try_reusable_highs(kwargs: dict[str, Any]) -> OptimizeResult | None:
+def try_reusable_highs(
+    kwargs: dict[str, Any],
+    *,
+    compact_result: bool = False,
+    _internal_continuous_check: bool = False,
+) -> OptimizeResult | None:
     """Return None when the original SciPy path should handle this call."""
     state = _state()
     state.calls += 1
@@ -268,7 +345,8 @@ def try_reusable_highs(kwargs: dict[str, Any]) -> OptimizeResult | None:
         if not _supported(kwargs):
             state.fallbacks += 1
             return None
-        return _solve(state, kwargs)
+        return _solve(state, kwargs, compact_result=compact_result,
+                      _internal_continuous_check=_internal_continuous_check)
     except Exception:
         # A version/API/model error must not make the optional fast path a
         # correctness dependency. Drop possibly modified native objects.

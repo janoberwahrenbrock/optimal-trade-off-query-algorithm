@@ -147,24 +147,26 @@ class PolytopeVolumeTests(unittest.TestCase):
 
     def test_boundary_and_equality_answers_keep_lp_fallback(self) -> None:
         cases = [
-            (build_weight_space(3, []), Query(ziel_index_a=0, ziel_index_b=1, value=0.0), ">"),
+            (build_weight_space(3, []), Query(ziel_index_a=0, ziel_index_b=1, value=0.0), ">", 1),
             (
                 build_weight_space(3, [Query(ziel_index_a=0, ziel_index_b=1, value=2.0).answer(">")]),
                 Query(ziel_index_a=0, ziel_index_b=1, value=2.0),
                 ">",
+                1,
             ),
             (
                 build_weight_space(3, [Query(ziel_index_a=0, ziel_index_b=1, value=1.0).answer("=")]),
                 Query(ziel_index_a=0, ziel_index_b=1, value=1.0),
                 "=",
+                2,
             ),
         ]
-        for weight_space, query, answer in cases:
+        for weight_space, query, answer, support_lp_count in cases:
             with self.subTest(query=query, answer=answer):
                 self.assertGreater(compute_polytope_intrinsic_volume(weight_space), 0.0)
                 with self._record_support_lps() as calls:
                     probabilities = compute_exact_query_answer_probabilities(weight_space, query)
-                self.assertEqual(len(calls), 2)
+                self.assertEqual(len(calls), support_lp_count)
                 self.assertEqual(probabilities[answer], 1.0)
                 self.assertEqual(sum(probabilities.values()), 1.0)
 
@@ -182,7 +184,7 @@ class PolytopeVolumeTests(unittest.TestCase):
             reference = compute_exact_query_answer_probabilities(weight_space, query)
         with self._record_support_lps() as calls:
             actual = compute_exact_query_answer_probabilities(weight_space, query)
-        self.assertEqual(len(calls), 2)
+        self.assertEqual(len(calls), 1)
         self.assertEqual(actual, reference)
 
     def test_inequality_degenerate_geometry_keeps_lp_fallback(self) -> None:
