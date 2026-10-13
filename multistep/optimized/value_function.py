@@ -1297,7 +1297,10 @@ def compute_query_candidates_for_depth_optimized(
             ): goal_pair_intervals
             for goal_pair_intervals in ratio_intervals
         }
-    elif query_source_mode == "central":
+    elif query_source_mode == "central" or (
+        query_source_mode == "grid" and precomputed_ratio_intervals is not None
+    ):
+        # Reuse available intervals for child filtering without adding ratio queries.
         ratio_intervals = _resolve_ratio_intervals(
             alternatives=alternatives,
             weight_space=weight_space,

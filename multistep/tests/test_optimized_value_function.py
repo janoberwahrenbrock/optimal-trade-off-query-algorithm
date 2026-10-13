@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import asdict, is_dataclass, replace
 import unittest
 from unittest.mock import patch
 
@@ -7,8 +8,10 @@ from multistep.optimized.profiling import collect_optimization_profile
 from multistep.optimized.value_function import (
     OptimizedMultistepConfig,
     OptimizedValueFunctionSession,
+    compute_candidate_analysis_for_mode,
     compute_candidate_set_for_subset,
     compute_central_query_candidates,
+    compute_grid_queries_for_config,
     compute_query_candidates_for_depth_optimized,
     compute_ratio_relevant_candidate_set,
     compute_posterior_quantile_query_candidates,
@@ -19,6 +22,7 @@ from multistep.optimized.value_function import (
     compute_value_function_optimized,
     estimate_supported_answer_probabilities,
     filter_already_answered_queries,
+    filter_candidate_subset_for_query_answer,
     is_query_already_answered,
     shortlist_query_candidates_by_sample_balance,
     score_query_candidates_by_posterior,
@@ -267,6 +271,213 @@ class OptimizedValueFunctionTest(unittest.TestCase):
 
         self.assertTrue(query_candidate_data.query_candidates)
         self.assertIn("ratio", set(query_candidate_data.query_sources.values()))
+
+    def test_grid_depths_reuse_candidate_intervals_without_ratio_queries(self) -> None:
+        weight_space = build_weight_space(goal_count=3, answered_queries=[])
+        base_config = OptimizedMultistepConfig(
+            answer_probability_mode="exact_volume",
+            grid_size=3,
+            parallelize_root=False,
+        )
+        analysis = compute_candidate_analysis_for_mode(
+            alternatives=self.alternatives,
+            weight_space=weight_space,
+            candidate_subset=None,
+            config=base_config,
+        )
+        expected_grid_queries = compute_grid_queries_for_config(
+            weight_space=weight_space,
+            config=base_config,
+        )
+        both_data = compute_query_candidates_for_depth_optimized(
+            alternatives=self.alternatives,
+            weight_space=weight_space,
+            candidates=analysis.candidates,
+            remaining_depth=2,
+            config=base_config,
+            precomputed_ratio_intervals=analysis.ratio_intervals,
+        )
+
+        for depth, config in (
+            (2, replace(base_config, grid_depth_query_source_mode="grid")),
+            (3, replace(base_config, grid_depth_query_source_mode="grid")),
+            (2, replace(base_config, include_ratio_queries_on_grid_depths=False)),
+        ):
+            with self.subTest(depth=depth, config=config), patch(
+                "multistep.optimized.value_function.compute_onestep_query_candidates",
+                side_effect=AssertionError("grid mode must not generate ratio queries"),
+            ), patch(
+                "multistep.optimized.value_function._compute_all_ratio_intervals_profiled",
+                side_effect=AssertionError("available candidate intervals must be reused"),
+            ):
+                grid_data = compute_query_candidates_for_depth_optimized(
+                    alternatives=self.alternatives,
+                    weight_space=weight_space,
+                    candidates=analysis.candidates,
+                    remaining_depth=depth,
+                    config=config,
+                    precomputed_ratio_intervals=analysis.ratio_intervals,
+                )
+
+            self.assertEqual(grid_data.query_candidates, expected_grid_queries)
+            self.assertEqual(set(grid_data.query_sources.values()), {"grid"})
+            self.assertIsNotNone(grid_data.ratio_intervals_by_goal_pair)
+            self.assertEqual(
+                grid_data.ratio_intervals_by_goal_pair,
+                both_data.ratio_intervals_by_goal_pair,
+            )
+
+    def test_grid_prefilter_removes_impossible_candidates_and_keeps_child_candidates(self) -> None:
+        weight_space = build_weight_space(goal_count=3, answered_queries=[])
+        config = OptimizedMultistepConfig(
+            answer_probability_mode="exact_volume",
+            grid_size=3,
+            parallelize_root=False,
+        )
+        analysis = compute_candidate_analysis_for_mode(
+            alternatives=self.alternatives,
+            weight_space=weight_space,
+            candidate_subset=None,
+            config=config,
+        )
+        query_data = {
+            mode: compute_query_candidates_for_depth_optimized(
+                alternatives=self.alternatives,
+                weight_space=weight_space,
+                candidates=analysis.candidates,
+                remaining_depth=2,
+                config=replace(config, grid_depth_query_source_mode=mode),
+                precomputed_ratio_intervals=analysis.ratio_intervals,
+            )
+            for mode in ("grid", "both")
+        }
+        query = Query(ziel_index_a=0, ziel_index_b=1, value=1.0)
+
+        for answer, impossible_candidate in (("<", 0), (">", 1)):
+            with self.subTest(answer=answer):
+                filtered = {
+                    mode: filter_candidate_subset_for_query_answer(
+                        candidate_subset=analysis.candidates,
+                        query=query,
+                        answer=answer,
+                        ratio_intervals_by_goal_pair=data.ratio_intervals_by_goal_pair,
+                        tolerance=config.ratio_terminal_tolerance,
+                    )
+                    for mode, data in query_data.items()
+                }
+                self.assertIn(impossible_candidate, analysis.candidates)
+                self.assertNotIn(impossible_candidate, filtered["grid"])
+                self.assertEqual(filtered["grid"], filtered["both"])
+                self.assertLess(len(filtered["grid"]), len(analysis.candidates))
+                child_space = build_weight_space(
+                    goal_count=3,
+                    answered_queries=[query.answer(answer)],
+                )
+                actual_child_candidates = compute_candidate_analysis_for_mode(
+                    alternatives=self.alternatives,
+                    weight_space=child_space,
+                    candidate_subset=analysis.candidates,
+                    config=config,
+                ).candidates
+                filtered_child_candidates = compute_candidate_analysis_for_mode(
+                    alternatives=self.alternatives,
+                    weight_space=child_space,
+                    candidate_subset=filtered["grid"],
+                    config=config,
+                ).candidates
+                self.assertEqual(filtered_child_candidates, actual_child_candidates)
+
+    def test_grid_without_precomputed_intervals_does_not_add_ratio_analysis(self) -> None:
+        weight_space = build_weight_space(goal_count=3, answered_queries=[])
+        config = OptimizedMultistepConfig(
+            grid_size=3,
+            candidate_count_mode="closed_lp",
+            grid_depth_query_source_mode="grid",
+            parallelize_root=False,
+        )
+        expected_grid_queries = compute_grid_queries_for_config(
+            weight_space=weight_space,
+            config=config,
+        )
+        with patch(
+            "multistep.optimized.value_function.compute_onestep_query_candidates",
+            side_effect=AssertionError("grid mode must not generate ratio queries"),
+        ), patch(
+            "multistep.optimized.value_function._compute_all_ratio_intervals_profiled",
+            side_effect=AssertionError("grid without intervals must not add ratio analysis"),
+        ):
+            data = compute_query_candidates_for_depth_optimized(
+                alternatives=self.alternatives,
+                weight_space=weight_space,
+                candidates=list(range(self.alternatives.get_anzahl_zeilen())),
+                remaining_depth=2,
+                config=config,
+            )
+
+        self.assertEqual(data.query_candidates, expected_grid_queries)
+        self.assertEqual(set(data.query_sources.values()), {"grid"})
+        self.assertIsNone(data.ratio_intervals_by_goal_pair)
+
+    def test_grid_prefilter_preserves_all_depth_two_query_evaluations(self) -> None:
+        config = OptimizedMultistepConfig(
+            answer_probability_mode="exact_volume",
+            grid_size=3,
+            min_query_value=0.1,
+            max_query_value=10.0,
+            grid_depth_query_source_mode="grid",
+            use_ratio_terminal_counts=True,
+            parallelize_root=False,
+        )
+        removed_candidates: list[int] = []
+
+        def filter_and_record(**kwargs):
+            filtered = filter_candidate_subset_for_query_answer(**kwargs)
+            original = kwargs["candidate_subset"]
+            if original is not None and filtered is not None:
+                removed_candidates.extend(set(original) - set(filtered))
+            return filtered
+
+        with patch(
+            "multistep.optimized.value_function.filter_candidate_subset_for_query_answer",
+            side_effect=filter_and_record,
+        ):
+            filtered_result = compute_value_function_optimized(
+                alternatives=self.alternatives,
+                answered_queries=[],
+                remaining_depth=2,
+                config=config,
+            )
+        with patch(
+            "multistep.optimized.value_function.filter_candidate_subset_for_query_answer",
+            side_effect=lambda **kwargs: kwargs["candidate_subset"],
+        ):
+            unfiltered_result = compute_value_function_optimized(
+                alternatives=self.alternatives,
+                answered_queries=[],
+                remaining_depth=2,
+                config=config,
+            )
+
+        self.assertTrue(removed_candidates)
+        self.assertTrue(filtered_result.query_evaluations)
+
+        def exact_semantics(value):
+            if isinstance(value, float):
+                return ("float_hex", value.hex())
+            if is_dataclass(value):
+                return exact_semantics(asdict(value))
+            if isinstance(value, Query):
+                return exact_semantics(value.model_dump())
+            if isinstance(value, dict):
+                return {key: exact_semantics(item) for key, item in value.items()}
+            if isinstance(value, (list, tuple)):
+                return tuple(exact_semantics(item) for item in value)
+            return value
+
+        self.assertEqual(
+            exact_semantics(filtered_result),
+            exact_semantics(unfiltered_result),
+        )
 
     def test_posterior_quantiles_create_balanced_ratio_query(self) -> None:
         queries = compute_posterior_quantile_query_candidates(

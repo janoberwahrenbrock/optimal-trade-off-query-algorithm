@@ -93,6 +93,85 @@ Vergleichsergebnisse, Softwareversionen und SHA-256-Werte der getesteten Quell-
 und Testdateien. Sie erhalten die wesentlichen Nachweise auch ohne die
 vollständigen lokalen Archive.
 
+## Grid-only mit gleicher Kandidaten-Vorauswahl (2026-10-13)
+
+Der Grid-only-Modus reicht jetzt auf verbleibender Tiefe größer 1 bereits
+vorhandene Ratio-Intervallmaps an die konservative Vorauswahl der
+Folgekandidaten weiter. Der Guard lautet, mit ausgelassenen Aufrufargumenten:
+
+```python
+elif query_source_mode == "central" or (
+    query_source_mode == "grid" and precomputed_ratio_intervals is not None
+):
+    ratio_intervals = _resolve_ratio_intervals(...)
+    ratio_intervals_by_goal_pair = {...}
+```
+
+Dadurch entstehen weder zusätzliche Ratio-Queries noch zusätzliche
+Ratio-Intervallberechnungen. `both`, der Grid-Pfad ohne vorliegende Intervalle
+(insbesondere `closed_lp`) und die Standardkonfiguration bleiben unverändert.
+Der kleine Patch und vier neue Regressionstests wurden auf Basis von
+`8baeac827408156b97814f1210c52bbaac6b0187` als lokaler, uncommitteter Stand
+geprüft und gemessen. Die Statusangaben in den Benchmarkdaten beziehen sich
+auf diesen Messzeitpunkt vor dem anschließenden Folgecommit.
+
+Auf **Bench i7** wurden dieselben zehn gespeicherten Probleme mit fünf Zielen
+und fünf Alternativen frisch mit beiden Einstellungen gelöst: Grid 10,
+Tiefe 2, exakte Volumenwahrscheinlichkeiten, acht tatsächlich gestartete
+Worker, `forkserver`, ein nativer Thread je Bibliothek und Abbruch bei einem
+Kandidaten oder mindestens 99 Prozent Volumenanteil. Jede Einstellung wurde
+dreimal gemessen, insgesamt **60 Läufe**, mit neuen Prozessen und wechselnder
+Reihenfolge. Einzige Konfigurationsdifferenz: `grid_depth_query_source_mode`
+ist `both` oder `grid`; Tiefe 1 verwendet in beiden Fällen Ratio-Queries.
+
+| Einstellung | Summe der zehn Problemmediane | Queries je Durchlauf | Korrekte Auswahl |
+| --- | ---: | ---: | ---: |
+| Grid plus Ratios, gleiche Vorauswahl | 108,406 s | 75 | 10/10 |
+| Grid-only, gleiche Vorauswahl | 120,265 s | 83 | 10/10 |
+
+Grid-only benötigte insgesamt **10,94 Prozent mehr Zeit** und acht zusätzliche
+Fragen. Bei sechs der zehn Probleme war sein Median schneller; die Mehrzeit
+der anderen vier überwog. Die tatsächlichen Gesamtzeiten der drei
+Wiederholungen betrugen für `both` **105,154 / 108,498 / 108,609 s**, für `grid`
+**117,045 / 120,159 / 120,598 s**. Deren Mediane sind 108,498 beziehungsweise
+120,159 s; diese andere Aggregation ergibt 10,75 Prozent Mehrzeit für Grid-only.
+Die Zeiten umfassen die Lösung einschließlich Poolstart und Poolende, jedoch
+keine Imports, Eingabeparsing oder Berichtsdateien.
+
+Alle **60 aufgezeichneten semantischen Ergebnisse** sind gegenüber dem
+früheren Ergebnis derselben Eingabe und Einstellung mit `float.hex()`
+identisch; nur Zeiten und Cachestatistiken wurden ausgenommen. Geprüft wurden
+Queries, Antworten, Erwartungswerte, Kandidatenverläufe, Volumina, Anteile und
+Auswahl. Innerhalb jeder Einstellung waren auch alle drei Wiederholungen
+identisch. Zwischen den beiden Strategien unterscheiden sich dagegen alle
+zehn Query-Verläufe. Nicht gewählte rekursive Zweige wurden nicht aufgezeichnet.
+Die vollständige Multi-Step-Suite bestand auf Mac und Bench i7 jeweils mit
+**228 Tests**, einschließlich der vier neuen Regressionstests.
+
+Eine separate Diagnose nach den Zeitmessungen bestätigte in den zehn
+Initialzuständen jeweils **20 geordnete Zielpaar-Maps mit identischen
+semantischen Hashes** für beide Einstellungen. Grid-only erzeugte weiterhin
+jeweils 200 Grid-Queries; `both` ergänzte 4 bis 24 Ratio-Queries und wählte in
+neun Fällen eine davon als erste Query. Diese Diagnose gilt nur für die
+unbeantworteten Anfangszustände, nicht für alle Suchzustände oder Fragen.
+
+**Folgerung:** Für diese Arbeitslast bleibt Grid plus Ratios die schnellere
+Standardstrategie. Der Patch stellt dieselbe Vorauswahl bereit; sein eigener
+Laufzeitnutzen wurde nicht durch einen separaten frischen Vorher-Nachher-Test
+isoliert. Frühere Grid-only-Zeiten stammen aus einer anderen Ausführung und
+werden nicht als kausaler Optimierungsnachweis verwendet. Zehn Probleme eines
+Seeds erlauben keine allgemeine Gleichheits- oder Qualitätsgarantie; die
+99-Prozent-Volumenregel garantiert nicht für jedes Zielgewicht die richtige
+Auswahl.
+
+Die [kompakten versionierten Nachweise](benchmarks/20261013_grid_prefilter_parity_workers8.json)
+enthalten Eingaben, vollständige Konfigurationen, Rohzeiten, Endzustände,
+Testbelege, semantische Vergleiche und SHA-256. Vollständige Rohberichte und
+Query-Verläufe bleiben im Projekt unter
+`outputs/benchmarks/bench-i7/20261013-grid-prefilter-parity-workers8/`
+und auf Bench i7 unter dem gleichnamigen Verzeichnis in
+`/home/cruncher/otqa-benchmarks/` erhalten.
+
 ## Verworfene Optimierungsversuche
 
 ### 2026-10-12: Gemeinsamer Geometriecache und vollständiger Wahrscheinlichkeitscache
