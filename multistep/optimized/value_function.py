@@ -146,8 +146,19 @@ class OptimizedMultistepConfig:
     posterior_query_objective: PosteriorQueryObjective | None = None
     posterior_query_shortlist_size: int | None = None
     volume_confidence_threshold: float | None = 0.99
+    query_efficiency_stop_aware: bool = False
 
     def __post_init__(self) -> None:
+        if type(self.query_efficiency_stop_aware) is not bool:
+            raise ValueError("query_efficiency_stop_aware must be a bool")
+        if self.query_efficiency_stop_aware and self.answer_probability_mode != "exact_volume":
+            raise ValueError("stop-aware query-efficiency planning requires exact_volume probabilities")
+        if (
+            self.query_efficiency_stop_aware
+            and self.volume_confidence_threshold is not None
+            and self.candidate_count_mode != "ratio_relevant"
+        ):
+            raise ValueError("stop-aware volume-confidence planning requires ratio_relevant candidate analysis")
         if self.sample_count <= 0:
             raise ValueError("sample_count must be positive")
 
@@ -479,7 +490,8 @@ class OptimizedValueFunctionSession:
 
         This experimental entry point leaves ``compute`` and its result cache
         unchanged.  Actual volume-confidence termination remains the caller's
-        responsibility; hypothetical plans stop early only at one candidate.
+        responsibility.  The opt-in stop-aware model also checks this criterion
+        in hypothetical states; the default retains candidate-only planning.
         """
 
         if self._is_closed:
@@ -496,6 +508,10 @@ class OptimizedValueFunctionSession:
             precomputed_state_analysis=self.analyze_state(
                 answered_queries=answered_queries,
                 candidate_subset=candidate_subset,
+                include_candidate_volumes=(
+                    self.config.query_efficiency_stop_aware
+                    and self.config.volume_confidence_threshold is not None
+                ),
             ),
         )
 

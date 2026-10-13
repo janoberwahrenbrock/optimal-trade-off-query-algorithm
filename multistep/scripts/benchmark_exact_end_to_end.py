@@ -39,8 +39,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-questions", type=int, default=100)
     parser.add_argument("--depth", type=int, choices=[1, 2, 3], default=1)
     parser.add_argument(
-        "--query-strategy", choices=["fixed", "reduction_per_query"], default="fixed",
-        help="Use fixed lookahead, or experimentally compare horizons up to --depth (at most two) by expected candidate reduction per expected query.",
+        "--query-strategy", choices=["fixed", "reduction_per_query", "reduction_per_query_stop_aware"], default="fixed",
+        help="Use fixed lookahead, candidate reduction per expected query, or stop-aware loss reduction per expected query; adaptive horizons are at most two.",
     )
     parser.add_argument("--seed", type=int, default=20260902)
     parser.add_argument(
@@ -95,7 +95,7 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("grid-size must be positive")
     if not 0.0 < args.volume_confidence_threshold <= 1.0:
         raise ValueError("volume-confidence-threshold must be in (0, 1]")
-    if getattr(args, "query_strategy", "fixed") == "reduction_per_query":
+    if getattr(args, "query_strategy", "fixed") in {"reduction_per_query", "reduction_per_query_stop_aware"}:
         if args.depth not in (1, 2):
             raise ValueError("reduction_per_query supports only maximum horizons 1 and 2")
         if args.root_query_source != "both" or args.depth_one_query_source != "ratio":
@@ -109,6 +109,7 @@ def build_config(
     root_query_source: str = "central",
     depth_one_query_source: str = "central",
     volume_confidence_threshold: float | None = 0.99,
+    query_efficiency_stop_aware: bool = False,
 ) -> OptimizedMultistepConfig:
     return OptimizedMultistepConfig(
         answer_probability_mode="exact_volume",
@@ -124,6 +125,7 @@ def build_config(
         parallelize_root=parallelize_root,
         max_workers=max_workers,
         volume_confidence_threshold=volume_confidence_threshold,
+        query_efficiency_stop_aware=query_efficiency_stop_aware,
     )
 
 
@@ -201,9 +203,9 @@ def solve_problem(
     volume_confidence_threshold: float | None = 0.99,
     query_strategy: str = "fixed",
 ) -> dict[str, Any]:
-    if query_strategy not in {"fixed", "reduction_per_query"}:
-        raise ValueError("query_strategy must be fixed or reduction_per_query")
-    if query_strategy == "reduction_per_query":
+    if query_strategy not in {"fixed", "reduction_per_query", "reduction_per_query_stop_aware"}:
+        raise ValueError("unsupported query strategy")
+    if query_strategy in {"reduction_per_query", "reduction_per_query_stop_aware"}:
         if depth not in (1, 2):
             raise ValueError("reduction_per_query supports only maximum horizons 1 and 2")
         if root_query_source != "both" or depth_one_query_source != "ratio":
@@ -216,6 +218,7 @@ def solve_problem(
         root_query_source=root_query_source,
         depth_one_query_source=depth_one_query_source,
         volume_confidence_threshold=volume_confidence_threshold,
+        query_efficiency_stop_aware=(query_strategy == "reduction_per_query_stop_aware"),
     )
     answered_queries: list[AnsweredQuery] = []
     query_records: list[dict[str, Any]] = []
@@ -338,7 +341,7 @@ def solve_problem(
                 break
 
             efficiency_result = None
-            if query_strategy == "reduction_per_query":
+            if query_strategy in {"reduction_per_query", "reduction_per_query_stop_aware"}:
                 efficiency_result = session.compute_query_efficiency(
                     answered_queries=answered_queries, max_horizon=depth,
                 )
@@ -405,6 +408,18 @@ def solve_problem(
                         for horizon, seconds in efficiency_result.evaluation_seconds_by_horizon.items()
                     },
                 })
+                if config.query_efficiency_stop_aware:
+                    if choice.expected_terminal_loss is None:
+                        raise RuntimeError("stop-aware decision lacks its terminal loss")
+                    query_records[-1].update({
+                        "planning_stop_aware": True,
+                        "candidate_count_before_planning": len(candidates),
+                        "expected_terminal_loss": float(choice.expected_terminal_loss),
+                        "expected_value_semantics": "expected_actual_terminal_candidate_count",
+                        "planning_terminal_loss_semantics": (
+                            "one_for_single_candidate_or_volume_confidence_else_actual_candidate_count"
+                        ),
+                    })
 
     seconds = time.perf_counter() - started
     cache = polytope_volume_cache_info()
@@ -467,9 +482,15 @@ def run(args: argparse.Namespace) -> list[dict[str, Any]]:
             ),
         }
     )
-    if getattr(args, "query_strategy", "fixed") == "reduction_per_query":
+    if getattr(args, "query_strategy", "fixed") in {"reduction_per_query", "reduction_per_query_stop_aware"}:
         settings["objective"] = "maximum expected candidate reduction divided by expected executed queries; no hypothetical volume-confidence stop"
         settings["lookahead_depth"] = "adaptive horizons 1.." + str(args.depth)
+        if args.query_strategy == "reduction_per_query_stop_aware":
+            settings["objective"] = "maximum stop-aware terminal loss reduction divided by expected executed queries"
+            settings["planning_stop_aware"] = True
+            settings["planning_terminal_loss_semantics"] = (
+                "one_for_single_candidate_or_volume_confidence_else_actual_candidate_count"
+            )
     else:
         # Preserve the existing fixed-mode settings shape for ordinary callers.
         settings.pop("query_strategy", None)

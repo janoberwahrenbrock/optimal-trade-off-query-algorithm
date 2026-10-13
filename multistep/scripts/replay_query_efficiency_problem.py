@@ -33,6 +33,7 @@ _TASK_SEQUENCE = itertools.count(1)
 _PLANNING_SEQUENCE = itertools.count(1)
 _BATCH_SEQUENCE = itertools.count(1)
 _ROOT_TASKS_SUBMITTED = 0
+STOP_AWARE_LOSS_SEMANTICS = 'one_for_single_candidate_or_volume_confidence_else_actual_candidate_count'
 
 
 def journal(path: str | None, event: str, **fields: Any) -> None:
@@ -251,11 +252,13 @@ def install_efficiency_observers(value_function: Any) -> None:
     def observed_compute(session: Any, *arguments: Any, **keywords: Any) -> Any:
         global _CURRENT_PLANNING, _LATEST_SELECTED_PLAN
         bound = signature.bind(session, *arguments, **keywords).arguments
+        stop_aware = bool(session.config.query_efficiency_stop_aware)
+        strategy = "reduction_per_query_stop_aware" if stop_aware else "reduction_per_query"
         previous = _CURRENT_PLANNING
         _CURRENT_PLANNING = {"planning_id": next(_PLANNING_SEQUENCE),
             "question_index": len(bound["answered_queries"]) + 1,
             "planning_depth": int(bound.get("max_horizon", 2)),
-            "query_strategy": "reduction_per_query"}
+            "query_strategy": strategy}
         started = time.monotonic()
         journal(_PROGRESS_PATH, "planning_start", **_CURRENT_PLANNING)
         try:
@@ -268,7 +271,8 @@ def install_efficiency_observers(value_function: Any) -> None:
                     best_query=None, value=None, selected_horizon=None)
                 return result
             chosen = choice.evaluation
-            best_plans = [efficiency_plan_json(result.best_by_horizon[h])
+            plan_json = query_efficiency.query_efficiency_evaluation_to_json if stop_aware else efficiency_plan_json
+            best_plans = [plan_json(result.best_by_horizon[h])
                           for h in sorted(result.best_by_horizon)
                           if result.best_by_horizon[h] is not None]
             _LATEST_SELECTED_PLAN = {
@@ -277,20 +281,31 @@ def install_efficiency_observers(value_function: Any) -> None:
                 "expected_value": float(chosen.expected_value),
                 "lexicographic_expected_values": [float(x) for x in
                     (chosen.lexicographic_expected_values or (chosen.expected_value,))],
-                "query_strategy": "reduction_per_query", "selected_horizon": int(choice.horizon),
+                "query_strategy": strategy, "selected_horizon": int(choice.horizon),
                 "expected_queries": float(choice.expected_queries),
                 "gain": float(choice.gain), "rate": float(choice.rate),
                 "horizon_best_plans": best_plans,
                 "horizon_evaluation_seconds": {str(h): float(s) for h, s in
                     result.evaluation_seconds_by_horizon.items()},
             }
+            if stop_aware:
+                _LATEST_SELECTED_PLAN.update(
+                    expected_terminal_candidates=float(chosen.expected_value),
+                    expected_terminal_loss=float(choice.expected_terminal_loss),
+                    planning_stop_aware=True,
+                    candidate_count_before_planning=int(result.candidate_count),
+                )
+            extra = ({"expected_terminal_candidates": float(chosen.expected_value),
+                      "expected_terminal_loss": float(choice.expected_terminal_loss),
+                      "planning_stop_aware": True,
+                      "candidate_count_before_planning": int(result.candidate_count)} if stop_aware else {})
             journal(_PROGRESS_PATH, "planning_end", **_CURRENT_PLANNING,
                 duration_seconds=time.monotonic() - started,
                 query_evaluation_count=sum(len(v) for v in result.evaluations_by_horizon.values()),
                 best_query=query_signature(chosen.query), value=float(chosen.expected_value),
                 selected_horizon=int(choice.horizon), expected_queries=float(choice.expected_queries),
                 gain=float(choice.gain), rate=float(choice.rate), horizon_best_plans=best_plans,
-                horizon_evaluation_seconds=_LATEST_SELECTED_PLAN["horizon_evaluation_seconds"])
+                horizon_evaluation_seconds=_LATEST_SELECTED_PLAN["horizon_evaluation_seconds"], **extra)
             return result
         except BaseException as error:
             journal(_PROGRESS_PATH, "planning_error", **_CURRENT_PLANNING,
@@ -303,11 +318,13 @@ def install_efficiency_observers(value_function: Any) -> None:
     def observed_batch(*arguments: Any, **keywords: Any) -> Any:
         global _CURRENT_BATCH
         bound = batch_signature.bind(*arguments, **keywords).arguments
+        strategy = ("reduction_per_query_stop_aware" if bound["config"].query_efficiency_stop_aware
+                    else "reduction_per_query")
         previous = _CURRENT_BATCH
         _CURRENT_BATCH = {"batch_id": next(_BATCH_SEQUENCE),
             "remaining_depth": int(bound["horizon"]),
             "root_query_count": len(bound["query_candidates"]),
-            "query_strategy": "reduction_per_query"}
+            "query_strategy": strategy}
         started = time.monotonic()
         journal(_PROGRESS_PATH, "parallel_batch_start", **{**_CURRENT_PLANNING, **_CURRENT_BATCH})
         try:
@@ -379,8 +396,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--root-query-source", choices=["both", "grid"], required=True)
     parser.add_argument("--grid-size", type=int, choices=[5, 10], required=True)
     parser.add_argument("--depth", type=int, choices=[1, 2], required=True)
-    parser.add_argument("--condition", choices=["fixed_depth1", "fixed_depth2", "adaptive_rate"], required=True)
-    parser.add_argument("--query-strategy", choices=["fixed", "reduction_per_query"], required=True)
+    parser.add_argument("--condition", choices=["fixed_depth1", "fixed_depth2", "adaptive_rate", "adaptive_stop_aware"], required=True)
+    parser.add_argument("--query-strategy", choices=["fixed", "reduction_per_query", "reduction_per_query_stop_aware"], required=True)
     parser.add_argument("--progress-jsonl", type=Path, help="External root-task observation journal.")
     parser.add_argument("--checkpoint-jsonl", type=Path,
                         help="Fsynced actual-question and state boundaries; no inner-solver resume.")
@@ -392,7 +409,9 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     global _PROGRESS_PATH, _CHECKPOINT_PATH
     args = parse_args()
-    expected = {"fixed_depth1": (1, "fixed"), "fixed_depth2": (2, "fixed"), "adaptive_rate": (2, "reduction_per_query")}[args.condition]
+    expected = {"fixed_depth1": (1, "fixed"), "fixed_depth2": (2, "fixed"),
+                "adaptive_rate": (2, "reduction_per_query"),
+                "adaptive_stop_aware": (2, "reduction_per_query_stop_aware")}[args.condition]
     if (args.depth, args.query_strategy) != expected or args.root_query_source != "both" or args.grid_size != 5:
         raise ValueError("Condition/depth/query-strategy/grid policy differ from the frozen experiment")
     if args.progress_jsonl is not None:
@@ -447,6 +466,9 @@ def main() -> None:
             "progress_per_query": True,
         },
     }
+    if args.condition == "adaptive_stop_aware":
+        report["settings"].update(planning_stop_aware=True,
+            planning_terminal_loss_semantics=STOP_AWARE_LOSS_SEMANTICS)
     try:
         if args.dimension < 3 or args.problem_index < 1:
             raise ValueError("Require dimension >= 3 and problem-index >= 1")
@@ -481,10 +503,12 @@ def main() -> None:
             multiprocessing_start_method=multiprocessing.get_start_method(),
             solver_file=str(Path(benchmark.__file__).resolve()),
         )
+        stop_settings = {"query_efficiency_stop_aware": True} if args.condition == "adaptive_stop_aware" else {}
         config = benchmark.build_config(
             parallelize_root=True, max_workers=8, grid_size=args.grid_size,
             root_query_source=args.root_query_source, depth_one_query_source="ratio",
             volume_confidence_threshold=0.99,
+            **stop_settings,
         )
         report["configuration"] = dataclasses.asdict(config)
         report["configuration_fingerprint"] = fingerprint(config)

@@ -229,14 +229,30 @@ CONDITIONS = {
     'fixed_depth2': {'depth': 2, 'query_strategy': 'fixed'},
     'adaptive_rate': {'depth': 2, 'query_strategy': 'reduction_per_query'},
 }
+SUPPORTED_CONDITIONS = {
+    **CONDITIONS,
+    'adaptive_stop_aware': {'depth': 2, 'query_strategy': 'reduction_per_query_stop_aware'},
+}
+STOP_AWARE_LOSS_SEMANTICS = 'one_for_single_candidate_or_volume_confidence_else_actual_candidate_count'
 CASE_COUNT = 100
 
 
-def schedule() -> list[dict[str, Any]]:
-    names = list(CONDITIONS)
+def selected_conditions(protocol: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """Accept an explicit supported cohort; legacy three-mode protocols stay unchanged."""
+    conditions = protocol.get('conditions', CONDITIONS)
+    require(isinstance(conditions, dict) and conditions, 'Protocol needs nonempty conditions')
+    require(all(name in SUPPORTED_CONDITIONS
+                and settings == SUPPORTED_CONDITIONS[name]
+                for name, settings in conditions.items()), 'Unsupported protocol condition/settings')
+    return conditions
+
+
+def schedule(conditions: dict[str, dict[str, Any]] | None = None) -> list[dict[str, Any]]:
+    names = list(CONDITIONS if conditions is None else conditions)
+    require(names, 'Cannot schedule an empty cohort')
     return [{'job_id': f'{condition}:p{index:03d}', 'condition': condition, 'problem_index': index}
         for index in range(1, CASE_COUNT + 1)
-        for condition in names[(index - 1) % 3:] + names[:(index - 1) % 3]]
+        for condition in names[(index - 1) % len(names):] + names[:(index - 1) % len(names)]]
 
 
 def generate_input(path: Path, seed: int = 2026101301) -> None:
@@ -256,11 +272,105 @@ def generate_input(path: Path, seed: int = 2026101301) -> None:
 
 
 def full_settings(index: int, condition: str) -> dict[str, Any]:
-    return {'dimension': 5, 'problem_index': index, 'alternatives': 5,
-        **CONDITIONS[condition], 'grid_size': 5, 'root_query_source': 'both',
+    settings = {'dimension': 5, 'problem_index': index, 'alternatives': 5,
+        **SUPPORTED_CONDITIONS[condition], 'grid_size': 5, 'root_query_source': 'both',
         'depth_one_query_source': 'ratio', 'workers': 8, 'parallelize_root': True,
         'max_questions': 100, 'volume_confidence_threshold': .99,
         'answer_probability_mode': 'exact_volume', 'progress_per_query': True}
+    if condition == 'adaptive_stop_aware':
+        settings.update(planning_stop_aware=True,
+            planning_terminal_loss_semantics=STOP_AWARE_LOSS_SEMANTICS)
+    return settings
+
+
+def close(first: float, second: float) -> bool:
+    return math.isclose(first, second, rel_tol=1e-10, abs_tol=1e-10)
+
+
+def validate_stop_aware_plan(plan: dict[str, Any], candidate_count: int) -> None:
+    """Recompute costs/losses from the saved policy, never from solver output scores."""
+    horizon = plan['horizon']
+    require(horizon in (1, 2), 'Invalid stop-aware horizon')
+
+    def query_expectations(query: dict[str, Any]) -> tuple[float, float]:
+        branches = query['branches']
+        require(branches and len({branch['answer'] for branch in branches}) == len(branches),
+                'Missing/duplicate planned answer branches')
+        probabilities = [branch['probability'] for branch in branches]
+        require(all(math.isfinite(value) and 0 <= value <= 1 for value in probabilities)
+                and close(math.fsum(probabilities), 1.0), 'Invalid planned answer probabilities')
+        for branch in branches:
+            if branch['probability'] <= 0:
+                continue
+            actual, loss = branch['expected_terminal_candidates'], branch['expected_terminal_loss']
+            count = branch['child_candidate_count']
+            require(type(count) is int and count >= 1
+                    and all(math.isfinite(value) and value >= 1 - 1e-9 for value in (actual, loss))
+                    and loss <= actual + 1e-9, 'Invalid planned raw/effective candidate values')
+            reason = branch['stop_reason']
+            share = branch['maximum_volume_share']
+            require(math.isfinite(share) and 0 <= share <= 1 + 1e-8,
+                    'Invalid planned maximum volume share')
+            expected_reason = ('single_candidate' if count == 1 else
+                               'volume_confidence' if share >= .99 else None)
+            require(reason == expected_reason, 'Planned stop does not match actual 99% policy')
+            followups = branch['expected_followup_queries']
+            require(followups in (0, 1), 'Invalid planned followup query count')
+            if reason is not None:
+                require(followups == 0 and close(actual, count) and close(loss, 1.0),
+                        'Absorbing planned state has a continuation or incorrect terminal loss')
+        actual = math.fsum(branch['probability'] * branch['expected_terminal_candidates']
+                           for branch in branches if branch['probability'] > 0)
+        loss = math.fsum(branch['probability'] * branch['expected_terminal_loss']
+                         for branch in branches if branch['probability'] > 0)
+        require(close(actual, query['expected_terminal_candidates'])
+                and close(loss, query['expected_terminal_loss']), 'Planned query expectations differ')
+        return actual, loss
+
+    actual, loss = query_expectations(plan['query'])
+    require(close(actual, plan['expected_terminal_candidates'])
+            and close(loss, plan['expected_terminal_loss']), 'Plan/query terminal expectations differ')
+    continuations = plan['continuations']
+    branches = {branch['answer']: branch for branch in plan['query']['branches']
+                if branch['probability'] > 0}
+    if horizon == 1:
+        require(not continuations
+                and all(branch['expected_followup_queries'] == 0 for branch in branches.values()),
+                'Horizon-one plan includes followup questions')
+    else:
+        require(len(continuations) == len(branches)
+                and {child['answer'] for child in continuations} == set(branches),
+                'Missing/duplicate saved continuation proofs')
+        for child in continuations:
+            branch = branches[child['answer']]
+            require(child['probability'] == branch['probability']
+                    and child['candidate_count'] == branch['child_candidate_count']
+                    and child['stop_reason'] == branch['stop_reason']
+                    and child['maximum_volume_share'] == branch['maximum_volume_share']
+                    and child['expected_queries'] == branch['expected_followup_queries'],
+                    'Continuation state/cost differs from root branch')
+            query = child['query']
+            require(child['expected_queries'] == (1 if query is not None else 0),
+                    'Saved continuation query does not match its cost')
+            if query is not None:
+                require(child['stop_reason'] is None, 'Absorbing planned state has a saved query')
+                child_actual, child_loss = query_expectations(query)
+                require(all(leaf['expected_followup_queries'] == 0 for leaf in query['branches']),
+                        'Depth-one continuation contains extra queries')
+            else:
+                child_actual = float(child['candidate_count'])
+                child_loss = 1.0 if child['stop_reason'] is not None else child_actual
+            require(close(child_actual, child['expected_terminal_candidates'])
+                    and close(child_loss, child['expected_terminal_loss'])
+                    and close(child_actual, branch['expected_terminal_candidates'])
+                    and close(child_loss, branch['expected_terminal_loss']),
+                    'Continuation terminal values differ')
+    expected_queries = 1.0 + math.fsum(branch['probability'] * branch['expected_followup_queries']
+                                     for branch in branches.values())
+    gain = float(candidate_count) - loss
+    require(close(expected_queries, plan['expected_queries'])
+            and close(gain, plan['gain']) and close(gain / expected_queries, plan['rate']),
+            'Stop-aware cost/gain/rate differs from saved policy proof')
 
 
 def strict_journal(path: Path) -> list[dict[str, Any]]:
@@ -300,7 +410,7 @@ def validate_result(root: Path, frozen: dict[str, Any], attempt: dict[str, Any],
     require(checkpoints and checkpoints[0]['event'] == 'solve_start'
             and checkpoints[-1]['event'] == 'solve_end', 'Incomplete solve checkpoints')
     require(checkpoints[0]['condition'] == condition
-            and checkpoints[0]['query_strategy'] == CONDITIONS[condition]['query_strategy'],
+            and checkpoints[0]['query_strategy'] == SUPPORTED_CONDITIONS[condition]['query_strategy'],
             'Checkpoint policy differs')
     answers = [event for event in checkpoints if event['event'] == 'answered_query']
     states = [event for event in checkpoints if event['event'] == 'state_boundary']
@@ -308,15 +418,15 @@ def validate_result(root: Path, frozen: dict[str, Any], attempt: dict[str, Any],
             and [event['question_index'] for event in answers] == list(range(1, count + 1))
             and [event['answered_query_count'] for event in states] == list(range(count + 1)),
             'Question/state boundary counts differ')
-    for event, query in zip(answers, result['queries']):
+    for query_index, (event, query) in enumerate(zip(answers, result['queries'])):
         require(all(stable(query.get(key)) == stable(value) for key, value in event['query_record'].items()),
                 'Actual answer journal differs')
         a, b, value = query['goal_index_a'], query['goal_index_b'], query['value']
         difference = case['target_weights'][a] - value * case['target_weights'][b]
         require(query['answer'] == ('>' if difference > 0 else '<' if difference < 0 else '='),
                 'Actual answer differs from fixed target weights')
-        if condition == 'adaptive_rate':
-            require(query['query_strategy'] == 'reduction_per_query'
+        if condition in {'adaptive_rate', 'adaptive_stop_aware'}:
+            require(query['query_strategy'] == SUPPORTED_CONDITIONS[condition]['query_strategy']
                     and query['selected_horizon'] in (1, 2), 'Missing adaptive decision')
             require(all(math.isfinite(query[field]) for field in
                         ('expected_terminal_candidates', 'expected_queries', 'gain', 'rate')),
@@ -329,6 +439,22 @@ def validate_result(root: Path, frozen: dict[str, Any], attempt: dict[str, Any],
                     and query['selected_horizon'] in plan_horizons
                     and set(query['horizon_evaluation_seconds']) == {'1', '2'},
                     'Both horizons must be evaluated; retain each nonempty best plan')
+            if condition == 'adaptive_stop_aware':
+                before_count = len(states[query_index]['candidates'])
+                require(query['planning_stop_aware'] is True
+                        and query['candidate_count_before_planning'] == before_count
+                        and close(query['expected_value'], query['expected_terminal_candidates']),
+                        'Stop-aware plan metadata changes actual candidate expectation')
+                for plan in query['horizon_best_plans']:
+                    validate_stop_aware_plan(plan, before_count)
+                chosen = next(plan for plan in query['horizon_best_plans']
+                              if plan['horizon'] == query['selected_horizon'])
+                require(all(close(query[key], chosen[key]) for key in
+                            ('expected_terminal_candidates', 'expected_terminal_loss',
+                             'expected_queries', 'gain', 'rate'))
+                        and all(query[key] == chosen['query'][key] for key in
+                                ('goal_index_a', 'goal_index_b', 'value')),
+                        'Selected stop-aware query differs from saved best horizon plan')
     pids = raw['spawned_worker_pids']
     require(len(pids) == len(set(pids)) and all(type(pid) is int for pid in pids) and len(pids) <= 8,
             'Invalid actual pool PID count')
@@ -518,7 +644,7 @@ class Series:
         for key, name in (('result_file', 'result.json'), ('progress_file', 'progress.jsonl'),
                           ('checkpoint_file', 'questions.jsonl'), ('log_file', 'run.log')):
             attempt[key] = str((directory / name).relative_to(self.root))
-        policy = CONDITIONS[condition]
+        policy = self.conditions[condition]
         command = [str(self.python), str(self.root / 'replay_query_efficiency_problem.py'),
             '--repo-root', str(self.root / 'repo'), '--input-json', str(self.root / 'input.json'),
             '--dimension', '5', '--problem-index', str(index),
@@ -556,12 +682,13 @@ class Series:
     def run(self) -> None:
         frozen = freeze(self.root)
         self.protocol = read(self.root / 'protocol.json')
-        expected = schedule()
+        self.conditions = selected_conditions(self.protocol)
+        expected = schedule(self.conditions)
         require(stable(self.protocol['schedule']) == stable(expected)
                 and self.protocol['case_timeout_seconds'] == self.timeout, 'Protocol schedule/timeout differs')
-        require(self.protocol['conditions'] == CONDITIONS, 'Protocol conditions differ')
         cases = read(self.root / 'input.json')['cases']
-        require(len(cases) == 100 and sorted(case['problem_index'] for case in cases) == list(range(1, 101)),
+        require(len(cases) == CASE_COUNT
+                and sorted(case['problem_index'] for case in cases) == list(range(1, CASE_COUNT + 1)),
                 'Expected all100 fixed cases')
         require(all(case['dimension'] == 5 and len(case['alternatives']) == 5
                 and all(len(row) == 5 for row in case['alternatives'])
@@ -638,7 +765,7 @@ class Series:
         self.verified()
         counts = {status: sum(entry['status'] == status for entry in self.state['jobs'].values())
                   for status in ('completed', 'completed_unsolved', 'failed', 'timed_out', 'interrupted', 'pending', 'running')}
-        self.state.update(status='completed' if counts['completed'] + counts['completed_unsolved'] == 300
+        self.state.update(status='completed' if counts['completed'] + counts['completed_unsolved'] == len(expected)
                           else 'completed_with_failures', finished_at_utc=now(), job_status_counts=counts)
         self.save()
         self.event('controller_finished', status=self.state['status'], job_status_counts=counts)
