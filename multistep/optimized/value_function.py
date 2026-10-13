@@ -11,7 +11,7 @@ from concurrent.futures import Executor, ProcessPoolExecutor
 from collections import OrderedDict
 from dataclasses import dataclass
 import math
-from typing import Literal
+from typing import TYPE_CHECKING, Callable, Literal
 
 import numpy as np
 
@@ -54,6 +54,9 @@ from multistep.src.value_function import (
 from multistep.src.weight_space import build_weight_space
 
 from .profiling import increment_profile_counter, profile_operation
+
+if TYPE_CHECKING:
+    from .query_efficiency import QueryEfficiencyResult
 
 
 CandidateCountMode = Literal["closed_lp", "ratio_relevant"]
@@ -465,6 +468,36 @@ class OptimizedValueFunctionSession:
             while len(self._state_analysis_cache) > self.max_cached_results:
                 self._state_analysis_cache.popitem(last=False)
         return analysis
+
+    def compute_query_efficiency(
+        self,
+        answered_queries: list[AnsweredQuery],
+        max_horizon: int = 2,
+        candidate_subset: list[int] | None = None,
+    ) -> "QueryEfficiencyResult":
+        """Compare one/two-query plans by expected reduction per query.
+
+        This experimental entry point leaves ``compute`` and its result cache
+        unchanged.  Actual volume-confidence termination remains the caller's
+        responsibility; hypothetical plans stop early only at one candidate.
+        """
+
+        if self._is_closed:
+            raise RuntimeError("optimized value-function session is closed")
+        from .query_efficiency import compute_query_efficiency
+
+        return compute_query_efficiency(
+            alternatives=self.alternatives,
+            answered_queries=answered_queries,
+            max_horizon=max_horizon,
+            config=self.config,
+            candidate_subset=candidate_subset,
+            executor=self._executor,
+            precomputed_state_analysis=self.analyze_state(
+                answered_queries=answered_queries,
+                candidate_subset=candidate_subset,
+            ),
+        )
 
     def clear_cache(self) -> None:
         self._result_cache.clear()
@@ -1833,6 +1866,9 @@ def evaluate_query_candidate_optimized(
     candidate_subset: list[int] | None,
     ratio_intervals_by_goal_pair: dict[tuple[int, int], GoalPairRatioIntervals] | None = None,
     query_source: QuerySource = "unknown",
+    _child_result_observer: Callable[
+        [QueryOperator, float, ValueFunctionResult], None
+    ] | None = None,
 ) -> QueryEvaluation:
     if remaining_depth <= 0:
         raise ValueError("remaining_depth must be positive")
@@ -1968,6 +2004,8 @@ def evaluate_query_candidate_optimized(
                     is_feasible=True,
                 ),
             )
+            if _child_result_observer is not None:
+                _child_result_observer(answer, probability, child_result)
             child_value = child_result.value
             child_candidate_count: int | None = child_result.candidate_count
             is_child_feasible = True

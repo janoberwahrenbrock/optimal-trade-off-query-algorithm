@@ -38,6 +38,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--alternatives", type=int, default=10)
     parser.add_argument("--max-questions", type=int, default=100)
     parser.add_argument("--depth", type=int, choices=[1, 2, 3], default=1)
+    parser.add_argument(
+        "--query-strategy", choices=["fixed", "reduction_per_query"], default="fixed",
+        help="Use fixed lookahead, or experimentally compare horizons up to --depth (at most two) by expected candidate reduction per expected query.",
+    )
     parser.add_argument("--seed", type=int, default=20260902)
     parser.add_argument(
         "--parallel-root",
@@ -91,6 +95,11 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("grid-size must be positive")
     if not 0.0 < args.volume_confidence_threshold <= 1.0:
         raise ValueError("volume-confidence-threshold must be in (0, 1]")
+    if getattr(args, "query_strategy", "fixed") == "reduction_per_query":
+        if args.depth not in (1, 2):
+            raise ValueError("reduction_per_query supports only maximum horizons 1 and 2")
+        if args.root_query_source != "both" or args.depth_one_query_source != "ratio":
+            raise ValueError("reduction_per_query requires --root-query-source both --depth-one-query-source ratio")
 
 
 def build_config(
@@ -190,7 +199,15 @@ def solve_problem(
     depth_one_query_source: str = "central",
     progress_per_query: bool = False,
     volume_confidence_threshold: float | None = 0.99,
+    query_strategy: str = "fixed",
 ) -> dict[str, Any]:
+    if query_strategy not in {"fixed", "reduction_per_query"}:
+        raise ValueError("query_strategy must be fixed or reduction_per_query")
+    if query_strategy == "reduction_per_query":
+        if depth not in (1, 2):
+            raise ValueError("reduction_per_query supports only maximum horizons 1 and 2")
+        if root_query_source != "both" or depth_one_query_source != "ratio":
+            raise ValueError("reduction_per_query requires grid plus ratios above depth one and ratio queries at depth one")
     clear_polytope_volume_cache()
     config = build_config(
         parallelize_root=parallelize_root,
@@ -320,18 +337,30 @@ def solve_problem(
             if question_index >= max_questions:
                 break
 
-            result = session.compute(
-                answered_queries=answered_queries,
-                remaining_depth=depth,
-            )
-            if result.best_query is None:
-                raise RuntimeError("exact planner returned no query")
-            best_query = result.best_query
-            best_evaluation = next(
-                evaluation
-                for evaluation in result.query_evaluations
-                if evaluation.query == best_query
-            )
+            efficiency_result = None
+            if query_strategy == "reduction_per_query":
+                efficiency_result = session.compute_query_efficiency(
+                    answered_queries=answered_queries, max_horizon=depth,
+                )
+                if efficiency_result.choice is None:
+                    raise RuntimeError("query-efficiency planner returned no query")
+                best_evaluation = efficiency_result.choice.evaluation
+                best_query = best_evaluation.query
+                expected_value = best_evaluation.expected_value
+            else:
+                result = session.compute(
+                    answered_queries=answered_queries,
+                    remaining_depth=depth,
+                )
+                if result.best_query is None:
+                    raise RuntimeError("exact planner returned no query")
+                best_query = result.best_query
+                best_evaluation = next(
+                    evaluation
+                    for evaluation in result.query_evaluations
+                    if evaluation.query == best_query
+                )
+                expected_value = float(result.value)
             expected_values = (
                 best_evaluation.lexicographic_expected_values
                 or (float(best_evaluation.expected_value),)
@@ -351,10 +380,31 @@ def solve_problem(
                     time.perf_counter() - iteration_started,
                 )
             )
-            query_records[-1]["expected_value"] = float(result.value)
+            query_records[-1]["expected_value"] = float(expected_value)
             query_records[-1]["lexicographic_expected_values"] = [
                 float(value) for value in expected_values
             ]
+            if efficiency_result is not None:
+                from multistep.optimized.query_efficiency import query_efficiency_evaluation_to_json
+
+                choice = efficiency_result.choice
+                assert choice is not None
+                query_records[-1].update({
+                    "query_strategy": query_strategy,
+                    "selected_horizon": choice.horizon,
+                    "expected_terminal_candidates": choice.evaluation.expected_value,
+                    "expected_queries": choice.expected_queries,
+                    "gain": choice.gain, "rate": choice.rate,
+                    "horizon_best_plans": [
+                        query_efficiency_evaluation_to_json(plan)
+                        for _, plan in sorted(efficiency_result.best_by_horizon.items())
+                        if plan is not None
+                    ],
+                    "horizon_evaluation_seconds": {
+                        str(horizon): seconds
+                        for horizon, seconds in efficiency_result.evaluation_seconds_by_horizon.items()
+                    },
+                })
 
     seconds = time.perf_counter() - started
     cache = polytope_volume_cache_info()
@@ -417,6 +467,12 @@ def run(args: argparse.Namespace) -> list[dict[str, Any]]:
             ),
         }
     )
+    if getattr(args, "query_strategy", "fixed") == "reduction_per_query":
+        settings["objective"] = "maximum expected candidate reduction divided by expected executed queries; no hypothetical volume-confidence stop"
+        settings["lookahead_depth"] = "adaptive horizons 1.." + str(args.depth)
+    else:
+        # Preserve the existing fixed-mode settings shape for ordinary callers.
+        settings.pop("query_strategy", None)
     rng = np.random.default_rng(int(args.seed))
     results: list[dict[str, Any]] = []
     for goal_count in args.goals:
@@ -449,6 +505,7 @@ def run(args: argparse.Namespace) -> list[dict[str, Any]]:
                     if args.require_exact_termination
                     else float(args.volume_confidence_threshold)
                 ),
+                query_strategy=str(getattr(args, "query_strategy", "fixed")),
             )
             result.update(
                 {
