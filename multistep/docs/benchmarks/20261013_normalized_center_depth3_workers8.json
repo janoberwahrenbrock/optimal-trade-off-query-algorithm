@@ -1,0 +1,189 @@
+{
+  "schema_version": 1,
+  "experiment_date": "2026-10-13",
+  "status": "completed",
+  "title": "Normalized center LP recovery and completed Grid-5 depth-3 pilot",
+  "source": {
+    "base_commit": "03ac83fda7ed04e28f9782672f2dd49ec5700668",
+    "source_committed": false,
+    "python_source_count": 87,
+    "source_fingerprint": "ad6bccef4dfbccfd19c1360b10a9fb8f07d4d7bf686c3d7521b6cf05c6aa3053",
+    "source_archive_sha256": "5ce8c1438d78152c226ac4601647c281554b84a358b144b71868a05a31d8735c",
+    "changed_python_path_sha256": {
+      "multistep/src/polytope_geometry.py": "cd67f6d32d22c1279789a2060830bc921ab313971ddb60ef04da1684586ac597",
+      "multistep/tests/test_polytope_geometry.py": "eed7f8dad3c05fdef5877faf74f21f59d172a1ff8e4e662a9e7a15a5d6f13025"
+    }
+  },
+  "input": {
+    "seed": 20260902,
+    "problem_index": 1,
+    "dimension": 5,
+    "alternative_count": 5,
+    "sha256": "5e77ffe4d912f05937e0a5de91b5aa11f7cb7974eda84e51ba5d39fb1892a5e8",
+    "origin": "Byte-identical saved input.json; the pilot uses case 1 only."
+  },
+  "configuration": {
+    "shared_configuration_fingerprint": "b7b41d0a702d85a5629fe1d700ab1a2c0eb5cc8a097bf24887cc8761600a9d69",
+    "configuration_objects_identical": true,
+    "settings_difference": [
+      "depth"
+    ],
+    "grid_size": 5,
+    "root_query_source": "both",
+    "depth_one_query_source": "ratio",
+    "workers": 8,
+    "native_threads": 1,
+    "start_method": "forkserver",
+    "answer_probability_mode": "exact_volume",
+    "volume_confidence_threshold": 0.99,
+    "max_questions": 100,
+    "depth3_hard_deadline_seconds": 900
+  },
+  "implementation": {
+    "retry": "Original LP remains first; only an invalid center/radius triggers equivalent positive row normalization with unchanged bounds/options/tolerances. Validate again against original geometry. Invalid retry remains an error, not zero volume.",
+    "valid_original_centers_preserved": true,
+    "code_defaults_unchanged": true
+  },
+  "arms": {
+    "2": {
+      "status": "completed",
+      "successful_solver_seconds": 4.51920663297642,
+      "question_count": 5,
+      "quality": {
+        "target_utilities": [
+          0.7510032907200143,
+          0.6236001134356374,
+          0.5540097580981146,
+          0.4570264506199031,
+          0.3809842587434887
+        ],
+        "independent_winner": 0,
+        "selected_candidate": 0,
+        "correct": true,
+        "absolute_utility_regret": 0.0
+      },
+      "termination_reason": "exact_single_candidate",
+      "exactly_solved": true,
+      "final_candidates": [
+        0
+      ],
+      "selected_candidate_volume_share": 1.0,
+      "residual_volume_share": 0.0,
+      "actual_workers": 8,
+      "successful_root_tasks": 543,
+      "failed_root_tasks": 0,
+      "planning_seconds": [
+        1.9199343890650198,
+        1.2039977690437809,
+        0.3583043909166008,
+        0.5120671920012683,
+        0.4756056109908968
+      ],
+      "answered_round_seconds": [
+        1.9282027299050242,
+        1.2104916229145601,
+        0.3642106180777773,
+        0.5174852350028232,
+        0.48102532303892076
+      ]
+    },
+    "3": {
+      "status": "completed",
+      "successful_solver_seconds": 734.2578106300207,
+      "question_count": 2,
+      "quality": {
+        "target_utilities": [
+          0.7510032907200143,
+          0.6236001134356374,
+          0.5540097580981146,
+          0.4570264506199031,
+          0.3809842587434887
+        ],
+        "independent_winner": 0,
+        "selected_candidate": 0,
+        "correct": true,
+        "absolute_utility_regret": 0.0
+      },
+      "termination_reason": "volume_confidence",
+      "exactly_solved": false,
+      "final_candidates": [
+        0,
+        3
+      ],
+      "selected_candidate_volume_share": 0.9993429194241097,
+      "residual_volume_share": 0.000657080575890312,
+      "actual_workers": 8,
+      "successful_root_tasks": 249,
+      "failed_root_tasks": 0,
+      "planning_seconds": [
+        347.8596974449465,
+        386.34972725308035
+      ],
+      "answered_round_seconds": [
+        347.8688489169581,
+        386.356454212917
+      ]
+    }
+  },
+  "comparison": {
+    "configuration_identical": true,
+    "settings_differences": [
+      "depth"
+    ],
+    "initial_semantics_float_hex_identical": true,
+    "depth3_over_depth2_solver_time_factor": 162.47493647937648,
+    "question_count_difference_depth3_minus_depth2": -3,
+    "recorded_semantics_float_hex_identical": false
+  },
+  "tests": {
+    "mac_multistep": 235,
+    "bench_multistep": 235,
+    "new_regression_tests": 7,
+    "independent_analytic_captured_volume": 1.4232771997898376e-14,
+    "volume_test_relative_tolerance": 1e-07
+  },
+  "isolated_root_replay": {
+    "status": "completed_without_error",
+    "seconds": 20.756141538033262,
+    "captured_halfspace_errors": 0,
+    "invalid_original_center_attempts_repaired": 1,
+    "scope": "One isolated root evaluation; not a complete solve or comparative benchmark."
+  },
+  "historical_depth2_semantics": {
+    "identical_float_hex": true,
+    "differences": 0,
+    "paired_float_fields": 53
+  },
+  "independent_review": {
+    "status": "passed",
+    "open_blockers": [],
+    "comparison_sha256": "cbf9a2ad8f9dd88ea74d1ea7e7ae3d2f4168eeffdfa12d8a06a40a70340f26d2"
+  },
+  "cleanup": {
+    "sources_unchanged": true,
+    "verified_python_files_after": 87,
+    "live_pilot_process_groups_after": []
+  },
+  "interpretation": "Numerical repair fixes the same geometry; deeper planning changes query strategy. Both selected utility-optimal alternative 0, but depth 2 ended with one candidate and depth 3 with [0,3] under the same 99-percent rule.",
+  "limits": [
+    "One saved problem and one run per depth; no general speed or quality guarantee.",
+    "External root-observer overhead is common, task-count dependent and unquantified.",
+    "Planning/round/worker timers overlap; do not add them. Earlier failed runs are not successful solution times."
+  ],
+  "full_artifacts_directory": "outputs/benchmarks/bench-i7/20261013-normalized-center-depth3-live-workers8/",
+  "artifact_reference_sha256": {
+    "input.json": "5e77ffe4d912f05937e0a5de91b5aa11f7cb7974eda84e51ba5d39fb1892a5e8",
+    "source.tar": "5ce8c1438d78152c226ac4601647c281554b84a358b144b71868a05a31d8735c",
+    "source-manifest.json": "ec05fcb2b8a9b20762cbef582c49a84ffe19709a6f9542a1672016a62054ec2b",
+    "provenance.json": "a5cb34bd58d8f8c04f1e892122adb2822d095b554a1312bd7005e92f784dead4",
+    "p01-depth2.json": "fbd19be878c7e866148cc3e4cd9a1f7f6fd2c11ca833af2c57aa5bacd14c767d",
+    "p01-depth3.json": "baeb6d0d329356b796723edece850f883cbc0b7898544530f5a979df7b86839a",
+    "pilot-comparison.json": "cbf9a2ad8f9dd88ea74d1ea7e7ae3d2f4168eeffdfa12d8a06a40a70340f26d2",
+    "independent-review.json": "c39a8b050ff635fe21c94574c2c901f738be638504b07d5bef60efb2399da73b",
+    "local-full-tests.json": "3d895175a4a36b6e1381ed15ff9abb7b224e7ff4cb0c419c83d008a7101fe9b9",
+    "remote-full-tests.json": "2d0cfc546a919b2585c692059ad0af03aa8e17cd6ee12ec2f16797119e1f421c",
+    "diagnostic-root-replay.json": "8dc602b0e1c0e47081a06469f63fdb5a040ab3540a3f05f4eaefee38e90b7e76",
+    "cleanup-and-source-verification.json": "cc03c2251cc5a9a6616dd663e371f90807b99af5a96489ab7219bf301ed74d0e",
+    "pilot-report.md": "5fcb0c28c402d63fe7be093b2a52ba858e629b77aa65d0e1f3bd665200983d01"
+  }
+}

@@ -172,6 +172,183 @@ Query-Verläufe bleiben im Projekt unter
 und auf Bench i7 unter dem gleichnamigen Verzeichnis in
 `/home/cruncher/otqa-benchmarks/` erhalten.
 
+## Grid 5 gegenüber Grid 10 bei Grid plus Ratios (2026-10-13)
+
+Auf ausdrücklichen Wunsch wurde die Grid-Größe als **Strategieparameter**
+verglichen. Dies ist keine weitere Codeoptimierung: Grid 5 kann andere Queries
+und Folgezustände erzeugen. Beide Varianten verwenden den unveränderten Commit
+`03ac83fda7ed04e28f9782672f2dd49ec5700668`. Die bisherige Benchmark-
+Vergleichskonfiguration bleibt **Grid 10 plus Ratios**; bestehende Code-Defaults
+bleiben unverändert (Grid-Größe 21). Die einzige Konfigurationsdifferenz zwischen
+den beiden gemessenen Varianten ist `grid_size`.
+
+Auf **Bench i7** wurden dieselben zehn gespeicherten 5-Ziele-/5-Alternativen-
+Probleme mit Seed 20260902 je Variante dreimal gelöst, insgesamt **60 Läufe**.
+Tiefe 2, acht tatsächlich gestartete Worker, `forkserver`, ein nativer Thread
+je Bibliothek, exakte Volumenberechnung, Ratio-Queries auf Tiefe 1, Wertebereich
+0,001 bis 100, maximal 100 Fragen und 99-Prozent-Abbruchregel blieben gleich.
+Neue Prozesse und wechselnde Reihenfolge wurden für beide Grid-Größen verwendet.
+
+| Einstellung | Summe der zehn Problemmediane | Queries je Durchlauf | Korrekte Auswahl | Exakt gelöst |
+| --- | ---: | ---: | ---: | ---: |
+| Grid 10 plus Ratios | 108,428 s | 75 | 10/10 | 3/10 |
+| Grid 5 plus Ratios | 55,456 s | 71 | 10/10 | 6/10 |
+
+Grid 5 benötigte **48,85 Prozent weniger Zeit** (Faktor 1,96) und war bei
+allen zehn Problemen schneller. Die drei vollständigen Durchlaufzeiten waren
+für Grid 10 **104,426 / 108,446 / 108,753 s**, für Grid 5
+**53,108 / 55,511 / 55,538 s**. Der beschreibende Quotient
+Gesamtlaufzeit/gestellte Fragen sank von **1,446 auf 0,781 s**;
+er ist kein isolierter Timer für die Bewertung desselben Suchzustands.
+Die Problemmediane enthalten Session- und Poolstart sowie Poolabbau.
+
+Beide Varianten wählten bei jedem Lauf den anhand der Zielgewichte optimalen
+Gewinner; absoluter und relativer ausgewählter Nutzenverlust waren jeweils null.
+Grid 5 benötigte in den Fällen 4, 6 und 7 mehr Fragen, in 2, 8 und 10 weniger.
+Die neun veränderten Query-Verläufe erzeugten andere Endzustände; nur Fall 9
+hatte dieselbe volle aufgezeichnete Semantik. Die drei Wiederholungen je Grid-Größe
+waren mit `float.hex()` semantisch identisch, ausgenommen Zeiten und Cachewerte.
+Alle 30 Grid-10-Ergebnisse entsprachen außerdem der früheren `both`-Aufzeichnung.
+Frühere Laufzeiten wurden nicht zur Schätzung dieser Beschleunigung verwendet.
+
+**Einordnung:** Grid 5 ist für diese Arbeitslast vielversprechend, ohne beobachteten
+Qualitätsverlust bei der Auswahl. Zehn unterschiedliche Probleme eines Seeds
+belegen keine allgemeine Gleichheit oder statistisch abgesicherte Nichtunterlegenheit.
+Die Zeitwiederholungen sind keine zusätzlichen unabhängigen Qualitätsfälle;
+die 99-Prozent-Volumenregel garantiert nicht für jedes Zielgewicht die richtige Auswahl.
+Die bereits zuvor bestandenen **228 Tests auf Mac und Bench i7** betreffen denselben
+87-Datei-Python-Fingerprint; für diesen Parametertest wurde keine Suite neu ausgeführt.
+
+Die [kompakten versionierten Nachweise](benchmarks/20261013_grid5_vs_grid10_ratios_workers8.json)
+enthalten Eingaben, beide Konfigurationen, Rohzeiten, Nutzen- und Endzustandsdaten
+sowie SHA-256. Vollständige Rohberichte und Query-Verläufe bleiben unter
+`outputs/benchmarks/bench-i7/20261013-grid5-vs-grid10-ratios-workers8/`
+und auf Bench i7 im gleichnamigen Verzeichnis unter `/home/cruncher/otqa-benchmarks/`.
+
+## Grid 5: Tiefe-3-Pilot mit numerischem Fehler (2026-10-13)
+
+Ein Pilot auf Bench i7 verglich den gespeicherten Fall 1 (fünf Ziele, fünf
+Alternativen, Seed 20260902) mit Grid 5 plus Ratios, acht Workern und Tiefe 2
+beziehungsweise 3. Exakte Volumenberechnung, native Threads auf 1, Ratio-Queries
+auf Tiefe 1 und 99-Prozent-Abbruchregel blieben gleich; die vollständigen
+Konfigurationsobjekte sind identisch. Nur der Planungstiefenparameter änderte sich.
+Beide Läufe verwendeten den unveränderten Commit `03ac83f` und dieselben externen
+Root-Beobachter; deren nicht separat gemessener Aufwand kann mit der Aufgabenanzahl steigen.
+
+Tiefe 2 löste das Problem in **4,487 s mit fünf Fragen**, korrekter Alternative 0
+und einem einzelnen verbleibenden Kandidaten. Das aufgezeichnete Ergebnis
+entspricht dem bisherigen Grid-5-Ergebnis exakt, ausgenommen Zeiten und Cachewerte.
+
+**Tiefe 3 scheiterte vor der ersten Frage** an
+`halfspace center is not strictly interior`. Der Fehler erreichte den Hauptprozess
+nach **250,755 s** Planung; nach Abbau noch laufender Workeraufgaben endete der
+Prozess nach **307,834 s**. Diese Fehlerzeiten sind keine Lösungszeiten.
+Von 124 Root-Queries wurden 109 erfolgreich bewertet, eine erzeugte den Fehler
+und 14 wurden nicht gestartet. Der 900-Sekunden-Timeout wurde nicht erreicht;
+nach dem Prozessabbau waren keine lebenden Gruppenmitglieder übrig.
+
+Die isolierte Auswertung der fehlerhaften Root-Query reproduzierte den Fehler
+in **19,263 s**. Auf dem hypothetischen Pfad folgten `(3, 2, 0.001) >` und
+`(4, 3, 0.001) >`, dann eine Ratio-Query mit Wert rund **1,83785 × 10⁷**.
+Im vierdimensionalen affinen Raum mit acht Halbräumen meldete das Innenpunkt-LP
+einen Radius von **3,03980 × 10⁻⁸**. Der tatsächliche Punkt hatte jedoch eine
+minimale normalisierte Reserve von **−3,34722 × 10⁻⁶** und war nicht im Inneren.
+Der Schutztest verweigerte die unsichere Volumenberechnung; dieser Befund
+rechtfertigt weder die Annahme einer leeren Region noch gelockerte Toleranzen.
+
+Weitere Fälle oder Wiederholungen wurden wegen dieses numerischen Hindernisses
+nicht gestartet. Die frühere Durchsatzprognose von etwa 330–340 Sekunden galt
+nur für den ersten Root-Batch und erlaubt keine Aussage über die vollständige
+Lösungsdauer oder eine 30-Minuten-Grenze. Für Tiefe 3 fehlen gültige Gesamtlaufzeit,
+Fragenzahl und Auswahl; ein Qualitätsvergleich ist nicht möglich.
+
+Eine zusätzliche isolierte Diagnose mit positiver Skalierung derselben Zeilen
+und öffentlichem `scipy.optimize.linprog` fand einen an den ursprünglichen
+Halbräumen geprüften Innenpunkt: Radius **3,04169 × 10⁻⁸**, minimale normalisierte
+Reserve **3,03789 × 10⁻⁸**. Die ursprüngliche geometrische Schnittfunktion lieferte
+damit **fünf Ecken**. Das stützt den Ansatz für dieses konkrete System, ersetzt
+aber keine Produktionsänderung, Regressionstests oder neue Laufzeitmessung.
+
+Ein noch nicht implementierter nächster Ansatz ist äquivalente Normalisierung
+der LP-Zeilen mit anschließender Prüfung des Mittelpunkts an denselben ursprünglichen
+Nebenbedingungen. Vor einem neuen Vergleich muss diese numerische Robustheit
+geprüft werden. Algorithmuscode und Code-Defaults blieben unverändert.
+
+Die [kompakten versionierten Nachweise](benchmarks/20261013_grid5_depth3_pilot_workers8.json)
+sichern Fall, Konfiguration, Ergebnis, Fehler, Diagnosesystem und Artefakthashes.
+Vollständige Logs und Fortschrittsjournale liegen unter
+`outputs/benchmarks/bench-i7/20261013-grid5-depth2-vs-depth3-live-workers8/`;
+`pilot-report.md` beschreibt den abgebrochenen Vergleich und seine Grenzen.
+
+## Numerisch robuster Innenpunkt durch äquivalente Zeilenskalierung (2026-10-13)
+
+Der im vorherigen Tiefe-3-Pilot erfasste Fehler wird nun durch einen bedingten
+Wiederholungsversuch des Innenpunkt-LPs behandelt. Basis ist Commit `03ac83f`;
+`multistep/src/polytope_geometry.py` und dessen Testdatei sind lokal geändert.
+Die 87 Python-Dateien wurden unter Fingerprint
+`ad6bccef4dfbccfd19c1360b10a9fb8f07d4d7bf686c3d7521b6cf05c6aa3053` eingefroren.
+Die vorherigen Fehlerdiagnosen bleiben als historische Messungen dokumentiert.
+
+Der erste LP-Aufruf bleibt unverändert. Sein Mittelpunkt und Radius werden auf
+Endlichkeit geprüft. Bei positivem Radius muss der Punkt strikt innerhalb der
+projizierten Halbräume liegen; bei kleinem Radius muss er die bestehenden
+Machbarkeitstoleranzen erfüllen. Gültige ursprüngliche Mittelpunkte werden
+unverändert weiterverwendet, einschließlich ihrer bisherigen Rundung.
+
+Nur bei ungültigem Punkt wird jede vollständige LP-Zeile durch die positive
+Norm ihres projizierten Normalenvektors geteilt. Aus
+`A_i c + ||A_i|| r <= b_i` wird `A_i/||A_i|| c + r <= b_i/||A_i||`.
+Dies verändert weder die zulässigen `(c, r)` noch das Radiusziel. Bounds,
+Solveroptionen und Toleranzen bleiben gleich. Der reparierte Punkt wird erneut
+an der ursprünglichen Geometrie geprüft. Ungültige oder fehlgeschlagene
+Wiederholungen ergeben weiterhin einen Fehler; es gibt keinen Nullvolumen-Kurzschluss.
+Grid, Ratio-Queries, exakte Volumenberechnung und Code-Defaults bleiben unverändert.
+
+Die vollständige Multi-Step-Suite bestand auf Mac und Bench i7 jeweils mit
+**235 Tests**. Sieben neue Regressionstests sichern den erfassten Fehler,
+Unverändertheit gültiger Mittelpunkte, nicht endliche oder außerhalb liegende
+Punkte, fehlgeschlagene Wiederholungen und gültige niedrigdimensionale Fälle.
+Für das erfasste schmale Polytop werden fünf Ecken und ein positives Volumen
+berechnet; die unabhängige analytische Referenz ist
+**1,4232771997898375 × 10⁻¹⁴**. Das Volumen wird relativ gegen diese Formel geprüft.
+
+Die zuvor fehlerhafte Root-Auswertung lief in einem frischen isolierten Prozess
+mit **20,756 s** ohne Fehler durch; ein ungültiger erster Punkt wurde automatisch
+repariert. Diese Diagnose ist keine vollständige Lösung. Ein frischer
+Tiefe-2-Kontrolllauf löste Fall 1 in **4,519 s mit fünf Fragen**, korrekter Alternative 0
+und genau einem verbleibenden Kandidaten. Seine aufgezeichnete Semantik entspricht
+dem vorherigen Live-Pilot exakt, ausgenommen Zeiten und Cachewerte.
+
+Der erneute Tiefe-3-Pilot löste diesen ersten Fall vollständig und fehlerfrei.
+Beide Tiefen verwendeten denselben geänderten Quellstand, Grid 5 plus Ratios,
+acht Worker und dieselben externen Root-Beobachter.
+
+| Planungstiefe | Lösungszeit | Fragen | Auswahl | Abbruch | Endkandidaten | Volumenanteil |
+| --- | ---: | ---: | --- | --- | --- | ---: |
+| 2 | 4,519 s | 5 | Alternative 0, korrekt | Einzelner Kandidat | `[0]` | 100 % |
+| 3 | 734,258 s | 2 | Alternative 0, korrekt | 99-Prozent-Regel | `[0, 3]` | 99,934292 % |
+
+Tiefe 3 benötigte **12 min 14,26 s**, Faktor **162,47** der Tiefe-2-Laufzeit,
+und drei weniger Antworten. Beide wählten den tatsächlichen optimalen Gewinner
+mit Nutzenverlust null. Die Endzustände sind unterschiedlich: Tiefe 3 lässt
+noch Alternative 3 zu; Tiefe 2 hat genau einen verbleibenden Kandidaten.
+Die beiden Tiefe-3-Planungen dauerten **347,860 und 386,350 s**. Alle
+**249 Root-Aufgaben** (124 und 125) waren erfolgreich, einschließlich der vormals
+fehlerhaften Root-Query. Innere rekursive Phasen wurden nicht separat profiliert.
+Die 900-Sekunden-Grenze wurde nicht erreicht; nach Abschluss waren alle
+Prozessgruppen beendet und alle 87 Python-Dateien unverändert.
+
+Die Reparatur behandelt dieselbe Geometrie numerisch robuster; die Änderung
+von Tiefe 2 auf 3 ist dagegen eine Suchstrategieänderung. Ein Problem mit je
+einem Lauf belegt keine allgemeine Laufzeit oder Qualitätsüberlegenheit.
+Die 99-Prozent-Volumenregel garantiert nicht für alle Zielgewichte die richtige Auswahl.
+Der Mehraufwand der gemeinsamen Root-Beobachter ist nicht separat quantifiziert.
+
+Die [kompakten versionierten Nachweise](benchmarks/20261013_normalized_center_depth3_workers8.json)
+sichern Code- und Testbelege sowie vollständige Pilotdaten. Rohberichte und Live-Journale liegen unter
+`outputs/benchmarks/bench-i7/20261013-normalized-center-depth3-live-workers8/`.
+`pilot-report.md` dokumentiert den abgeschlossenen Pilot und seine Grenzen.
+
 ## Verworfene Optimierungsversuche
 
 ### 2026-10-12: Gemeinsamer Geometriecache und vollständiger Wahrscheinlichkeitscache
@@ -437,3 +614,175 @@ Zufallstests gegen direkt gelöste LPs verglichen. Der Sampler besitzt
 Regressionstests für den relativen Simplex-Innenpunkt, die Exploration in
 Dimension 7 und seine Diagnostik. Die approximativen Schalter besitzen eigene
 Tests, bleiben aber bewusst opt-in.
+
+## Laufende Serie: 20 weitere Tiefe-3-Probleme (2026-10-13)
+
+Nach dem erfolgreichen Pilotfall wird auf Bench i7 eine feste Serie von
+**20 weiteren Problemen, Fälle 2 bis 21**, ausgeführt. Pilotfall 1 ist nur zur
+Provenienz in den Eingaben enthalten und bleibt aus der Serienauswertung
+ausgeschlossen. Die Eingaben setzen die historische RNG-Folge mit Seed
+`20260902` ohne Auswahl oder erneutes Ziehen fort; alle 21 gespeicherten Fälle
+wurden unabhängig bitgenau reproduziert. Verwendet wird weiterhin Basiscommit
+`03ac83fda7ed04e28f9782672f2dd49ec5700668` mit der oben dokumentierten
+Innenpunktkorrektur; der Fingerprint der 87 eingefrorenen Python-Dateien ist
+`ad6bccef4dfbccfd19c1360b10a9fb8f07d4d7bf686c3d7521b6cf05c6aa3053`.
+
+Die feste Konfiguration lautet **fünf Ziele, fünf Alternativen, Grid 5 plus
+Ratios, Tiefe 3 und acht Worker**. Auf verbleibenden Tiefen größer als 1 werden
+Grid- und Ratio-Queries berücksichtigt, auf Tiefe 1 Ratio-Queries. Die
+Antwortwahrscheinlichkeiten werden weiterhin mit `exact_volume` und der
+geometrischen Ratio-Engine berechnet. Das 99%-Volumen-Abbruchkriterium, alle
+Toleranzen und die Begrenzung auf höchstens 100 tatsächlich gestellte Fragen
+bleiben erhalten. Der Nutzer hat die bisherige Laufzeitgrenze ausdrücklich
+aufgehoben: `case_timeout_seconds=0` lässt jeden Fall ohne Zeitlimit bis zum
+Ergebnis beziehungsweise einem dokumentierten Fehler laufen.
+
+Der unabhängig vom AI-Run gestartete Controller speichert den Serienzustand
+atomar sowie Fragen, Fortschritt und Ergebnisse in erhaltenen Verzeichnissen
+je Fall und Versuch. Ein erneuter Start überspringt bereits abgeschlossene,
+über ihre Hashes validierte Fälle. Ein durch Rechner- oder Prozessausfall
+unterbrochener Fall wird in einem neuen Versuch am **Problemanfang** neu
+gestartet; innerhalb einer laufenden LP-Berechnung wird kein Zustand
+wiederhergestellt. Fehlgeschlagene oder unvollständige Versuche bleiben mit
+ihren Fehlern und Zwischenständen erhalten und zählen nicht als gelöste
+Probleme. Der Nenner der Serie bleibt stets 20.
+
+Die geprüfte lokale Momentaufnahme vom **2026-10-13, 02:43:45 UTC** zeigt den
+ersten zusätzlichen Fall 2 in Bearbeitung: zwei tatsächliche Fragen sind
+gespeichert, die dritte Planung läuft. Acht Worker sind beobachtet worden;
+die gespeicherten Journale enthalten zu diesem Zeitpunkt keine Fehler.
+**Noch kein Serienfall ist abgeschlossen**, 19 weitere Fälle warten. Daraus
+werden weder fertige Laufzeiten noch Aussagen zur Query-Ersparnis oder
+Lösungsqualität der gesamten Serie abgeleitet.
+
+Anleitung für Live-Status und Fortsetzung:
+`outputs/benchmarks/bench-i7/20261013-depth3-series20-grid5-ratios-workers8/README.md`.
+Im selben lokalen Artefaktverzeichnis werden `report.md` und
+`series-summary.json` laufend neu aus den gespeicherten Daten erstellt;
+`series-state.json` und `attempts/pXX/aNN/` bewahren den Controllerzustand und
+die Rohdaten. Diese dynamischen Berichte zeigen den jeweils neuesten
+gesicherten Stand; dieser Dokumentationsabschnitt hält ausschließlich die
+oben bezeichnete Momentaufnahme fest.
+
+## Abschluss der 20 weiteren Tiefe-3-Probleme (2026-10-13)
+
+Die oben erhaltene Momentaufnahme wird durch diesen Serienabschluss ergänzt.
+Der Controller beendete die festen Fälle 2 bis 21 mit
+`completed_with_failures`: **17 von 20 Problemen wurden korrekt gelöst
+(85 Prozent)**, drei scheiterten ohne gültiges Endergebnis. Unter den 17
+fertigen Auswahlen gab es keine falsche Auswahl; der anhand der eingefrorenen
+Zielgewichte unabhängig berechnete Nutzenverlust war jeweils null. Pilotfall 1
+bleibt ausgeschlossen, der Nenner bleibt 20. Es gab keine laufenden oder
+wartenden Fälle mehr.
+
+Konfiguration und Quellstand blieben während der Serie unverändert: fünf Ziele,
+fünf Alternativen, Grid 5 plus Ratios, Tiefe 3, acht Worker mit `forkserver`,
+ein nativer Thread je Bibliothek, `exact_volume`, geometrische Ratio-Engine,
+99-Prozent-Volumenregel und maximal 100 tatsächlich gestellte Fragen.
+`case_timeout_seconds=0` ließ die Fälle ohne Laufzeitgrenze bis zum Ergebnis
+oder Fehler laufen. Die 87 eingefrorenen Python-Dateien behielten den oben
+angegebenen Fingerprint `ad6bccef…caa3053`.
+
+Die folgenden Statistiken beziehen sich ausschließlich auf die **17 gültigen
+Lösungen** und deren verstrichene Lösungszeit einschließlich Session- und
+Workerpoolstart/-ende. Imports und Eingabeparsing im Hauptprozess sowie
+Berichtsdateien sind ausgeschlossen; die externe Beobachtung ist enthalten.
+Kumulierte Workerintervalle überlappen diese Zeiten und werden nicht addiert.
+
+| Kennzahl | Erfolgreiche Lösungszeit | Tatsächliche Queries |
+| --- | ---: | ---: |
+| Summe | 22.403,098633 s | 171 |
+| Median | 975,10 s | 8 |
+| Mittelwert | 1.317,83 s | 10,06 |
+| Minimum | 620,21 s | 3 |
+| Maximum | 4.177,64 s | 42 |
+
+Das 25-Prozent-Quantil der Erfolgszeiten beträgt **847,48 s**, das
+75-Prozent-Quantil **1.320,12 s** und das 90-Prozent-Quantil **2.074,33 s**;
+die Quantile verwenden lineare Interpolation bei `(n-1)*p`. Der frühere Pilot
+mit zwei Queries liegt unter dem Serienmedian von acht und ist für den
+Fragebedarf dieser Serie nicht typisch. Diese Serie enthält keinen frischen
+Tiefe-2-Vergleich.
+
+**Vier Abschlüsse hatten einen numerischen Einzelkandidaten**, 13 erfüllten
+die gespeicherte 99-Prozent-Volumenregel mit verbleibenden Restkandidaten.
+Die Volumenabbrüche garantieren keine mathematisch eindeutige Auswahl für
+jeden zulässigen Gewichtsvektor. Auch der Einzelkandidatenstatus gilt innerhalb
+der bestehenden numerischen Toleranzen. Die Prüfungen glichen gespeicherte
+Geometriewerte und deren arithmetische Konsistenz ab; sie berechneten keine
+LPs oder Volumina erneut und lieferten keinen symbolischen Nullvolumenbeweis.
+Nutzenmaximum und tatsächliche Antwortvorzeichen wurden dagegen unabhängig
+aus den gespeicherten Eingaben geprüft.
+
+| Fehlgeschlagener Fall | Beobachtete Prozesszeit | Gespeicherte Teilantworten |
+| --- | ---: | ---: |
+| 7 | 3.194,1706 s | 44 |
+| 12 | 4.611,3404 s | 75 |
+| 16 | 3.458,2364 s | 71 |
+
+Alle drei meldeten
+`row-normalized center LP returned an invalid center or radius`.
+Die gleiche Meldung belegt keine identische numerische Ursache. Die Versuche
+besitzen kein gültiges Lösungsergebnis und bleiben aus allen Erfolgsaggregaten
+ausgeschlossen. Ihre insgesamt **11.263,7473373 s Prozesszeit und 190
+Teilantworten** werden separat erhalten; diese Zeiten sind keine Lösungszeiten.
+
+Der gesamte Controllerlauf dauerte von **2026-10-13, 02:35:28.768852 UTC**
+bis **11:56:58.999442 UTC** insgesamt **33.690,230590 s**. Das ist die
+verstrichene Serienzeit mit erfolgreichen und fehlgeschlagenen Versuchen sowie
+Controller- und Prozessaufwand, kein kumulierter Workerzeitwert.
+Die Abschlussprüfung bestätigte **93 primäre Artefakte bytegleich auf Mac und
+Bench**, unveränderte **87 Python-Dateien** und keine noch lebende der
+**221 erfassten historischen Prozessidentitäten**. Controller und aufgezeichnete
+Solvergruppen waren beendet. Es gab keine Solverwiederholung, keinen Retry,
+Commit oder Push im Zuge dieses Serienabschlusses.
+
+Die vollständigen lokalen Nachweise liegen im Hauptprojektarbeitsverzeichnis:
+[Serien-README](/Users/janoberwahrenbrock/Code/optimal-trade-off-query-algorithm/outputs/benchmarks/bench-i7/20261013-depth3-series20-grid5-ratios-workers8/README.md),
+[Einzelfallbericht](/Users/janoberwahrenbrock/Code/optimal-trade-off-query-algorithm/outputs/benchmarks/bench-i7/20261013-depth3-series20-grid5-ratios-workers8/report.md),
+[terminale Zusammenfassung](/Users/janoberwahrenbrock/Code/optimal-trade-off-query-algorithm/outputs/benchmarks/bench-i7/20261013-depth3-series20-grid5-ratios-workers8/series-summary.json),
+[unabhängige Serienabschlussprüfung](/Users/janoberwahrenbrock/Code/optimal-trade-off-query-algorithm/outputs/benchmarks/bench-i7/20261013-depth3-series20-grid5-ratios-workers8/final-series-independent-review.json)
+und [Sicherungs- und Cleanup-Prüfung](/Users/janoberwahrenbrock/Code/optimal-trade-off-query-algorithm/outputs/benchmarks/bench-i7/20261013-depth3-series20-grid5-ratios-workers8/terminal-raw-backup-review.json).
+
+## Gepaarter Vergleich der 17 Tiefe-3-Erfolgsfälle mit Tiefe 2 (2026-10-13)
+
+Im Anschluss an die abgeschlossene Serie wurden alle 17 erfolgreichen Fälle
+mit derselben eingefrorenen Quelle `ad6bccef…caa3053`, denselben Eingaben und
+demselben Replay-Adapter erneut mit Tiefe 2 gemessen. Grid 5 plus Ratios,
+Ratio-Queries auf der letzten Ebene, acht Worker, native Threads jeweils 1,
+`exact_volume` und die vorhandene 99-Prozent-Abbruchregel blieben gleich.
+Die Solver-Einstellungen unterscheiden sich ausschließlich in der Tiefe.
+
+Beide Strategien wählten in allen 17 Fällen dieselbe korrekte Alternative.
+Tiefe 2 benötigte insgesamt **126,277269 s und 139 Queries**, Tiefe 3
+**22.403,098633 s und 171 Queries**. Die Mediane lagen bei **5,144835 s /
+6 Queries** beziehungsweise **975,103562 s / 8 Queries**. Tiefe 3 benötigte
+in vier Fällen weniger, in drei gleich viele und in zehn mehr Queries.
+Tiefe 2 endete in zehn Fällen mit einem Kandidaten und in sieben über die
+Volumenregel; bei Tiefe 3 waren es vier und 13.
+
+Dies ist eine einmalige gepaarte Messung auf dem nach Tiefe-3-Erfolg
+ausgewählten Teilkollektiv, kein Erfolgsquotenvergleich auf allen 20 Fällen.
+Die Fehlerfälle 7, 12 und 16 sowie Pilot 1 bleiben ausgeschlossen. Der
+Arbeitsverzeichnis-Unterschied des neuen Controllers wurde statisch geprüft;
+Quell-/Eingabepfade sind explizit und die Anfangszustände bitgleich.
+Beobachter- und Betriebssystemaufwand sind nicht separat quantifiziert.
+
+Der Planungsscore minimiert erwartete Restkandidaten nach einem festen
+Horizont; er minimiert nicht die gesamte Queryzahl bis zur 99-Prozent-Regel.
+Nach jeder tatsächlichen Antwort wird der volle Horizont erneut geplant.
+Die gespeicherten ersten Tiefe-3-Scores waren in allen 17 Fällen kleiner als
+die Tiefe-2-Scores; dies garantiert keine kleinere tatsächliche Queryzahl.
+
+Nachvollziehbare Aggregate und Rohdaten-Hashes:
+`benchmarks/20261013_depth2_vs_depth3_matched_success17.json`. Alle Rohdaten,
+Journale, unabhängigen Prüfnachweise und Sicherungsnachweise liegen bytegleich
+auf Mac und Bench im Verzeichnis
+`outputs/benchmarks/bench-i7/20261013-depth2-matched-depth3-success17-grid5-ratios-workers8`.
+Die abgeschlossene Statusautomatik bleibt deaktiviert.
+
+Dieser Stand einschließlich Innenpunktkorrektur, ihrer elf erfolgreichen
+Regressionstests und der vollständigen bisherigen Benchmark-Dokumentation
+wird vor dem folgenden separaten Strategieexperiment als lokaler Commit
+gesichert. Das Experiment verändert die Queryauswahl; der feste bisherige
+Algorithmus bleibt als Vergleichsbasis erhalten.

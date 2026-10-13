@@ -1,0 +1,682 @@
+{
+  "schema_version": 1,
+  "experiment_date": "2026-10-13",
+  "title": "Grid 5 depth 2 versus depth 3 live pilot; depth 3 failed numerically",
+  "status": "incomplete_comparison_due_to_numerical_error",
+  "source": {
+    "prepared_at_utc": "2026-10-13T01:12:14.404481+00:00",
+    "source_revision": "03ac83fda7ed04e28f9782672f2dd49ec5700668",
+    "source_branch": "codex/vertex-support-cache",
+    "source_fingerprint": "09ef2b5fa1d212df688841707a06e4bf66f9816f7319701d7993d5710974dc07",
+    "source_python_files": 87,
+    "source_committed": true,
+    "input_sha256": "5e77ffe4d912f05937e0a5de91b5aa11f7cb7974eda84e51ba5d39fb1892a5e8",
+    "source_archive_sha256": "41cb44b60a7f2b7c0336eb0a103337d22892005f7f0335723b730b4f3b03a3cf",
+    "only_strategy_difference": "lookahead depth: 2 vs 3",
+    "grid_size": 5,
+    "root_query_source": "both",
+    "depth_one_query_source": "ratio",
+    "workers": 8,
+    "native_threads": 1,
+    "volume_confidence_threshold": 0.99,
+    "max_questions": 100,
+    "pilot_problem_indices": [
+      1
+    ],
+    "extension_problem_indices": [
+      4,
+      8
+    ],
+    "depth3_pilot_hard_wall_limit_seconds": 900,
+    "early_abort_forecast_threshold_seconds": 1800,
+    "note": "External root-task progress observation in both arms; solver Python sources unchanged. Forecasts apply to a root-evaluation batch only until full trajectory evidence exists. Incomplete runs are not successful benchmark outcomes. No commits/pushes.",
+    "adapter_sha256": "c29f46996d2df393a457366001eb48d76708453f92bdb9cf92c602dac8caab9f",
+    "runner_sha256": "46aa9c332632ac4bd48f2bf5683e2e2361b135fc1044ee94bab060b2dd91889f"
+  },
+  "case": {
+    "dimension": 5,
+    "alternatives": [
+      [
+        0.9229635307860012,
+        0.6255785896017241,
+        0.18200229327102213,
+        0.9518737455753902,
+        0.8192126030115413
+      ],
+      [
+        0.5203770167474737,
+        0.5867659268230576,
+        0.8960596268067894,
+        0.21199515136466252,
+        0.7034927435162313
+      ],
+      [
+        0.6589174006430067,
+        0.2240629428518548,
+        0.7557852799931157,
+        0.09392871611441811,
+        0.554907304882348
+      ],
+      [
+        0.5479384909401955,
+        0.47296157937617833,
+        0.25423753719368125,
+        0.9965675805939299,
+        0.3155144857842731
+      ],
+      [
+        0.9007017324632242,
+        0.21487933626255817,
+        0.49557896508208654,
+        0.38828367278292353,
+        0.02102864980357122
+      ]
+    ],
+    "target_weights": [
+      0.2569551730417767,
+      0.0018114017748710604,
+      0.17655286323895322,
+      0.13555893931729993,
+      0.42912162262709924
+    ],
+    "problem_index": 1
+  },
+  "configuration": {
+    "sample_count": 1000,
+    "burn_in": 200,
+    "thinning": 5,
+    "random_seed": null,
+    "sampling_chain_count": 1,
+    "equality_tol": 0.0,
+    "grid_size": 5,
+    "min_query_value": 0.001,
+    "max_query_value": 100.0,
+    "grid_spacing": "log",
+    "query_epsilon": 0.001,
+    "skip_zero_probability_branches": true,
+    "pass_candidate_subset": true,
+    "reuse_conditioned_samples": false,
+    "min_conditioned_sample_count": 50,
+    "use_ratio_terminal_counts": true,
+    "ratio_terminal_tolerance": 1e-12,
+    "canonical_grid_goal_pairs_only": false,
+    "filter_answered_query_candidates": true,
+    "answered_query_abs_tolerance": 1e-12,
+    "answered_query_rel_tolerance": 1e-09,
+    "answer_support_tolerance": 1e-09,
+    "answer_probability_smoothing": 1.0,
+    "answer_probability_mode": "exact_volume",
+    "parallelize_root": true,
+    "max_workers": 8,
+    "candidate_count_mode": "ratio_relevant",
+    "include_ratio_queries_on_grid_depths": true,
+    "grid_depth_query_source_mode": "both",
+    "depth_one_query_source_mode": "ratio",
+    "repair_zero_terminal_counts": true,
+    "validate_ratio_terminal_counts": false,
+    "max_query_candidates_per_state": null,
+    "adaptive_depth_candidate_threshold": null,
+    "ratio_interval_engine": "geometry",
+    "geometry_tolerance": 1e-10,
+    "posterior_quantile_levels": [],
+    "posterior_query_objective": null,
+    "posterior_query_shortlist_size": null,
+    "volume_confidence_threshold": 0.99
+  },
+  "settings": {
+    "depth2": {
+      "dimension": 5,
+      "problem_index": 1,
+      "alternatives": 5,
+      "depth": 2,
+      "grid_size": 5,
+      "root_query_source": "both",
+      "depth_one_query_source": "ratio",
+      "workers": 8,
+      "parallelize_root": true,
+      "max_questions": 100,
+      "volume_confidence_threshold": 0.99,
+      "answer_probability_mode": "exact_volume",
+      "progress_per_query": true
+    },
+    "depth3": {
+      "dimension": 5,
+      "problem_index": 1,
+      "alternatives": 5,
+      "depth": 3,
+      "grid_size": 5,
+      "root_query_source": "both",
+      "depth_one_query_source": "ratio",
+      "workers": 8,
+      "parallelize_root": true,
+      "max_questions": 100,
+      "volume_confidence_threshold": 0.99,
+      "answer_probability_mode": "exact_volume",
+      "progress_per_query": true
+    }
+  },
+  "depth2_result": {
+    "solved": true,
+    "exactly_solved": true,
+    "termination_reason": "exact_single_candidate",
+    "question_count": 5,
+    "seconds": 4.487420863006264,
+    "initial_candidate_count": 5,
+    "initial_candidates": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "initial_candidate_volumes": {
+      "0": 0.06864521199585927,
+      "1": 0.023803510471366054,
+      "2": 3.6417386741633665e-06,
+      "3": 0.0005176735353236413,
+      "4": 0.000199461321268071
+    },
+    "initial_candidate_volume_shares": {
+      "0": 0.7367777296926019,
+      "1": 0.2554860840820924,
+      "2": 3.908724111225239e-05,
+      "3": 0.005556255432654245,
+      "4": 0.002140843551539191
+    },
+    "final_candidates": [
+      0
+    ],
+    "final_candidate_volumes": {
+      "0": 0.0021430868485303126
+    },
+    "final_candidate_volume_shares": {
+      "0": 1.0
+    },
+    "target_winner": 0,
+    "final_candidate": 0,
+    "selected_candidate": 0,
+    "selected_candidate_volume": 0.0021430868485303126,
+    "selected_candidate_volume_share": 1.0,
+    "residual_volume": 0.0,
+    "residual_volume_share": 0.0,
+    "selection_is_correct": true,
+    "query_seconds": [
+      1.9292698489734903,
+      1.2130516639444977,
+      0.36449167190585285,
+      0.48358690610621125,
+      0.47862105001695454
+    ],
+    "queries": [
+      {
+        "goal_index_a": 2,
+        "goal_index_b": 3,
+        "value": 1.2387699272986161,
+        "answer": ">",
+        "seconds": 1.9292698489734903,
+        "expected_value": 2.082144469082134,
+        "lexicographic_expected_values": [
+          2.082144469082134
+        ],
+        "remaining_candidate_count": 4,
+        "remaining_candidates": [
+          0,
+          1,
+          2,
+          4
+        ],
+        "candidate_volumes": {
+          "0": 0.017722556903123403,
+          "1": 0.023690719606099427,
+          "2": 3.6417386741633665e-06,
+          "4": 0.000199461321268071
+        },
+        "candidate_volume_shares": {
+          "0": 0.42585532635459294,
+          "1": 0.5692643101432268,
+          "2": 8.750733994318069e-05,
+          "4": 0.004792856162237101
+        }
+      },
+      {
+        "goal_index_a": 0,
+        "goal_index_b": 4,
+        "value": 2.880549597044727,
+        "answer": "<",
+        "seconds": 1.2130516639444977,
+        "expected_value": 2.12269177970182,
+        "lexicographic_expected_values": [
+          2.12269177970182
+        ],
+        "remaining_candidate_count": 2,
+        "remaining_candidates": [
+          0,
+          1
+        ],
+        "candidate_volumes": {
+          "0": 0.012020831733484724,
+          "1": 0.01887119590345445
+        },
+        "candidate_volume_shares": {
+          "0": 0.3891240767605297,
+          "1": 0.6108759232394703
+        }
+      },
+      {
+        "goal_index_a": 2,
+        "goal_index_b": 3,
+        "value": 3.7131542455509834,
+        "answer": "<",
+        "seconds": 0.36449167190585285,
+        "expected_value": 1.8190500018015061,
+        "lexicographic_expected_values": [
+          1.8190500018015061
+        ],
+        "remaining_candidate_count": 2,
+        "remaining_candidates": [
+          0,
+          1
+        ],
+        "candidate_volumes": {
+          "0": 0.008764503829727764,
+          "1": 0.007453668706428018
+        },
+        "candidate_volume_shares": {
+          "0": 0.5404125409437299,
+          "1": 0.45958745905626996
+        }
+      },
+      {
+        "goal_index_a": 2,
+        "goal_index_b": 3,
+        "value": 1.629966722479372,
+        "answer": "<",
+        "seconds": 0.48358690610621125,
+        "expected_value": 1.7052256908093977,
+        "lexicographic_expected_values": [
+          1.7052256908093977
+        ],
+        "remaining_candidate_count": 2,
+        "remaining_candidates": [
+          0,
+          1
+        ],
+        "candidate_volumes": {
+          "0": 0.003523933589726015,
+          "1": 0.0010711291937350056
+        },
+        "candidate_volume_shares": {
+          "0": 0.7668956346820083,
+          "1": 0.23310436531799172
+        }
+      },
+      {
+        "goal_index_a": 2,
+        "goal_index_b": 0,
+        "value": 1.7010380324651126,
+        "answer": "<",
+        "seconds": 0.47862105001695454,
+        "expected_value": 1.47294225445802,
+        "lexicographic_expected_values": [
+          1.47294225445802
+        ],
+        "remaining_candidate_count": 1,
+        "remaining_candidates": [
+          0
+        ],
+        "candidate_volumes": {
+          "0": 0.0021430868485303126
+        },
+        "candidate_volume_shares": {
+          "0": 1.0
+        }
+      }
+    ],
+    "volume_cache": {
+      "hits": 0,
+      "misses": 0,
+      "size": 0
+    }
+  },
+  "depth3_outcome": {
+    "status": "failed",
+    "error_type": "RuntimeError",
+    "error_message": "halfspace center is not strictly interior",
+    "completed_solution_seconds": null,
+    "completed_question_count": null,
+    "selected_candidate": null,
+    "planning_seconds_before_error": 250.75530881399754,
+    "process_elapsed_seconds": 307.83445643109735,
+    "root_queries_total": 124,
+    "root_queries_successful": 109,
+    "root_queries_error": 1,
+    "root_queries_never_started": 14,
+    "timeout_reached": false,
+    "hard_deadline_seconds": 900,
+    "process_group_termination": {
+      "term_sent_at_utc": "2026-10-13T01:22:32.323778+00:00",
+      "process_group_id": 214595,
+      "live_survivor_pids": [],
+      "exit_code": 1
+    }
+  },
+  "diagnostic": {
+    "status": "reproduced_error",
+    "isolated_root_seconds": 19.263433874002658,
+    "scope": "isolated cold-process root replay, not a complete solve or comparative benchmark",
+    "root_query": {
+      "ziel_index_a": 3,
+      "ziel_index_b": 2,
+      "value": 0.001
+    },
+    "query_stack": [
+      {
+        "depth": 3,
+        "query": {
+          "ziel_index_a": 3,
+          "ziel_index_b": 2,
+          "value": 0.001
+        },
+        "answered_queries": []
+      },
+      {
+        "depth": 2,
+        "query": {
+          "ziel_index_a": 4,
+          "ziel_index_b": 3,
+          "value": 0.001
+        },
+        "answered_queries": [
+          {
+            "ziel_index_a": 3,
+            "ziel_index_b": 2,
+            "value": 0.001,
+            "operator": ">"
+          }
+        ]
+      },
+      {
+        "depth": 1,
+        "query": {
+          "ziel_index_a": 1,
+          "ziel_index_b": 4,
+          "value": 18378469.506142955
+        },
+        "answered_queries": [
+          {
+            "ziel_index_a": 3,
+            "ziel_index_b": 2,
+            "value": 0.001,
+            "operator": ">"
+          },
+          {
+            "ziel_index_a": 4,
+            "ziel_index_b": 3,
+            "value": 0.001,
+            "operator": ">"
+          }
+        ]
+      }
+    ],
+    "affine_dimension": 4,
+    "halfspace_count": 8,
+    "reported_interior_radius": 3.0398013871656406e-08,
+    "min_actual_normalized_slack": -3.347219037830307e-06,
+    "constraint_system": {
+      "inequalities_left_side": [
+        [
+          -1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          -1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          -1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          -1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          -1.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.001,
+          -1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.001,
+          -1.0
+        ],
+        [
+          -0.0,
+          -1.0,
+          -0.0,
+          -0.0,
+          18378469.506142955
+        ]
+      ],
+      "inequalities_right_side": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "equalities_left_side": [
+        [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      ],
+      "equalities_right_side": [
+        1.0
+      ]
+    },
+    "halfspaces": [
+      [
+        0.44721359549995787,
+        0.44721359549995787,
+        0.44721359549995787,
+        0.44721359549995787,
+        -0.2
+      ],
+      [
+        -0.8618033988749896,
+        0.13819660112501048,
+        0.13819660112501048,
+        0.13819660112501048,
+        -0.19999999999999998
+      ],
+      [
+        0.13819660112501048,
+        -0.8618033988749896,
+        0.13819660112501048,
+        0.13819660112501048,
+        -0.19999999999999998
+      ],
+      [
+        0.13819660112501048,
+        0.13819660112501048,
+        -0.8618033988749896,
+        0.13819660112501048,
+        -0.19999999999999998
+      ],
+      [
+        0.13819660112501048,
+        0.13819660112501048,
+        0.13819660112501048,
+        -0.8618033988749896,
+        -0.19999999999999998
+      ],
+      [
+        0.13805840452388546,
+        0.13905840452388546,
+        -0.8619415954761146,
+        0.13805840452388546,
+        -0.19979999999999998
+      ],
+      [
+        0.13805840452388546,
+        0.13805840452388546,
+        0.13905840452388546,
+        -0.8619415954761146,
+        -0.19979999999999998
+      ],
+      [
+        -2539842.881432005,
+        -2539841.881432005,
+        -2539841.881432005,
+        15838627.624710951,
+        3675693.7012285907
+      ]
+    ],
+    "computed_center": [
+      0.8618072362300585,
+      -0.1381956487848347,
+      -0.138195648753611,
+      -0.1381956487535791
+    ],
+    "normalized_slacks": [
+      -3.347219037830307e-06,
+      1.118037244695722,
+      3.040111876129181e-08,
+      3.0436027920188735e-08,
+      3.043606361385898e-08,
+      3.03980130511583e-08,
+      3.039801382831442e-08,
+      3.039801382831442e-08
+    ],
+    "normalized_center_followup": {
+      "purpose": "Diagnostic only: positive row scaling preserves each original inequality, no production solver change",
+      "success": true,
+      "message": "Optimization terminated successfully. (HiGHS Status 7: Optimal)",
+      "coefficient_norm_min": 0.8944271909999157,
+      "coefficient_norm_max": 16438203.078863878,
+      "reported_radius": 3.041694682792694e-08,
+      "validated_min_normalized_slack": 3.0378920906626306e-08,
+      "strictly_inside_original_halfspaces": true,
+      "original_geometry_intersection_succeeded": true,
+      "vertex_count": 5
+    }
+  },
+  "validation": {
+    "identical_config_objects": true,
+    "verified_python_files_before": 87,
+    "verified_python_files_after": 87,
+    "source_fingerprint": "09ef2b5fa1d212df688841707a06e4bf66f9816f7319701d7993d5710974dc07",
+    "native_threads": {
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "BLIS_NUM_THREADS": "1",
+      "VECLIB_MAXIMUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1"
+    },
+    "actual_worker_count_depth2": 8,
+    "actual_worker_count_depth3": 8,
+    "depth2_prior_semantic_equivalence": {
+      "depth2_matches_prior_grid5_result_bit_exact_without_timing_and_cache_fields": true,
+      "spawned_workers": 8,
+      "seconds": 4.487420863006264,
+      "queries": 5,
+      "observer_events": 1108
+    }
+  },
+  "interpretation": {
+    "depth3_complete_runtime_or_quality_comparison_available": false,
+    "pre_failure_estimate_initial_batch_seconds": [
+      330,
+      340
+    ],
+    "estimate_scope": "Initial root batch only, not an entire problem or a guarantee regarding 30 minutes.",
+    "next_step_hypothesis": "Normalize LP rows equivalently and validate an interior center against the same original constraints. Successful isolated captured-system diagnostic supports this direction; production fix, regression tests and new benchmark are not implemented.",
+    "solver_code_changed": false,
+    "code_defaults_changed": false,
+    "further_cases_and_repeats_started": false
+  },
+  "artifact_sha256": {
+    "job.json": "d4e1001eb5028c6cd3743aed69b70d70070d1efa24ac1fb4649f7419b0f3dcb2",
+    "p01-depth2.json": "82aa90066523c82758e28eecb65566b3b0a0a22209a3516da4ad0a5dbc2060b1",
+    "p01-depth3.json": "fbf21e98c7cb6d4415a02f5c7b0536b7412df14dcfc81081d52dfdda9a944c5f",
+    "p01-depth2-progress.jsonl": "dbb0babbf2a461a2a2fb6a9f4b37b829d8f87827ba02af6c3412e37d113e9655",
+    "p01-depth3-progress.jsonl": "f2ccde7a0802392cda38fc99a2cb12625c54ee33b4068b7b87696c1b6c3d9f55",
+    "monitoring.jsonl": "209fce73448408001f84e297bd386ee65ccdc62f39020d3630178e461ebf9fd1",
+    "depth2-equivalence.json": "121bab27018f755f4c093d49dad27aa76cc76daf128d03a7c0ed162c20ab7070",
+    "diagnostic-root-replay.json": "82309f2c1188ccf4da41ac007a6c812c68997ba941ab6281184743263c9295c6",
+    "diagnostic-failing-halfspaces.json": "6bc5b14e230bf081b80cd77fd5ebfc233f8709a44914172db0e2d93b4f2505fc",
+    "diagnostic-failing-system.json": "16e5ce094b91f7525a0e0cbbefab79db1f298671728f88c5e1d4989e6ae1f84d",
+    "diagnostic-run.json": "28ef14ee9ec8b04faf18d3efec8200ae2b7e6dca69da4cf9a739dc070c0f724f",
+    "source.tar": "41cb44b60a7f2b7c0336eb0a103337d22892005f7f0335723b730b4f3b03a3cf",
+    "source-manifest.json": "6a699d7277820bfd66b627e96d920ecd778ae0d5fbd54ac10c4d73e07e2c0e33",
+    "input.json": "5e77ffe4d912f05937e0a5de91b5aa11f7cb7974eda84e51ba5d39fb1892a5e8",
+    "replay_problem.py": "c29f46996d2df393a457366001eb48d76708453f92bdb9cf92c602dac8caab9f",
+    "run_depth_pilot.py": "46aa9c332632ac4bd48f2bf5683e2e2361b135fc1044ee94bab060b2dd91889f",
+    "pilot-report.md": "2df05e169df9f392055a5b50150feed795cbad277445bc50b90c3bd98f67e229",
+    "diagnostic-normalized-center.json": "7b6a7bf92dcd652e3cd137f6b7ae0545f476d50ea5bf378e6563e13513481035",
+    "diagnostic_normalized_center_source.py": "616791b21fc8fe14cb0199b81da3c6a7214c96678088e2429672bd3efb618644",
+    "pilot-comparison.json": "07f56288777378041a3a591983c256d7a48af4f972b3000711f155da16210b68"
+  },
+  "raw_artifacts_directory": "outputs/benchmarks/bench-i7/20261013-grid5-depth2-vs-depth3-live-workers8/",
+  "limitations": [
+    "Single saved problem, one run per depth; depth 3 failed before first question.",
+    "Observer overhead unquantified and task-count dependent; no inner-recursion profiling.",
+    "The isolated root reproduction is not an entire solve or comparative timing result."
+  ],
+  "independent_analysis_summary": {
+    "job_status": "failed",
+    "final_snapshot": true,
+    "source_revision": "03ac83fda7ed04e28f9782672f2dd49ec5700668",
+    "source_fingerprint": "09ef2b5fa1d212df688841707a06e4bf66f9816f7319701d7993d5710974dc07",
+    "python_source_count": 87,
+    "case_count": 1,
+    "repeats_per_depth": 1,
+    "runtime": {
+      "hostname": "machine",
+      "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+      "python": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+      "numpy": "2.5.4",
+      "scipy": "1.18.1"
+    },
+    "comparison": null,
+    "depth2_historical_equivalence": {
+      "file": "/Users/janoberwahrenbrock/Code/optimal-trade-off-query-algorithm/outputs/benchmarks/bench-i7/20261013-grid5-vs-grid10-ratios-workers8/r1-p01-grid5.json",
+      "sha256": "afc94a6fb40767cacc2bcffe886572c57c6b1e418529502bdaba9cf2779adf14",
+      "recorded_semantics_float_hex_identical": true,
+      "timing_caveat": "Earlier unobserved timings are not used to estimate the depth effect."
+    },
+    "forecast_caveat": "Throughput extrapolations concern only the current root batch. Candidate costs vary, startup and scheduling affect progress, and unobserved later batches/questions can add substantial work. These are uncertain forecasts, not rigorous lower bounds or full-solution estimates.",
+    "scope_caveat": "One saved 5D/5A problem, one observed run per depth; no statistical speed/quality generalization. Planning timers, answered-round timers and summed root-worker elapsed times overlap and must not be added."
+  }
+}

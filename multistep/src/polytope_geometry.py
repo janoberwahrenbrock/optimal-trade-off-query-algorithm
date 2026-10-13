@@ -121,7 +121,43 @@ def enumerate_polytope_vertices(
         return _empty_result("error", affine_dimension, str(center_result.message))
 
     center = np.asarray(center_result.x[:-1], dtype=float)
-    radius = max(0.0, float(center_result.x[-1]))
+    reported_radius = float(center_result.x[-1])
+    if not _center_is_usable(
+        center, reported_radius, reduced_matrix, reduced_right_side,
+        projected_norms, tolerance,
+    ):
+        # HiGHS can report a positive radius while its center violates a row
+        # when projected coefficients span many orders of magnitude. Dividing
+        # each complete LP row by its positive normal length preserves the
+        # feasible (center, radius) set, including the unchanged radius objective.
+        # Retain the original solve for valid centers to preserve their rounding.
+        center_result = run_linprog_with_retries(
+            _internal_compact_result=True,
+            c=np.concatenate((np.zeros(affine_dimension), [-1.0])),
+            A_ub=np.column_stack(
+                (reduced_matrix / projected_norms[:, None], np.ones(len(projected_norms)))
+            ),
+            b_ub=reduced_right_side / projected_norms,
+            bounds=[(None, None)] * affine_dimension + [(0.0, None)],
+            method="highs",
+            options=LINPROG_OPTIONS,
+        )
+        if not center_result.success or center_result.x is None:
+            return _empty_result(
+                "error", affine_dimension,
+                f"row-normalized center LP failed: {center_result.message}",
+            )
+        center = np.asarray(center_result.x[:-1], dtype=float)
+        reported_radius = float(center_result.x[-1])
+        if not _center_is_usable(
+            center, reported_radius, reduced_matrix, reduced_right_side,
+            projected_norms, tolerance,
+        ):
+            return _empty_result(
+                "error", affine_dimension,
+                "row-normalized center LP returned an invalid center or radius",
+            )
+    radius = max(0.0, reported_radius)
     if radius <= tolerance:
         return PolytopeVertices(
             status="lower_dimensional",
@@ -177,6 +213,33 @@ def enumerate_polytope_vertices(
         affine_dimension=affine_dimension,
         interior_radius=radius,
     )
+
+
+def _center_is_usable(
+    center: np.ndarray,
+    radius: float,
+    reduced_matrix: np.ndarray,
+    reduced_right_side: np.ndarray,
+    projected_norms: np.ndarray,
+    tolerance: float,
+) -> bool:
+    """Validate a center before trusting either Qhull or zero-volume status."""
+
+    if not np.all(np.isfinite(center)) or not np.isfinite(radius) or radius < -tolerance:
+        return False
+    # Match the expression used below by Qhull conditioning, including its
+    # operation order, so cancellation cannot hide an invalid interior point.
+    offsets = (
+        (reduced_matrix / projected_norms[:, None]) @ center
+        + (-reduced_right_side) / projected_norms
+    )
+    if not np.all(np.isfinite(offsets)):
+        return False
+    if radius > tolerance:
+        return bool(np.all(offsets < 0.0))
+    # A truly lower-dimensional region has no strict interior. Retain its
+    # existing radius threshold only after verifying ordinary feasibility.
+    return bool(np.all(offsets <= tolerance))
 
 
 def _compute_halfspace_intersections_with_retries(

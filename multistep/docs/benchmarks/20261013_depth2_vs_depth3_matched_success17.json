@@ -1,0 +1,732 @@
+{
+  "generated_at_utc": "2026-10-13T12:34:54.552074+00:00",
+  "protocol": {
+    "purpose": "Paired depth2 baseline for the17 completed depth3 cases, excludes failed depth3 cases andpilot1",
+    "case_indices": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      8,
+      9,
+      10,
+      11,
+      13,
+      14,
+      15,
+      17,
+      18,
+      19,
+      20,
+      21
+    ],
+    "depth3_failed_cases_excluded": [
+      7,
+      12,
+      16
+    ],
+    "configuration": {
+      "goals": 5,
+      "alternatives": 5,
+      "grid_size": 5,
+      "query_source": "grid plus ratios",
+      "depth_one_query_source": "ratio",
+      "depth": 2,
+      "workers": 8,
+      "answer_probability_mode": "exact_volume",
+      "volume_confidence_threshold": 0.99,
+      "max_questions": 100,
+      "time_limit": null
+    },
+    "frozen": {
+      "source_revision": "03ac83fda7ed04e28f9782672f2dd49ec5700668",
+      "source_fingerprint": "ad6bccef4dfbccfd19c1360b10a9fb8f07d4d7bf686c3d7521b6cf05c6aa3053",
+      "source_python_files": 87,
+      "input_sha256": "71209591fa403078dd09f9e241b95a57e79a5971b808c16f883b34cfa8f62822",
+      "adapter_sha256": "924086da206b39f91d645f27769bb3ad7e058ef29e6eea66d942a18d76f9f1b1",
+      "runner_sha256": "c94c615a86b8bdb078142a8eac977b36151d18a98cbd433998cfaebf6422534a",
+      "source_archive_sha256": "5ce8c1438d78152c226ac4601647c281554b84a358b144b71868a05a31d8735c",
+      "source_manifest_sha256": "ec05fcb2b8a9b20762cbef582c49a84ffe19709a6f9542a1672016a62054ec2b",
+      "protocol_sha256": "e35713fe9fe13af6dcac566684c5de80f9a014964502541dd7859bad34c4a83f",
+      "provenance_sha256": "9e1c491a82d17b276a64d6b31e9bcb2690d6039c5cece413559f9b098658efb2"
+    },
+    "depth3_local_directory": "/Users/janoberwahrenbrock/Code/optimal-trade-off-query-algorithm/outputs/benchmarks/bench-i7/20261013-depth3-series20-grid5-ratios-workers8",
+    "depth3_remote_directory": "/home/cruncher/otqa-benchmarks/20261013-depth3-series20-grid5-ratios-workers8",
+    "method": "Sequential fresh processes on Bench i7; unchanged frozen Python source and replayadapter; same per query, planning, and worker observers; onlydepth parameter changes. Native thread env=1. One timing observation per case per depth; not a repeated noise-controlled trial.",
+    "controller_sha256": "109de2361a6cbe62a794c75925b29f3c6d080fcfe565e6d18b5a62ac761ec91e",
+    "selection_limit": "17cases conditioned on depth3 successful completion; cannot infer all20 depth2 failure rate."
+  },
+  "aggregates": {
+    "depth2": {
+      "cases": 17,
+      "correct": 17,
+      "incorrect": 0,
+      "errors": 0,
+      "unsolved": 0,
+      "seconds_sum": 126.27726880088449,
+      "seconds_mean": 7.428074635346146,
+      "seconds_median": 5.144834667094983,
+      "seconds_min": 3.266149822040461,
+      "seconds_max": 21.859427976072766,
+      "queries_sum": 139,
+      "queries_mean": 8.176470588235293,
+      "queries_median": 6,
+      "queries_min": 4,
+      "queries_max": 27,
+      "single_candidate": 10,
+      "volume_confidence": 7
+    },
+    "depth3": {
+      "cases": 17,
+      "correct": 17,
+      "incorrect": 0,
+      "errors": 0,
+      "unsolved": 0,
+      "seconds_sum": 22403.09863290598,
+      "seconds_mean": 1317.8293313474107,
+      "seconds_median": 975.10356197902,
+      "seconds_min": 620.2071635919856,
+      "seconds_max": 4177.640556953964,
+      "queries_sum": 171,
+      "queries_mean": 10.058823529411764,
+      "queries_median": 8,
+      "queries_min": 3,
+      "queries_max": 42,
+      "single_candidate": 4,
+      "volume_confidence": 13
+    }
+  },
+  "comparison": {
+    "time_ratio_of_sums_depth3_over_depth2": 177.41196690143383,
+    "query_difference_depth3_minus_depth2": 32,
+    "query_percent_change_depth3_vs_depth2": 23.02158273381294,
+    "depth3_fewer_queries_cases": [
+      6,
+      13,
+      15,
+      21
+    ],
+    "equal_queries_cases": [
+      3,
+      8,
+      19
+    ],
+    "depth3_more_queries_cases": [
+      2,
+      4,
+      5,
+      9,
+      10,
+      11,
+      14,
+      17,
+      18,
+      20
+    ]
+  },
+  "rows": [
+    {
+      "problem_index": 2,
+      "target_winner": 4,
+      "depth2_seconds": 3.266149822040461,
+      "depth3_seconds": 847.4833838070044,
+      "depth3_to_depth2_time_ratio": 259.4747424285504,
+      "depth2_queries": 4,
+      "depth3_queries": 6,
+      "query_difference_depth3_minus_depth2": 2,
+      "depth2_stop": "volume_confidence",
+      "depth3_stop": "volume_confidence",
+      "depth2_selected_share": 0.9999107640269339,
+      "depth3_selected_share": 0.9960063438955149,
+      "both_correct": true,
+      "validation": {
+        "depth2": {
+          "raw_sha256": "51711fbad55f41b7f2bb0f71b211745e9643416a885519a33c039fb6230344af",
+          "questions_sha256": "dd0c8c6735728035e2847ba15c71b0f848d8ec13ed0bc265e1d055cce1ac90b9",
+          "progress_sha256": "9ae3dafec1f5b425ca1caf68536e0f9e2a42c10bacc218bbae0ba4e2aa882356",
+          "answered_queries_checked": 4,
+          "state_boundaries_checked": 5,
+          "winner_independently_recomputed": 4,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        },
+        "depth3": {
+          "raw_sha256": "d0638450acbd5072027c2e50f067855f5b4d3eaaacfec5087dfe97a7a520d38f",
+          "questions_sha256": "610c0cfb591bee878f21916d0f3961cdde1ee0bb8120b92d652b9be3b101f054",
+          "progress_sha256": "525297b087a0aa77d03a382a50eb222c4546b9fd1e4bfd1cb7f280453789c8c7",
+          "answered_queries_checked": 6,
+          "state_boundaries_checked": 7,
+          "winner_independently_recomputed": 4,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        }
+      }
+    },
+    {
+      "problem_index": 3,
+      "target_winner": 2,
+      "depth2_seconds": 3.435020725009963,
+      "depth3_seconds": 819.3923897380009,
+      "depth3_to_depth2_time_ratio": 238.5407411874129,
+      "depth2_queries": 4,
+      "depth3_queries": 4,
+      "query_difference_depth3_minus_depth2": 0,
+      "depth2_stop": "exact_single_candidate",
+      "depth3_stop": "volume_confidence",
+      "depth2_selected_share": 1.0,
+      "depth3_selected_share": 0.9921323028214704,
+      "both_correct": true,
+      "validation": {
+        "depth2": {
+          "raw_sha256": "84c015b92765d813cd4e803922ff997a50249e3f9e1812dad39985217253d745",
+          "questions_sha256": "ae6f0e91f20028b7e373ad093406076e0bf0ce0bf3535c78548801361f70bd6d",
+          "progress_sha256": "8ae48c05a468e2e2e0afab7b512e59216c735ac3e93947feadd9f1c17173a4a1",
+          "answered_queries_checked": 4,
+          "state_boundaries_checked": 5,
+          "winner_independently_recomputed": 2,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        },
+        "depth3": {
+          "raw_sha256": "73635798cc26d57e2ea59766c1c1950c711d545b448261ee3152bc615f7518de",
+          "questions_sha256": "f9d22ad741008e9972da3b153f18f4e85dd338414cb491e8e879b27341d5cc96",
+          "progress_sha256": "91633bf4d2fc0f9efee3345d6960dca349274966b139f04855f8785e5535d4d4",
+          "answered_queries_checked": 4,
+          "state_boundaries_checked": 5,
+          "winner_independently_recomputed": 2,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        }
+      }
+    },
+    {
+      "problem_index": 4,
+      "target_winner": 0,
+      "depth2_seconds": 6.12124085391406,
+      "depth3_seconds": 1320.1152823630255,
+      "depth3_to_depth2_time_ratio": 215.66138530865257,
+      "depth2_queries": 9,
+      "depth3_queries": 13,
+      "query_difference_depth3_minus_depth2": 4,
+      "depth2_stop": "exact_single_candidate",
+      "depth3_stop": "volume_confidence",
+      "depth2_selected_share": 1.0,
+      "depth3_selected_share": 0.99287556192998,
+      "both_correct": true,
+      "validation": {
+        "depth2": {
+          "raw_sha256": "855e703afe55aafb7126980d00dff5d6d804ff9940457c76e6ed6ffcfe659377",
+          "questions_sha256": "66f56d2b714d1e51d3d158217ab099fcc13e4cd5b9e79462daba45d282b080cf",
+          "progress_sha256": "83bfc24fee10e6787212e718d12c08a8d87337ed6257928d5f3a7e091250259a",
+          "answered_queries_checked": 9,
+          "state_boundaries_checked": 10,
+          "winner_independently_recomputed": 0,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        },
+        "depth3": {
+          "raw_sha256": "69ccc59b5598b308855985574d17374cf875d3eded0d1ea6abd82e5a736de222",
+          "questions_sha256": "18be69d1ce525acecee65d8757c6be771867750db7aafaf5a447c86bedf33ab6",
+          "progress_sha256": "87f8a841a94cf490d231a36c72242b71ce75d426ea1b9e30fa1fa63aad2e5564",
+          "answered_queries_checked": 13,
+          "state_boundaries_checked": 14,
+          "winner_independently_recomputed": 0,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        }
+      }
+    },
+    {
+      "problem_index": 5,
+      "target_winner": 0,
+      "depth2_seconds": 3.783610695041716,
+      "depth3_seconds": 970.1462727710605,
+      "depth3_to_depth2_time_ratio": 256.40752999308353,
+      "depth2_queries": 4,
+      "depth3_queries": 6,
+      "query_difference_depth3_minus_depth2": 2,
+      "depth2_stop": "volume_confidence",
+      "depth3_stop": "volume_confidence",
+      "depth2_selected_share": 0.9966171322869012,
+      "depth3_selected_share": 0.995154932123659,
+      "both_correct": true,
+      "validation": {
+        "depth2": {
+          "raw_sha256": "38d1618d7974cec8e46cdd2408ab2945aa7646749f6e4b3aedc435bfe310d544",
+          "questions_sha256": "80c6e6035a4e85e786c088b19e81b74c92bf88dd4b327ef413595189ba807cf4",
+          "progress_sha256": "8d837a236d1d050a3852a56d3513d511b0ead549ec65e7b84ddb2f397887f82b",
+          "answered_queries_checked": 4,
+          "state_boundaries_checked": 5,
+          "winner_independently_recomputed": 0,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        },
+        "depth3": {
+          "raw_sha256": "0193cf04ace32ef1058132fd46b1c7420c597893c92c1980361f0739b858c812",
+          "questions_sha256": "a81158526e199e3524a66d70c1d48c54adf723a3b206c5e89c7d978ee45f1b02",
+          "progress_sha256": "0750d21f3b902ea524cf3c080186e15197d77d56e6dccf5adc0679a9b3aa6313",
+          "answered_queries_checked": 6,
+          "state_boundaries_checked": 7,
+          "winner_independently_recomputed": 0,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        }
+      }
+    },
+    {
+      "problem_index": 6,
+      "target_winner": 1,
+      "depth2_seconds": 7.54301622195635,
+      "depth3_seconds": 975.10356197902,
+      "depth3_to_depth2_time_ratio": 129.27236708581782,
+      "depth2_queries": 12,
+      "depth3_queries": 8,
+      "query_difference_depth3_minus_depth2": -4,
+      "depth2_stop": "exact_single_candidate",
+      "depth3_stop": "exact_single_candidate",
+      "depth2_selected_share": 1.0,
+      "depth3_selected_share": 1.0,
+      "both_correct": true,
+      "validation": {
+        "depth2": {
+          "raw_sha256": "e01e7b08ec05e08537ea1cdc58963ce4d331fa7f11742cfe0f82e6fb3d8eec13",
+          "questions_sha256": "9bfc0e9019843db02a0f510b0fc05298a7504ee2632b0c1cb36269ce3456741d",
+          "progress_sha256": "7232f2a8608851880f45f672c2ec4e53bfb127b5ef08bd6509e015b1aab580e2",
+          "answered_queries_checked": 12,
+          "state_boundaries_checked": 13,
+          "winner_independently_recomputed": 1,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        },
+        "depth3": {
+          "raw_sha256": "a88fa2af9b79a7ab865375830f429d73a870fcdb586e97eb4cc77d10242b1060",
+          "questions_sha256": "6262f010855fcc85745c8f1fc50140923eb241ab9a91ac9a142368b320822ef3",
+          "progress_sha256": "10c303fdb975473a25ccae04b9c034a5344ba3085372574de1fcbd00b0e842d5",
+          "answered_queries_checked": 8,
+          "state_boundaries_checked": 9,
+          "winner_independently_recomputed": 1,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        }
+      }
+    },
+    {
+      "problem_index": 8,
+      "target_winner": 1,
+      "depth2_seconds": 8.163826813921332,
+      "depth3_seconds": 1251.0894161940087,
+      "depth3_to_depth2_time_ratio": 153.24791237126607,
+      "depth2_queries": 10,
+      "depth3_queries": 10,
+      "query_difference_depth3_minus_depth2": 0,
+      "depth2_stop": "exact_single_candidate",
+      "depth3_stop": "volume_confidence",
+      "depth2_selected_share": 1.0,
+      "depth3_selected_share": 0.995643234053181,
+      "both_correct": true,
+      "validation": {
+        "depth2": {
+          "raw_sha256": "be163bbe00b1cffeb27254917d8cdc4c4dc61b4736704517d4a7da361c61a794",
+          "questions_sha256": "7cdce3abc02a5db519573a38660305dfe6eb29878f332d3edf205bd5ede167c9",
+          "progress_sha256": "614a04127e59ca3ec9819ff60dead33d22f3f0e61b0287bfc2c65c56aa75db4d",
+          "answered_queries_checked": 10,
+          "state_boundaries_checked": 11,
+          "winner_independently_recomputed": 1,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        },
+        "depth3": {
+          "raw_sha256": "f80b3ce7e5ea3a0cb6935a9253164cea5fb557a0711818688cb4582fb202ecff",
+          "questions_sha256": "30c6a399126230775aad612ad844c889637e31959e167a4e14cf29d60b604d4a",
+          "progress_sha256": "47cbf27318d790ef2b742da3878752b0f852a003accd7a54714e710435b85bfe",
+          "answered_queries_checked": 10,
+          "state_boundaries_checked": 11,
+          "winner_independently_recomputed": 1,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        }
+      }
+    },
+    {
+      "problem_index": 9,
+      "target_winner": 4,
+      "depth2_seconds": 4.300025358912535,
+      "depth3_seconds": 817.7996952499961,
+      "depth3_to_depth2_time_ratio": 190.18485403928304,
+      "depth2_queries": 4,
+      "depth3_queries": 6,
+      "query_difference_depth3_minus_depth2": 2,
+      "depth2_stop": "volume_confidence",
+      "depth3_stop": "volume_confidence",
+      "depth2_selected_share": 0.9999998780730106,
+      "depth3_selected_share": 0.9904239575640762,
+      "both_correct": true,
+      "validation": {
+        "depth2": {
+          "raw_sha256": "c90b1de870538f981afce189225faf8fb3fd7e249e37bb20b0bcc1fe58605f06",
+          "questions_sha256": "69b6d9701fa0cd9cc189719ca388f8af7fa8ce3acc093b0778f5d6dd61afcca6",
+          "progress_sha256": "617a9b58453664f7218b363ad9a0a62ca9a9a9fcfa0060c3842a7f46d7fa9289",
+          "answered_queries_checked": 4,
+          "state_boundaries_checked": 5,
+          "winner_independently_recomputed": 4,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        },
+        "depth3": {
+          "raw_sha256": "392b37b488e663463664918c222f7e9149973bb8e560aee37e297fd4889218be",
+          "questions_sha256": "030d5d01c6f9f45ad332508a8338db38d78e55cf165183685f5ff11b914d0602",
+          "progress_sha256": "43f95c7837bc92c49f2f8c984b674977ee5a118a490816ee7fe8039415c701b7",
+          "answered_queries_checked": 6,
+          "state_boundaries_checked": 7,
+          "winner_independently_recomputed": 4,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        }
+      }
+    },
+    {
+      "problem_index": 10,
+      "target_winner": 2,
+      "depth2_seconds": 4.177466374007054,
+      "depth3_seconds": 923.8774002409773,
+      "depth3_to_depth2_time_ratio": 221.1573517358532,
+      "depth2_queries": 6,
+      "depth3_queries": 11,
+      "query_difference_depth3_minus_depth2": 5,
+      "depth2_stop": "volume_confidence",
+      "depth3_stop": "exact_single_candidate",
+      "depth2_selected_share": 0.9908944219620277,
+      "depth3_selected_share": 1.0,
+      "both_correct": true,
+      "validation": {
+        "depth2": {
+          "raw_sha256": "a4b2542e6ef4f445c1f83d220bfac4eb7cb8a117aa38a1a46357be0531efc682",
+          "questions_sha256": "b46485036caf3e854eb8e95e3c2938b76b00c032b10385b7885ca530b0b583b5",
+          "progress_sha256": "b013496c43932df57f3c7c3a2edab4689124d480c04fe91321bad4207d02cdeb",
+          "answered_queries_checked": 6,
+          "state_boundaries_checked": 7,
+          "winner_independently_recomputed": 2,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        },
+        "depth3": {
+          "raw_sha256": "7ea2ce56fc287b23f362c6d29415f4138b30e04c4d1bdc8f4ec729d18bdf8a52",
+          "questions_sha256": "3259be3ffc244393f9c414dba2ea4fb1674af84823b632cffc9e9a4f0f8b9b29",
+          "progress_sha256": "ad554fdb31aa104e4d6b812d04fef4d3d99e9b318ad0f58c802eb973059ba122",
+          "answered_queries_checked": 11,
+          "state_boundaries_checked": 12,
+          "winner_independently_recomputed": 2,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        }
+      }
+    },
+    {
+      "problem_index": 11,
+      "target_winner": 2,
+      "depth2_seconds": 12.951574923936278,
+      "depth3_seconds": 4177.640556953964,
+      "depth3_to_depth2_time_ratio": 322.5584982126856,
+      "depth2_queries": 12,
+      "depth3_queries": 42,
+      "query_difference_depth3_minus_depth2": 30,
+      "depth2_stop": "exact_single_candidate",
+      "depth3_stop": "exact_single_candidate",
+      "depth2_selected_share": 1.0,
+      "depth3_selected_share": 1.0,
+      "both_correct": true,
+      "validation": {
+        "depth2": {
+          "raw_sha256": "7e8ce0b3e5deec844ccae2f3575617464df21acd0329882317af18a2b745c6b6",
+          "questions_sha256": "bd29812f1f4a6e4b5292c180086d7c36c455ef101d67ab9ee49250fdabeacf70",
+          "progress_sha256": "90ceab6688365a9d4c8d3835a4b84328b08e3009954ae445f4ca0427589f58b5",
+          "answered_queries_checked": 12,
+          "state_boundaries_checked": 13,
+          "winner_independently_recomputed": 2,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        },
+        "depth3": {
+          "raw_sha256": "3c6f1beb4927dc8845a0e88a88f2d4bf5baf2c0c35ae5cf70d54cc14d59cab86",
+          "questions_sha256": "d019492e32717224b4c8c603eba88602b29814429a7d68fa63116290752a6b85",
+          "progress_sha256": "e15a1581a8c20855befbe9897d4f246ebb2926306a2cfdbffbe2777fcfb98dd8",
+          "answered_queries_checked": 42,
+          "state_boundaries_checked": 43,
+          "winner_independently_recomputed": 2,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        }
+      }
+    },
+    {
+      "problem_index": 13,
+      "target_winner": 0,
+      "depth2_seconds": 21.859427976072766,
+      "depth3_seconds": 2424.2703408849193,
+      "depth3_to_depth2_time_ratio": 110.90273467075694,
+      "depth2_queries": 27,
+      "depth3_queries": 11,
+      "query_difference_depth3_minus_depth2": -16,
+      "depth2_stop": "exact_single_candidate",
+      "depth3_stop": "volume_confidence",
+      "depth2_selected_share": 1.0,
+      "depth3_selected_share": 0.9960856079845798,
+      "both_correct": true,
+      "validation": {
+        "depth2": {
+          "raw_sha256": "6b2efe3a2cc15021e8f435a7c394b52605af75d5753923202a90ced29a029b6f",
+          "questions_sha256": "2c77df318b6f75d9e375556f355ed200e9d27a9ed196acb10290f75999f49806",
+          "progress_sha256": "4b1e029355853fc10c02f060a7979c0746e079d8661713dbee16b3c44b382845",
+          "answered_queries_checked": 27,
+          "state_boundaries_checked": 28,
+          "winner_independently_recomputed": 0,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        },
+        "depth3": {
+          "raw_sha256": "06d0fd6e81d28285e03ed4dd78dc5bfca06acf55d1e5246f6efe89d095b7ec42",
+          "questions_sha256": "bf6d27bfac8a2297bf54e895f5d67a0522dae4762c33789848a7b80de4e82500",
+          "progress_sha256": "b8fcc3952732f70bb7a8c09f70d4b59e3c49deeb2780b37389cf98002087f2a2",
+          "answered_queries_checked": 11,
+          "state_boundaries_checked": 12,
+          "winner_independently_recomputed": 0,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        }
+      }
+    },
+    {
+      "problem_index": 14,
+      "target_winner": 3,
+      "depth2_seconds": 4.830697561963461,
+      "depth3_seconds": 1841.040679937927,
+      "depth3_to_depth2_time_ratio": 381.1128012720438,
+      "depth2_queries": 4,
+      "depth3_queries": 14,
+      "query_difference_depth3_minus_depth2": 10,
+      "depth2_stop": "volume_confidence",
+      "depth3_stop": "exact_single_candidate",
+      "depth2_selected_share": 0.9933909615687001,
+      "depth3_selected_share": 1.0,
+      "both_correct": true,
+      "validation": {
+        "depth2": {
+          "raw_sha256": "fd7852d13f37030a00478708825e4ec2c7a76f2f1af1d8b6a2fb72b64592b023",
+          "questions_sha256": "240e03cc36d6b7b842f9ec481943413b5d73a1a0d8818fb82f51444e4e710983",
+          "progress_sha256": "305ab96c7a7534290ca08ce89babd595dcbb5cf12f9c55dea85791a5db2d3439",
+          "answered_queries_checked": 4,
+          "state_boundaries_checked": 5,
+          "winner_independently_recomputed": 3,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        },
+        "depth3": {
+          "raw_sha256": "396f500df1f0194645f96df890061b21e8f22bed77b05cacb5b6bd54101bcf98",
+          "questions_sha256": "928f769b6ae8083b09300cf68f6c95fc85218872f3b6e55a179fc066fbbd070a",
+          "progress_sha256": "2051550572a59d35a903bcbc73487eedd55421b96af67aaa0ea60219b9eb3208",
+          "answered_queries_checked": 14,
+          "state_boundaries_checked": 15,
+          "winner_independently_recomputed": 3,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        }
+      }
+    },
+    {
+      "problem_index": 15,
+      "target_winner": 1,
+      "depth2_seconds": 11.98478411801625,
+      "depth3_seconds": 1188.6837210140657,
+      "depth3_to_depth2_time_ratio": 99.18273948941346,
+      "depth2_queries": 11,
+      "depth3_queries": 8,
+      "query_difference_depth3_minus_depth2": -3,
+      "depth2_stop": "volume_confidence",
+      "depth3_stop": "volume_confidence",
+      "depth2_selected_share": 0.9999203808186894,
+      "depth3_selected_share": 0.9957365934636001,
+      "both_correct": true,
+      "validation": {
+        "depth2": {
+          "raw_sha256": "d452415f587f70a9f8ca145750d381f7eea9b008ce93839e0c95ca257ab00ffe",
+          "questions_sha256": "aede70b8a33a041b2a77aaebabcc32c6c9847ec433094fb841c08f0395fec6cb",
+          "progress_sha256": "48d6133d80fdb94ef05de9a9b3953aff2a08a469d4f81c516c08723a984925bc",
+          "answered_queries_checked": 11,
+          "state_boundaries_checked": 12,
+          "winner_independently_recomputed": 1,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        },
+        "depth3": {
+          "raw_sha256": "6072fb57a6dc2b2fda5c5f8ad0ce8d7a07ea73e82e942f71f1cd0d91a35f4f9d",
+          "questions_sha256": "dd64671909bdb864b36b06f19ee13d6461ab1221ea7d3ce21aa4a611c24040b1",
+          "progress_sha256": "66e68ca73e501ffaf902f757ba02356af3ae2346e922b8b59c4c502be87dfe80",
+          "answered_queries_checked": 8,
+          "state_boundaries_checked": 9,
+          "winner_independently_recomputed": 1,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        }
+      }
+    },
+    {
+      "problem_index": 17,
+      "target_winner": 2,
+      "depth2_seconds": 5.144834667094983,
+      "depth3_seconds": 1341.6213111840189,
+      "depth3_to_depth2_time_ratio": 260.7705393848082,
+      "depth2_queries": 4,
+      "depth3_queries": 7,
+      "query_difference_depth3_minus_depth2": 3,
+      "depth2_stop": "volume_confidence",
+      "depth3_stop": "volume_confidence",
+      "depth2_selected_share": 0.9991657730879819,
+      "depth3_selected_share": 0.9944338810127701,
+      "both_correct": true,
+      "validation": {
+        "depth2": {
+          "raw_sha256": "654cc1d4e484a80bdb89bd7c0fb5f5c0e2b0168fc5715dc04b422af8e9a8ae3c",
+          "questions_sha256": "cdc80e498b7735dfd4ae544ca74e6b39e2415dc1524fe71e6dbd410c5ad7770d",
+          "progress_sha256": "f2ac042db21ce8cfaf0c32e6f9d34492a80971b1d5818414c3206825baeb9076",
+          "answered_queries_checked": 4,
+          "state_boundaries_checked": 5,
+          "winner_independently_recomputed": 2,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        },
+        "depth3": {
+          "raw_sha256": "95ffa50b027836f1c30ec43cccf0bbcf4e8190faa8670a5634bbc495515896a9",
+          "questions_sha256": "b535e346ca18d43fe7056151d444b47947400953ec4079ff95812823d97a652b",
+          "progress_sha256": "638e9bcb2c7a674d153504cb8f518191548832b320522f14fa75d03e348b7718",
+          "answered_queries_checked": 7,
+          "state_boundaries_checked": 8,
+          "winner_independently_recomputed": 2,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        }
+      }
+    },
+    {
+      "problem_index": 18,
+      "target_winner": 3,
+      "depth2_seconds": 6.171038919943385,
+      "depth3_seconds": 1243.709299398004,
+      "depth3_to_depth2_time_ratio": 201.53969461748497,
+      "depth2_queries": 6,
+      "depth3_queries": 10,
+      "query_difference_depth3_minus_depth2": 4,
+      "depth2_stop": "exact_single_candidate",
+      "depth3_stop": "volume_confidence",
+      "depth2_selected_share": 1.0,
+      "depth3_selected_share": 0.9983693776253373,
+      "both_correct": true,
+      "validation": {
+        "depth2": {
+          "raw_sha256": "b55a114fd6fb18ced0d826a34ccd35d1b79a3b8c7ea7c191e0d18784cf861220",
+          "questions_sha256": "464c0c57c73529e185de6ca09c2ba7bbfa322ed83f5372437ff9533d5b642b5d",
+          "progress_sha256": "3f4bb54e37f79af2fd8aea6f1faef1b4c33384ab17dd1e50b4ba0368ae9a01c7",
+          "answered_queries_checked": 6,
+          "state_boundaries_checked": 7,
+          "winner_independently_recomputed": 3,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        },
+        "depth3": {
+          "raw_sha256": "6834d7043047a4288a58c721747a2faea7600af069e485ee86a32805c8d69fc1",
+          "questions_sha256": "55c942647c20256231af2e9de187802e125a8c7c720bc1c18d6ba535ed20b4b3",
+          "progress_sha256": "723a44d58a2c0eaf64c25847ee4a3b665e9b37b073ab286d98391a3b16d80dca",
+          "answered_queries_checked": 10,
+          "state_boundaries_checked": 11,
+          "winner_independently_recomputed": 3,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        }
+      }
+    },
+    {
+      "problem_index": 19,
+      "target_winner": 4,
+      "depth2_seconds": 3.43951548403129,
+      "depth3_seconds": 680.8138731539948,
+      "depth3_to_depth2_time_ratio": 197.93888886816285,
+      "depth2_queries": 5,
+      "depth3_queries": 5,
+      "query_difference_depth3_minus_depth2": 0,
+      "depth2_stop": "exact_single_candidate",
+      "depth3_stop": "volume_confidence",
+      "depth2_selected_share": 1.0,
+      "depth3_selected_share": 0.9988857933305426,
+      "both_correct": true,
+      "validation": {
+        "depth2": {
+          "raw_sha256": "f7e5f01e84f184f066c97370151ecea08fa4901133968bf95e168f409705106e",
+          "questions_sha256": "6ee49352819723e9b4ab3ab16cda15419734b2d0b6fcd432cc53e77cbde63ca9",
+          "progress_sha256": "7557fd3de342cdbbc1758079b88d6f0e56e3855f539ee20fb4baccb2b9b61dd6",
+          "answered_queries_checked": 5,
+          "state_boundaries_checked": 6,
+          "winner_independently_recomputed": 4,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        },
+        "depth3": {
+          "raw_sha256": "d8d3d6546f42a5a325bfa10927ece2b4dd1010cd4c3cd115788ea0c9c1c2d225",
+          "questions_sha256": "4ed5c13bd02619ce0a0b293c431b65005dfa2dce24d4aa0729bb5fa38442d1b7",
+          "progress_sha256": "a9ecd84ad6052627bafe1bd363d71db55999da29e5960c0d4f6c84cb4c73cf63",
+          "answered_queries_checked": 5,
+          "state_boundaries_checked": 6,
+          "winner_independently_recomputed": 4,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        }
+      }
+    },
+    {
+      "problem_index": 20,
+      "target_winner": 0,
+      "depth2_seconds": 3.319673386053182,
+      "depth3_seconds": 620.2071635919856,
+      "depth3_to_depth2_time_ratio": 186.82776630907077,
+      "depth2_queries": 6,
+      "depth3_queries": 7,
+      "query_difference_depth3_minus_depth2": 1,
+      "depth2_stop": "exact_single_candidate",
+      "depth3_stop": "volume_confidence",
+      "depth2_selected_share": 1.0,
+      "depth3_selected_share": 0.9948471931544147,
+      "both_correct": true,
+      "validation": {
+        "depth2": {
+          "raw_sha256": "99c72e85bf29a267bee47c7be5a9c95f82b70d965df723e802e7ce041bae6686",
+          "questions_sha256": "7f9559650c9f4a9bcd0ed9215883d0acee2b031f4b41d9697a3e5f66d65bf33e",
+          "progress_sha256": "0bc1c5338c4d6836cb7af776442c9ce639a4b35535ab8e186340fa04d73c5f11",
+          "answered_queries_checked": 6,
+          "state_boundaries_checked": 7,
+          "winner_independently_recomputed": 0,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        },
+        "depth3": {
+          "raw_sha256": "1e379f487490b91321e209935a6817c469e4b0b35dacd5f8c0717c6cf1e5ed28",
+          "questions_sha256": "2f77d9c8a92d68f88d76635a99dac02a6d090aa830a51e8665f1a85894d382f5",
+          "progress_sha256": "61c9caa0731048408c96d26774268d8fde15de3fe0c305677e7d137017ff51b0",
+          "answered_queries_checked": 7,
+          "state_boundaries_checked": 8,
+          "winner_independently_recomputed": 0,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        }
+      }
+    },
+    {
+      "problem_index": 21,
+      "target_winner": 0,
+      "depth2_seconds": 15.78536489896942,
+      "depth3_seconds": 960.104284444009,
+      "depth3_to_depth2_time_ratio": 60.82243208116724,
+      "depth2_queries": 11,
+      "depth3_queries": 3,
+      "query_difference_depth3_minus_depth2": -8,
+      "depth2_stop": "exact_single_candidate",
+      "depth3_stop": "volume_confidence",
+      "depth2_selected_share": 1.0,
+      "depth3_selected_share": 0.9985711963583911,
+      "both_correct": true,
+      "validation": {
+        "depth2": {
+          "raw_sha256": "dd3ba263619c1cc7a272659704584945891b0733cede123e219050c880021d3b",
+          "questions_sha256": "cd4e8acbaadf6c169803391bde941b97634c0dbfed7fd863bff195afb9630c06",
+          "progress_sha256": "af7d56532efccea91c04f0f52bcb826ec33a315b92ab7f3ca92e1284372f4536",
+          "answered_queries_checked": 11,
+          "state_boundaries_checked": 12,
+          "winner_independently_recomputed": 0,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        },
+        "depth3": {
+          "raw_sha256": "23089c52d4498680e1debed1053a9acbe00ec65dc1874c3a6befbf57fdd5ece1",
+          "questions_sha256": "5db4cf76d9a54c3582156677b85547eb2af7bd17b13f8e65fffe8fe1b6339960",
+          "progress_sha256": "15c2e03b84c18fbf675a721d7014935a731d63cdf7a82196d305bed328325283",
+          "answered_queries_checked": 3,
+          "state_boundaries_checked": 4,
+          "winner_independently_recomputed": 0,
+          "qualification": "Exact rational signs/utilities of the stored binary floats; volume shares checked arithmetically, not recomputed geometrically."
+        }
+      }
+    }
+  ],
+  "limits": [
+    "Matched subset excludes depth3 failures7,12,16 andpilot1; no all20 success-rate comparison.",
+    "One observation per depth/case, taken sequentially at different times; no repeated randomized paired timing design.",
+    "Same observer instrumentation; observation overhead can scale with submitted task count and was not isolated.",
+    "Depth2 controller cwd /home/cruncher differs from depth3 solver cwd repo; solver/import/input/output paths are explicit. Profiling environment absent in depth2 controller.",
+    "Singleton is under existing floating-point geometric tolerances; .99 is geometric volume confidence, not a per-case correctness guarantee."
+  ]
+}
