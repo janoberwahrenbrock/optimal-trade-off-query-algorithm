@@ -41,6 +41,7 @@ from .value_function import (
     resolve_grid_depth_query_source_mode,
 )
 from .profiling import increment_profile_counter, profile_operation
+from .terminal_candidate_analysis import compute_terminal_candidate_analysis_for_mode
 
 
 @dataclass(frozen=True)
@@ -329,7 +330,11 @@ def _evaluate_stop_aware_query(
                     failure_message="positive-probability branch has no valid candidates in stop-aware plan",
                 )
             else:
-                analysis = compute_candidate_analysis_for_mode(
+                analyze = (
+                    compute_terminal_candidate_analysis_for_mode
+                    if horizon == 1 else compute_candidate_analysis_for_mode
+                )
+                analysis = analyze(
                     alternatives, child_space, child_subset, config,
                     include_candidate_volumes=config.volume_confidence_threshold is not None,
                 )

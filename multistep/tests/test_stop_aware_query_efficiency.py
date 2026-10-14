@@ -226,10 +226,13 @@ class StopAwareQueryEfficiencyTest(unittest.TestCase):
                           return_value=Mock(is_feasible=Mock(return_value=False))):
             with self.assertRaisesRegex(RuntimeError, "positive-probability"):
                 efficiency._evaluate_efficiency_worker(self.payload())
-        with patch.object(efficiency, "compute_candidate_analysis_for_mode",
-                          return_value=CandidateAnalysis([], [], {}, {})):
-            with self.assertRaisesRegex(RuntimeError, "positive-probability"):
-                efficiency._evaluate_efficiency_worker(self.payload())
+        for horizon, entry in ((1, "compute_terminal_candidate_analysis_for_mode"),
+                               (2, "compute_candidate_analysis_for_mode")):
+            with self.subTest(horizon=horizon), \
+                 patch.object(efficiency, entry,
+                              return_value=CandidateAnalysis([], [], {}, {})):
+                with self.assertRaisesRegex(RuntimeError, "positive-probability"):
+                    efficiency._evaluate_efficiency_worker(self.payload(horizon))
 
     def test_invalid_probabilities_are_not_silently_normalized(self):
         for less, greater in [(math.nan, 1.), (math.inf, 0.), (-1e-12, 1.), (.6, .6)]:

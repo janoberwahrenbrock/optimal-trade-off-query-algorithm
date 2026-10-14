@@ -39,6 +39,7 @@ except (ImportError, AttributeError):
 
 _MAX_MODELS = 32
 _MAX_MODEL_BYTES = 4 * 1024 * 1024
+_ORIGINAL_CLEAN_INPUTS = globals().get("_clean_inputs")
 _LOCAL = threading.local()
 _SUPPORTED_OPTIONS = {"primal_feasibility_tolerance", "dual_feasibility_tolerance",
                       "disp", "presolve"}
@@ -190,6 +191,85 @@ def _constraint_matrix_csc(a_ub: np.ndarray, a_eq: np.ndarray) -> Any:
     return _CSCData(transposed[columns, rows], indices, indptr)
 
 
+def _problem(kwargs: dict[str, Any]) -> Any:
+    return _LPProblem(
+        kwargs["c"], kwargs.get("A_ub"), kwargs.get("b_ub"),
+        kwargs.get("A_eq"), kwargs.get("b_eq"), kwargs.get("bounds"), None, None,
+    )
+
+
+def _clean_private_inputs(kwargs: dict[str, Any]) -> Any:
+    """Same checks/copies for standard project arrays; no prepared-input cache."""
+    if _clean_inputs is not _ORIGINAL_CLEAN_INPUTS:
+        return _clean_inputs(_problem(kwargs))
+    objective = kwargs["c"]
+    if type(objective) is np.ndarray:
+        ordinary = (objective.dtype == np.dtype(np.float64)
+                    and objective.ndim == 1 and objective.flags.c_contiguous)
+    else:
+        ordinary = (type(objective) in (list, tuple)
+                    and all(type(value) in (float, int) for value in objective))
+    if not ordinary:
+        return _clean_inputs(_problem(kwargs))
+    try:
+        c = np.array(objective, dtype=np.float64, copy=True).squeeze()
+    except (TypeError, ValueError, OverflowError):
+        return _clean_inputs(_problem(kwargs))
+    if c.size == 1:
+        c = c.reshape(-1)
+    if c.ndim != 1 or c.size == 0 or not np.isfinite(c).all():
+        return _clean_inputs(_problem(kwargs))
+    variable_count = len(c)
+    constraints = []
+    for matrix_name, rhs_name in (("A_ub", "b_ub"), ("A_eq", "b_eq")):
+        matrix, rhs = kwargs.get(matrix_name), kwargs.get(rhs_name)
+        if matrix is None and rhs is None:
+            constraints.extend((np.zeros((0, variable_count)), np.array([], dtype=float)))
+            continue
+        if not (
+            type(matrix) is np.ndarray and type(rhs) is np.ndarray
+            and matrix.dtype == rhs.dtype == np.dtype(np.float64)
+            and matrix.ndim == 2 and matrix.shape[1] == variable_count
+            and rhs.shape == (matrix.shape[0],)
+            and matrix.flags.c_contiguous and rhs.flags.c_contiguous
+            and np.isfinite(matrix).all() and np.isfinite(rhs).all()
+        ):
+            return _clean_inputs(_problem(kwargs))
+        constraints.extend((matrix.copy(order="K"), rhs.copy(order="K")))
+    bounds = kwargs.get("bounds")
+    if bounds is None:
+        cleaned_bounds = np.empty((variable_count, 2))
+        cleaned_bounds[:, 0] = 0.0
+        cleaned_bounds[:, 1] = np.inf
+    elif type(bounds) is np.ndarray:
+        if not (bounds.dtype == np.dtype(np.float64)
+                and bounds.shape == (variable_count, 2)
+                and bounds.flags.c_contiguous and np.isfinite(bounds).all()):
+            return _clean_inputs(_problem(kwargs))
+        cleaned_bounds = bounds.copy(order="K")
+    elif type(bounds) in (list, tuple) and len(bounds) == variable_count:
+        cleaned_bounds = np.empty((variable_count, 2))
+        for index, row in enumerate(bounds):
+            if type(row) not in (list, tuple) or len(row) != 2:
+                return _clean_inputs(_problem(kwargs))
+            for column, value in enumerate(row):
+                if value is None:
+                    cleaned_bounds[index, column] = -np.inf if column == 0 else np.inf
+                elif type(value) in (float, int):
+                    try:
+                        number = float(value)
+                    except (OverflowError, ValueError):
+                        return _clean_inputs(_problem(kwargs))
+                    if not np.isfinite(number):
+                        return _clean_inputs(_problem(kwargs))
+                    cleaned_bounds[index, column] = number
+                else:
+                    return _clean_inputs(_problem(kwargs))
+    else:
+        return _clean_inputs(_problem(kwargs))
+    return _LPProblem(c, *constraints, cleaned_bounds, None, None)
+
+
 def _solve(
     state: _State,
     kwargs: dict[str, Any],
@@ -197,11 +277,11 @@ def _solve(
     compact_result: bool = False,
     _internal_continuous_check: bool = False,
 ) -> OptimizeResult:
-    # Keep SciPy's validation and default bounds, including rejection of NaNs.
-    lp = _clean_inputs(_LPProblem(
-        kwargs["c"], kwargs.get("A_ub"), kwargs.get("b_ub"),
-        kwargs.get("A_eq"), kwargs.get("b_eq"), kwargs.get("bounds"), None, None,
-    ))
+    # Only ordinary private continuous inputs have equivalent direct format
+    # preparation. Every generic/invalid input retains the original cleaner.
+    lp = _clean_private_inputs(kwargs) if (
+        compact_result and _internal_continuous_check
+    ) else _clean_inputs(_problem(kwargs))
     c, a_ub, b_ub, a_eq, b_eq, bounds, _, _ = lp
     options = kwargs.get("options") or {}
     options_key = (

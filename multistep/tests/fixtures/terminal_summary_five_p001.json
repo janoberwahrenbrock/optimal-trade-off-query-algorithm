@@ -1,0 +1,201 @@
+{
+  "case_key": "five:p001:q08",
+  "alternatives": [
+    [
+      0.41787440013241495,
+      0.2547616811063218,
+      0.8490854380309911,
+      0.543084092989858,
+      0.8969926137197353
+    ],
+    [
+      0.1706335417757816,
+      0.4483280606262392,
+      0.6378733227882178,
+      0.529898662062431,
+      0.9508180928115846
+    ],
+    [
+      0.33988738401362895,
+      0.2393385991507878,
+      0.2982694716498355,
+      0.6253974108396063,
+      0.28383018589276243
+    ],
+    [
+      0.9590208800237613,
+      0.05806333025686683,
+      0.9131403089299149,
+      0.40650230479684646,
+      0.44345799407575737
+    ],
+    [
+      0.8122601383707208,
+      0.3138529109905719,
+      0.1436437323473735,
+      0.3456015410152643,
+      0.3569399192150936
+    ]
+  ],
+  "initial_answered_queries": [
+    {
+      "question_index": 1,
+      "new_question_index": 1,
+      "goal_index_a": 3,
+      "goal_index_b": 2,
+      "value": 6.6906992385921615,
+      "value_hex": "0x1.ac346a9448072p+2",
+      "answer": "<"
+    },
+    {
+      "question_index": 2,
+      "new_question_index": 2,
+      "goal_index_a": 0,
+      "goal_index_b": 4,
+      "value": 0.31622776601683794,
+      "value_hex": "0x1.43d136248490fp-2",
+      "answer": ">"
+    },
+    {
+      "question_index": 3,
+      "new_question_index": 3,
+      "goal_index_a": 1,
+      "goal_index_b": 2,
+      "value": 3.9208764116289756,
+      "value_hex": "0x1.f5df473bcd593p+1",
+      "answer": "<"
+    },
+    {
+      "question_index": 4,
+      "new_question_index": 4,
+      "goal_index_a": 1,
+      "goal_index_b": 2,
+      "value": 1.0901611601488894,
+      "value_hex": "0x1.1714cd42357a6p+0",
+      "answer": "<"
+    },
+    {
+      "question_index": 5,
+      "new_question_index": 5,
+      "goal_index_a": 2,
+      "goal_index_b": 1,
+      "value": 2.9640257426551515,
+      "value_hex": "0x1.7b65320e9a5ddp+1",
+      "answer": "<"
+    },
+    {
+      "question_index": 6,
+      "new_question_index": 6,
+      "goal_index_a": 4,
+      "goal_index_b": 0,
+      "value": 0.4216965034285822,
+      "value_hex": "0x1.afd1354c40d50p-2",
+      "answer": "<"
+    },
+    {
+      "question_index": 7,
+      "new_question_index": 7,
+      "goal_index_a": 3,
+      "goal_index_b": 1,
+      "value": 1.6711487531979559,
+      "value_hex": "0x1.abd06799bc847p+0",
+      "answer": "<"
+    },
+    {
+      "question_index": 8,
+      "new_question_index": 8,
+      "goal_index_a": 2,
+      "goal_index_b": 3,
+      "value": 2.016604069377723,
+      "value_hex": "0x1.022015077a9a6p+1",
+      "answer": ">"
+    }
+  ],
+  "root_queries": [
+    {
+      "ziel_index_a": 0,
+      "ziel_index_b": 4,
+      "value_hex": "0x1.2f6867d48ebb7p+1"
+    },
+    {
+      "ziel_index_a": 1,
+      "ziel_index_b": 0,
+      "value_hex": "0x1.af3ca34546e39p+0"
+    },
+    {
+      "ziel_index_a": 1,
+      "ziel_index_b": 0,
+      "value_hex": "0x1.3c8db23044807p+6"
+    },
+    {
+      "ziel_index_a": 1,
+      "ziel_index_b": 2,
+      "value_hex": "0x1.1756567981411p+0"
+    },
+    {
+      "ziel_index_a": 1,
+      "ziel_index_b": 4,
+      "value_hex": "0x1.ff7cc77869eb2p+1"
+    },
+    {
+      "ziel_index_a": 2,
+      "ziel_index_b": 0,
+      "value_hex": "0x1.9a6d123df23d4p+0"
+    },
+    {
+      "ziel_index_a": 2,
+      "ziel_index_b": 0,
+      "value_hex": "0x1.d521e72cb9390p+7"
+    },
+    {
+      "ziel_index_a": 2,
+      "ziel_index_b": 1,
+      "value_hex": "0x1.7b85f6aa40412p+1"
+    },
+    {
+      "ziel_index_a": 2,
+      "ziel_index_b": 3,
+      "value_hex": "0x1.01ff506bd4b70p+1"
+    },
+    {
+      "ziel_index_a": 2,
+      "ziel_index_b": 4,
+      "value_hex": "0x1.e6cff41f53ca5p+1"
+    },
+    {
+      "ziel_index_a": 3,
+      "ziel_index_b": 0,
+      "value_hex": "0x1.ea913169859fbp+1"
+    },
+    {
+      "ziel_index_a": 3,
+      "ziel_index_b": 1,
+      "value_hex": "0x1.788708ae579bfp+0"
+    },
+    {
+      "ziel_index_a": 0,
+      "ziel_index_b": 1,
+      "value_hex": "0x1.0624dd2f1a9fcp-10"
+    },
+    {
+      "ziel_index_a": 0,
+      "ziel_index_b": 1,
+      "value_hex": "0x1.235a71c5ee5ccp-6"
+    },
+    {
+      "ziel_index_a": 0,
+      "ziel_index_b": 1,
+      "value_hex": "0x1.43d136248490fp-2"
+    },
+    {
+      "ziel_index_a": 0,
+      "ziel_index_b": 1,
+      "value_hex": "0x1.67e600b234626p+2"
+    }
+  ],
+  "candidate_subset": [
+    0,
+    3
+  ],
+  "provenance": "Immutable saved actual q08 prefix and completed profiled root task query values; only isolated H1 query evaluation differential test."
+}
