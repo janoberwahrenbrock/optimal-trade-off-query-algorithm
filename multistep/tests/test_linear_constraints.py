@@ -77,7 +77,7 @@ class LinearConstraintSystemTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "system is infeasible"):
                 system.find_feasible_point()
 
-    def test_minimize_still_raises_for_unclassified_solver_status(self) -> None:
+    def test_minimize_recovers_supported_failure_after_all_native_retries(self) -> None:
         system = self._build_one_variable_system()
 
         with patch(
@@ -87,9 +87,40 @@ class LinearConstraintSystemTests(unittest.TestCase):
                 status=4,
                 message="unexpected solver failure",
             ),
-        ):
-            with self.assertRaisesRegex(RuntimeError, "linprog failed"):
-                system.minimize([1.0])
+        ) as mocked_linprog:
+            result = system.minimize([1.0])
+
+        self.assertEqual(mocked_linprog.call_count, 4)
+        self.assertEqual(result.status, "optimal")
+        self.assertEqual(result.objective_sense, "min")
+        self.assertEqual(result.optimal_value, 0.0)
+        self.assertEqual(result.solver_status_code, 0)
+        self.assertIn("exact binary active-set recovery", result.solver_message)
+
+    def test_minimize_still_raises_for_unclassified_unsupported_system(self) -> None:
+        # This half-space has lineality and no explicit nonnegativity, so the
+        # exact pointed-polyhedron fallback must decline the native failure.
+        system = LinearConstraintSystem()
+        system.add_inequality([1.0, -1.0], 0.0)
+
+        with patch(
+            "multistep.src.linear_programming.linprog",
+            return_value=SimpleNamespace(
+                success=False,
+                status=4,
+                message="unexpected solver failure",
+            ),
+        ) as mocked_linprog:
+            with self.assertRaisesRegex(
+                RuntimeError, "^linprog failed: unexpected solver failure$",
+            ) as raised:
+                system.minimize([1.0, 0.0])
+
+        self.assertEqual(mocked_linprog.call_count, 4)
+        self.assertTrue(any(
+            "exact LP recovery unavailable" in note
+            for note in raised.exception.__notes__
+        ))
 
     def test_maximize_retries_without_presolve_for_unclassified_solver_status(self) -> None:
         system = self._build_one_variable_system()

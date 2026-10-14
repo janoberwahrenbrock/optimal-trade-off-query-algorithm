@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-"""Experimental one/two-step candidate reduction per expected query.
+"""Candidate reduction per expected query, over horizons one through three.
 
 The denominator counts questions, not CPU time.  At horizon two, a child
 executes one further question exactly when its existing depth-one planner
 returns a query.  All such continuations cost one, so minimizing their
 terminal candidate count also maximizes the complete root plan's rate.
-This equivalence does not extend to longer horizons with varying child costs.
+At horizon three child plans can have different expected costs.  Their exact
+loss/cost frontiers are combined before maximizing the complete root rate;
+choosing each child's standalone best rate would optimize a different ratio.
 Volume-confidence termination is outside the default planning model.  The
 opt-in stop-aware model instead treats the existing termination criterion as
 absorbing and scores an effective terminal loss, while retaining the genuine
@@ -51,6 +53,8 @@ class QueryEfficiencyContinuation:
     expected_terminal_loss: float | None = None
     stop_reason: str | None = None
     maximum_volume_share: float | None = None
+    expected_queries: float | None = None
+    continuations: tuple[QueryEfficiencyContinuation, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -64,7 +68,7 @@ class StopAwareBranch:
     expected_terminal_loss: float
     stop_reason: str | None
     maximum_volume_share: float | None
-    expected_followup_queries: int
+    expected_followup_queries: float
 
 
 @dataclass(frozen=True)
@@ -168,7 +172,11 @@ def _stop_aware_state_status(
     return ("volume_confidence" if decision is not None else None), maximum_share
 
 
-def _validate_stop_aware_evaluation(evaluation: StopAwareQueryEvaluation) -> None:
+def _validate_stop_aware_evaluation(
+    evaluation: StopAwareQueryEvaluation,
+    *,
+    max_followup_queries: int = 1,
+) -> None:
     _validate_query_evaluation(evaluation)
     if len(evaluation.branches) != len(evaluation.stop_aware_branches):
         raise RuntimeError("missing stop-aware branch metadata")
@@ -178,7 +186,9 @@ def _validate_stop_aware_evaluation(evaluation: StopAwareQueryEvaluation) -> Non
             or branch.probability != proof.probability
             or branch.child_candidate_count != proof.candidate_count
             or branch.child_value != proof.expected_terminal_candidates
-            or proof.expected_followup_queries not in (0, 1)
+            or not math.isfinite(proof.expected_followup_queries)
+            or not 0.0 <= proof.expected_followup_queries <= max_followup_queries
+            or (max_followup_queries == 1 and proof.expected_followup_queries not in (0, 1))
         ):
             raise RuntimeError("inconsistent stop-aware branch metadata")
         if branch.probability <= 0.0:
@@ -306,10 +316,23 @@ def _evaluate_stop_aware_query(
         )
         increment_profile_counter("stop_aware_candidate_analyses")
         with profile_operation("stop_aware_candidate_analysis"):
-            analysis = compute_candidate_analysis_for_mode(
-                alternatives, child_space, child_subset, config,
-                include_candidate_volumes=config.volume_confidence_threshold is not None,
-            )
+            if child_subset == []:
+                # A positive branch cannot lose every candidate through a
+                # numerical ratio prefilter. Prove a strict singleton without
+                # inventing candidates or skipping a positive probability.
+                analysis = _recover_empty_child_analysis(
+                    alternatives=alternatives, parent_space=weight_space,
+                    child_space=child_space, parent_candidates=candidate_subset,
+                    filtered_candidates=child_subset, probability=probability,
+                    query=query, answer=answer,
+                    include_candidate_volumes=config.volume_confidence_threshold is not None,
+                    failure_message="positive-probability branch has no valid candidates in stop-aware plan",
+                )
+            else:
+                analysis = compute_candidate_analysis_for_mode(
+                    alternatives, child_space, child_subset, config,
+                    include_candidate_volumes=config.volume_confidence_threshold is not None,
+                )
         count = len(analysis.candidates)
         if count <= 0:
             raise RuntimeError("positive-probability branch has no valid candidates in stop-aware plan")
@@ -357,6 +380,288 @@ def _evaluate_stop_aware_query(
     return evaluation, expected_queries, tuple(continuations)
 
 
+@dataclass(frozen=True)
+class _ContinuationOption:
+    """One complete depth-two child policy, including its expected cost."""
+
+    evaluation: QueryEvaluation | None
+    expected_terminal_candidates: float
+    expected_terminal_loss: float
+    expected_queries: float
+    continuations: tuple[QueryEfficiencyContinuation, ...] = ()
+    stop_reason: str | None = None
+    maximum_volume_share: float | None = None
+
+
+def _continuation_identity(child: QueryEfficiencyContinuation) -> tuple:
+    return (
+        query_identity_sort_key(child.evaluation.query)
+        if child.evaluation is not None else (-1, -1, 0.0),
+        tuple(_continuation_identity(item) for item in child.continuations),
+    )
+
+
+def _option_identity(option: _ContinuationOption) -> tuple:
+    return (
+        query_identity_sort_key(option.evaluation.query)
+        if option.evaluation is not None else (-1, -1, 0.0),
+        tuple(_continuation_identity(item) for item in option.continuations),
+    )
+
+
+def _pareto_continuation_options(
+    options: list[_ContinuationOption],
+) -> tuple[_ContinuationOption, ...]:
+    """Remove only exactly dominated loss/cost pairs, without tolerance."""
+
+    frontier: list[_ContinuationOption] = []
+    minimum_loss = math.inf
+    for option in sorted(options, key=lambda item: (
+        item.expected_queries, item.expected_terminal_loss, _option_identity(item),
+    )):
+        if option.expected_terminal_loss < minimum_loss:
+            frontier.append(option)
+            minimum_loss = option.expected_terminal_loss
+    return tuple(frontier)
+
+
+def _select_global_continuations(
+    candidate_count: int,
+    probabilities: tuple[float, ...],
+    frontiers: tuple[tuple[_ContinuationOption, ...], ...],
+) -> tuple[_ContinuationOption, ...]:
+    """Optimize (C - sum(p L)) / (1 + sum(p Q)) for the root.
+
+    Each Cartesian-product stage is pruned by its exact weighted loss/cost
+    frontier.  Adding identical remaining branches preserves dominance, so
+    this discards no potentially optimal complete policy.  No child rate,
+    numerical tolerance, sampling, or approximate shortlist is used.
+    """
+
+    combinations: list[tuple[_ContinuationOption, ...]] = [()]
+    for index, frontier in enumerate(frontiers):
+        if not frontier:
+            raise RuntimeError("missing positive-probability child policy frontier")
+        expanded = [prefix + (option,) for prefix in combinations for option in frontier]
+        weighted: list[tuple[float, float, tuple, tuple[_ContinuationOption, ...]]] = []
+        for chosen in expanded:
+            cost = math.fsum(probabilities[i] * item.expected_queries for i, item in enumerate(chosen))
+            loss = math.fsum(probabilities[i] * item.expected_terminal_loss for i, item in enumerate(chosen))
+            weighted.append((cost, loss, tuple(_option_identity(item) for item in chosen), chosen))
+        minimum_loss = math.inf
+        combinations = []
+        for _, loss, _, chosen in sorted(weighted, key=lambda item: item[:3]):
+            if loss < minimum_loss:
+                combinations.append(chosen)
+                minimum_loss = loss
+        increment_profile_counter("query_efficiency_frontier_combinations", len(expanded))
+        increment_profile_counter("query_efficiency_retained_frontier_combinations", len(combinations))
+
+    def selection_key(chosen: tuple[_ContinuationOption, ...]) -> tuple:
+        loss = math.fsum(p * item.expected_terminal_loss for p, item in zip(probabilities, chosen, strict=True))
+        cost = 1.0 + math.fsum(p * item.expected_queries for p, item in zip(probabilities, chosen, strict=True))
+        return (-(float(candidate_count) - loss) / cost, cost,
+                tuple(_option_identity(item) for item in chosen))
+
+    return min(combinations, key=selection_key)
+
+
+def _depth_two_child_frontier(
+    *,
+    alternatives: AlternativenMatrix,
+    answered_queries: list[AnsweredQuery],
+    weight_space: LinearConstraintSystem,
+    analysis: CandidateAnalysis,
+    config: OptimizedMultistepConfig,
+) -> tuple[_ContinuationOption, ...]:
+    """Evaluate all child root queries serially using the unchanged H2 path."""
+
+    from .value_function import canonical_query_key
+
+    count = len(analysis.candidates)
+    stop_reason, maximum_share = (
+        _stop_aware_state_status(analysis, config)
+        if config.query_efficiency_stop_aware
+        else ("single_candidate" if count == 1 else None, None)
+    )
+    if stop_reason is not None:
+        return (_ContinuationOption(None, float(count), 1.0, 0.0,
+                                    stop_reason=stop_reason, maximum_volume_share=maximum_share),)
+    data = compute_query_candidates_for_depth_optimized(
+        alternatives, weight_space, analysis.candidates, 2, config,
+        precomputed_ratio_intervals=analysis.ratio_intervals,
+    )
+    queries = data.query_candidates
+    if config.filter_answered_query_candidates:
+        queries = filter_already_answered_queries(
+            queries, answered_queries,
+            abs_tol=config.answered_query_abs_tolerance,
+            rel_tol=config.answered_query_rel_tolerance,
+        )
+    if not queries:
+        return (_ContinuationOption(None, float(count), float(count), 0.0,
+                                    maximum_volume_share=maximum_share),)
+    options: list[_ContinuationOption] = []
+    for query in queries:
+        evaluation, cost, children = _evaluate_efficiency_worker((
+            alternatives, answered_queries, weight_space, query, None, 2, config,
+            analysis.candidates if config.pass_candidate_subset else None,
+            data.ratio_intervals_by_goal_pair,
+            data.query_sources.get(canonical_query_key(query), "unknown"),
+        ))
+        options.append(_ContinuationOption(
+            evaluation, evaluation.expected_value,
+            evaluation.expected_terminal_loss if isinstance(evaluation, StopAwareQueryEvaluation)
+            else evaluation.expected_value,
+            cost, children, maximum_volume_share=maximum_share,
+        ))
+    increment_profile_counter("query_efficiency_child_policy_options", len(options))
+    frontier = _pareto_continuation_options(options)
+    increment_profile_counter("query_efficiency_child_frontier_options", len(frontier))
+    return frontier
+
+
+def _evaluate_depth_three_query(
+    payload: RootPayload,
+) -> tuple[QueryEvaluation, float, tuple[QueryEfficiencyContinuation, ...]]:
+    """Combine complete child policies before optimizing a horizon-three root."""
+
+    alternatives, answers, weight_space, query, _, _, config, subset, intervals, source = payload
+    root_count = (
+        len(subset) if subset is not None else len(compute_candidate_analysis_for_mode(
+            alternatives, weight_space, None, config,
+            include_candidate_volumes=False,
+        ).candidates)
+    )
+    increment_profile_counter("query_evaluations")
+    increment_profile_counter("exact_volume_probability_calls")
+    with profile_operation("exact_volume_probabilities"):
+        probabilities = compute_exact_query_answer_probabilities(
+            weight_space=weight_space, query=query, tolerance=config.geometry_tolerance,
+        )
+    if any(not math.isfinite(p) or not 0.0 <= p <= 1.0 for p in probabilities.values()) or not math.isclose(
+        math.fsum(probabilities[answer] for answer in ANSWER_OPTIONS), 1.0,
+        abs_tol=1e-12, rel_tol=0.0,
+    ):
+        raise RuntimeError("invalid branch probabilities in horizon-three plan")
+    child_states: list[tuple[QueryOperator, float, CandidateAnalysis]] = []
+    frontiers: list[tuple[_ContinuationOption, ...]] = []
+    for answer in ANSWER_OPTIONS:
+        increment_profile_counter("branch_checks")
+        probability = probabilities[answer]
+        if probability == 0.0:
+            continue
+        child_answers = answers + [query.answer(answer)]
+        child_space = build_weight_space(alternatives.get_anzahl_spalten(), child_answers)
+        if not child_space.is_feasible():
+            raise RuntimeError("positive-probability branch has no valid candidates in horizon-three plan")
+        child_subset = filter_candidate_subset_for_query_answer(
+            candidate_subset=subset, query=query, answer=answer,
+            ratio_intervals_by_goal_pair=intervals, tolerance=config.ratio_terminal_tolerance,
+        )
+        with profile_operation("query_efficiency_depth_three_child_analysis"):
+            if child_subset == []:
+                analysis = _recover_empty_child_analysis(
+                    alternatives=alternatives, parent_space=weight_space,
+                    child_space=child_space, parent_candidates=subset,
+                    filtered_candidates=child_subset, probability=probability,
+                    query=query, answer=answer,
+                    include_candidate_volumes=(
+                        config.query_efficiency_stop_aware
+                        and config.volume_confidence_threshold is not None
+                    ),
+                    failure_message="positive-probability branch has no valid candidates in horizon-three plan",
+                )
+            else:
+                analysis = compute_candidate_analysis_for_mode(
+                    alternatives, child_space, child_subset, config,
+                    include_candidate_volumes=(
+                        config.query_efficiency_stop_aware and config.volume_confidence_threshold is not None
+                    ),
+                )
+        if not analysis.candidates:
+            raise RuntimeError("positive-probability branch has no valid candidates in horizon-three plan")
+        child_states.append((answer, probability, analysis))
+        frontiers.append(_depth_two_child_frontier(
+            alternatives=alternatives, answered_queries=child_answers,
+            weight_space=child_space, analysis=analysis, config=config,
+        ))
+    selected = _select_global_continuations(
+        root_count, tuple(state[1] for state in child_states), tuple(frontiers),
+    )
+    chosen_by_answer = {state[0]: (state, option)
+                        for state, option in zip(child_states, selected, strict=True)}
+    branches: list[QueryBranchResult] = []
+    proofs: list[StopAwareBranch] = []
+    continuations: list[QueryEfficiencyContinuation] = []
+    for answer in ANSWER_OPTIONS:
+        probability = probabilities[answer]
+        if probability == 0.0:
+            branches.append(QueryBranchResult(answer, probability, 0.0, None, False))
+            proofs.append(StopAwareBranch(answer, probability, None, 0.0, 0.0, None, None, 0))
+            continue
+        (_, _, analysis), option = chosen_by_answer[answer]
+        count = len(analysis.candidates)
+        branches.append(QueryBranchResult(
+            answer, probability, option.expected_terminal_candidates, count, True,
+        ))
+        proofs.append(StopAwareBranch(
+            answer, probability, count, option.expected_terminal_candidates,
+            option.expected_terminal_loss, option.stop_reason,
+            option.maximum_volume_share, option.expected_queries,
+        ))
+        continuations.append(QueryEfficiencyContinuation(
+            answer, probability, count, option.expected_terminal_candidates,
+            option.evaluation,
+            expected_terminal_loss=option.expected_terminal_loss if config.query_efficiency_stop_aware else None,
+            stop_reason=option.stop_reason, maximum_volume_share=option.maximum_volume_share,
+            expected_queries=option.expected_queries, continuations=option.continuations,
+        ))
+    expectation = math.fsum(branch.probability * branch.child_value for branch in branches)
+    if config.query_efficiency_stop_aware:
+        evaluation: QueryEvaluation = StopAwareQueryEvaluation(
+            query, expectation, tuple(branches), query_source=source,
+            expected_terminal_loss=math.fsum(proof.probability * proof.expected_terminal_loss for proof in proofs),
+            stop_aware_branches=tuple(proofs),
+        )
+        _validate_stop_aware_evaluation(evaluation, max_followup_queries=2)
+    else:
+        evaluation = QueryEvaluation(query, expectation, tuple(branches), query_source=source)
+        _validate_query_evaluation(evaluation)
+    expected_queries = 1.0 + math.fsum(
+        child.probability * child.expected_queries for child in continuations
+    )
+    if not math.isfinite(expected_queries) or not 1.0 <= expected_queries <= 3.0 + 1e-12:
+        raise RuntimeError("invalid expected question count in horizon-three plan")
+    return evaluation, expected_queries, tuple(continuations)
+
+
+def _recover_empty_child_analysis(
+    *, alternatives, parent_space, child_space, parent_candidates,
+    filtered_candidates, probability, query, answer, include_candidate_volumes,
+    failure_message,
+):
+    """Prove only an empty positive branch that previously raised an error."""
+
+    from multistep.src.exact_geometry_recovery import (
+        RecoveryGeometryError, RecoveryNotApplicable,
+        recover_strict_singleton_from_systems,
+    )
+    try:
+        fields = recover_strict_singleton_from_systems(
+            parent_system=parent_space, child_system=child_space,
+            alternatives=alternatives, parent_candidate_subset=parent_candidates,
+            filtered_child_subset=filtered_candidates, probability=probability,
+            query=query, answer=answer,
+        )
+    except (RecoveryGeometryError, RecoveryNotApplicable) as error:
+        raise RuntimeError(failure_message) from error
+    if not include_candidate_volumes:
+        fields["candidate_volumes"] = None
+        fields["candidate_volume_shares"] = None
+    return CandidateAnalysis(**fields)
+
+
 def _evaluate_stop_aware_efficiency_worker(
     payload: RootPayload,
 ) -> tuple[StopAwareQueryEvaluation, float, tuple[QueryEfficiencyContinuation, ...]]:
@@ -374,6 +679,8 @@ def _evaluate_stop_aware_efficiency_worker(
 def _evaluate_efficiency_worker(
     payload: RootPayload,
 ) -> tuple[QueryEvaluation, float, tuple[QueryEfficiencyContinuation, ...]]:
+    if payload[5] == 3:
+        return _evaluate_depth_three_query(payload)
     if payload[6].query_efficiency_stop_aware:
         return _evaluate_stop_aware_efficiency_worker(payload)
     alternatives, answers, weight_space, query, samples, horizon, config, subset, intervals, source = payload
@@ -499,12 +806,12 @@ def compute_query_efficiency(
 ) -> QueryEfficiencyResult:
     """Rank every allowed root query/horizon by a ratio of expectations."""
 
-    if type(max_horizon) is not int or max_horizon not in (1, 2):
-        raise ValueError("query-efficiency planning supports only horizons 1 and 2")
+    if type(max_horizon) is not int or max_horizon not in (1, 2, 3):
+        raise ValueError("query-efficiency planning supports only horizons 1, 2 and 3")
     if config.answer_probability_mode != "exact_volume":
         raise ValueError("query-efficiency planning requires exact_volume probabilities")
-    if config.depth_one_query_source_mode != "ratio" or resolve_grid_depth_query_source_mode(config) != "both":
-        raise ValueError("query-efficiency planning requires ratio at depth one and grid plus ratios above it")
+    if config.depth_one_query_source_mode != "ratio" or resolve_grid_depth_query_source_mode(config) not in ("grid", "both"):
+        raise ValueError("query-efficiency planning requires ratios at depth one and grid or grid plus ratios above it")
     if config.adaptive_depth_candidate_threshold is not None:
         raise ValueError("query-efficiency planning cannot reduce hypothetical depths adaptively")
 
@@ -568,7 +875,7 @@ def compute_query_efficiency(
 
 
 def query_efficiency_evaluation_to_json(plan: QueryEfficiencyEvaluation) -> dict:
-    """Include the complete selected two-question policy, not unchosen trees."""
+    """Include the complete selected policy; preserve the H1/H2 JSON layout."""
 
     def query_json(evaluation: QueryEvaluation | None) -> dict | None:
         if evaluation is None:
@@ -600,20 +907,38 @@ def query_efficiency_evaluation_to_json(plan: QueryEfficiencyEvaluation) -> dict
                 })
         return serialized
 
+    def continuation_json(child: QueryEfficiencyContinuation) -> dict:
+        serialized_child = {
+            "answer": child.answer, "probability": child.probability,
+            "candidate_count": child.candidate_count,
+            "expected_terminal_candidates": child.expected_terminal_candidates,
+            "expected_queries": (
+                child.expected_queries if child.expected_queries is not None
+                else 1 if child.evaluation is not None else 0
+            ),
+            "query": query_json(child.evaluation),
+        }
+        if child.expected_terminal_loss is not None:
+            serialized_child.update({
+                "expected_terminal_loss": child.expected_terminal_loss,
+                "stop_reason": child.stop_reason,
+                "maximum_volume_share": child.maximum_volume_share,
+            })
+        if child.expected_queries is not None:
+            serialized_child["continuations"] = [
+                continuation_json(item) for item in child.continuations
+            ]
+            if child.expected_terminal_loss is None:
+                serialized_child["stop_reason"] = child.stop_reason
+        return serialized_child
+
     serialized = {
         "horizon": plan.horizon,
         "query": query_json(plan.evaluation),
         "expected_terminal_candidates": plan.evaluation.expected_value,
         "expected_queries": plan.expected_queries,
         "gain": plan.gain, "rate": plan.rate,
-        "continuations": [
-            {"answer": child.answer, "probability": child.probability,
-             "candidate_count": child.candidate_count,
-             "expected_terminal_candidates": child.expected_terminal_candidates,
-             "expected_queries": 1 if child.evaluation is not None else 0,
-             "query": query_json(child.evaluation)}
-            for child in plan.continuations
-        ],
+        "continuations": [continuation_json(child) for child in plan.continuations],
     }
     if plan.stop_aware:
         serialized.update({

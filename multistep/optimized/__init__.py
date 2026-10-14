@@ -1,5 +1,6 @@
 """Optimized multistep implementations."""
 
+from .algorithm import AlgorithmConfig, solve
 from .profiling import OptimizationProfile, collect_optimization_profile
 from .value_function import (
     OptimizedMultistepConfig,
@@ -14,6 +15,8 @@ from .value_function import (
 )
 
 __all__ = [
+    "AlgorithmConfig",
+    "solve",
     "OptimizationProfile",
     "OptimizedMultistepConfig",
     "OptimizedValueFunctionSession",

@@ -40,7 +40,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--depth", type=int, choices=[1, 2, 3], default=1)
     parser.add_argument(
         "--query-strategy", choices=["fixed", "reduction_per_query", "reduction_per_query_stop_aware"], default="fixed",
-        help="Use fixed lookahead, candidate reduction per expected query, or stop-aware loss reduction per expected query; adaptive horizons are at most two.",
+        help="Use fixed lookahead, candidate reduction per expected query, or stop-aware loss reduction per expected query; adaptive horizons are at most three.",
     )
     parser.add_argument("--seed", type=int, default=20260902)
     parser.add_argument(
@@ -96,10 +96,10 @@ def validate_args(args: argparse.Namespace) -> None:
     if not 0.0 < args.volume_confidence_threshold <= 1.0:
         raise ValueError("volume-confidence-threshold must be in (0, 1]")
     if getattr(args, "query_strategy", "fixed") in {"reduction_per_query", "reduction_per_query_stop_aware"}:
-        if args.depth not in (1, 2):
-            raise ValueError("reduction_per_query supports only maximum horizons 1 and 2")
-        if args.root_query_source != "both" or args.depth_one_query_source != "ratio":
-            raise ValueError("reduction_per_query requires --root-query-source both --depth-one-query-source ratio")
+        if args.depth not in (1, 2, 3):
+            raise ValueError("reduction_per_query supports maximum horizons 1, 2 and 3")
+        if args.root_query_source not in {"grid", "both"} or args.depth_one_query_source != "ratio":
+            raise ValueError("reduction_per_query requires --root-query-source grid/both --depth-one-query-source ratio")
 
 
 def build_config(
@@ -203,14 +203,16 @@ def solve_problem(
     volume_confidence_threshold: float | None = 0.99,
     query_strategy: str = "fixed",
 ) -> dict[str, Any]:
+    """Benchmark adapter: simulate answers around the shared exact solver."""
+    from multistep.optimized.algorithm import _solve_with_optimized_config
+
     if query_strategy not in {"fixed", "reduction_per_query", "reduction_per_query_stop_aware"}:
         raise ValueError("unsupported query strategy")
     if query_strategy in {"reduction_per_query", "reduction_per_query_stop_aware"}:
-        if depth not in (1, 2):
-            raise ValueError("reduction_per_query supports only maximum horizons 1 and 2")
-        if root_query_source != "both" or depth_one_query_source != "ratio":
-            raise ValueError("reduction_per_query requires grid plus ratios above depth one and ratio queries at depth one")
-    clear_polytope_volume_cache()
+        if depth not in (1, 2, 3):
+            raise ValueError("reduction_per_query supports maximum horizons 1, 2 and 3")
+        if root_query_source not in {"both", "grid"} or depth_one_query_source != "ratio":
+            raise ValueError("reduction_per_query requires grid or grid plus ratios above depth one and ratio queries at depth one")
     config = build_config(
         parallelize_root=parallelize_root,
         max_workers=max_workers,
@@ -220,242 +222,35 @@ def solve_problem(
         volume_confidence_threshold=volume_confidence_threshold,
         query_efficiency_stop_aware=(query_strategy == "reduction_per_query_stop_aware"),
     )
-    answered_queries: list[AnsweredQuery] = []
-    query_records: list[dict[str, Any]] = []
     true_winner = target_winner(alternatives, target_weights)
-    started = time.perf_counter()
-    initial_candidate_count: int | None = None
-    initial_candidates: list[int] = []
-    initial_candidate_volumes: dict[int, float] | None = None
-    initial_candidate_volume_shares: dict[int, float] | None = None
-    final_candidates: list[int] = []
-    final_candidate_volumes: dict[int, float] | None = None
-    final_candidate_volume_shares: dict[int, float] | None = None
-    termination_reason = "max_questions"
-    selected_candidate: int | None = None
-    selected_candidate_volume: float | None = None
-    selected_candidate_volume_share: float | None = None
-    residual_volume: float | None = None
-    residual_volume_share: float | None = None
-    with OptimizedValueFunctionSession(
+
+    def answer_query(query: Query) -> str:
+        answer = classify_query_answer(weights=target_weights, query=query, equality_tol=0.0)
+        if answer == "=":
+            raise RuntimeError("random target produced an exact equality answer")
+        return answer
+
+    def check_true_winner(state: Any, question_index: int) -> None:
+        if true_winner not in state.candidate_analysis.candidates:
+            raise RuntimeError("true winner was removed from the candidate set")
+
+    result = _solve_with_optimized_config(
         alternatives=alternatives,
-        config=config,
-        max_cached_results=max_questions + 1,
-    ) as session:
-        for question_index in range(max_questions + 1):
-            iteration_started = time.perf_counter()
-            state = session.analyze_state(
-                answered_queries,
-                include_candidate_volumes=True,
-            )
-            if not state.is_feasible or state.candidate_analysis is None:
-                raise RuntimeError("query trajectory became infeasible")
-            candidates = state.candidate_analysis.candidates
-            candidate_volumes = state.candidate_analysis.candidate_volumes
-            candidate_volume_shares = (
-                state.candidate_analysis.candidate_volume_shares
-            )
-            if initial_candidate_count is None:
-                initial_candidate_count = len(candidates)
-                initial_candidates = [int(candidate) for candidate in candidates]
-                initial_candidate_volumes = candidate_volumes
-                initial_candidate_volume_shares = candidate_volume_shares
-                if progress_per_query:
-                    print(
-                        f"query=00 candidates={initial_candidates} "
-                        f"volume_shares={format_candidate_volume_shares(candidates, candidate_volume_shares)} "
-                        "initial=True",
-                        flush=True,
-                    )
-            if query_records and "remaining_candidate_count" not in query_records[-1]:
-                query_record = query_records[-1]
-                query_record["remaining_candidate_count"] = len(candidates)
-                query_record["remaining_candidates"] = [
-                    int(candidate) for candidate in candidates
-                ]
-                query_record["candidate_volumes"] = candidate_volumes
-                query_record["candidate_volume_shares"] = candidate_volume_shares
-                if progress_per_query:
-                    print(
-                        f"query={len(query_records):02d} "
-                        f"candidates={query_record['remaining_candidates']} "
-                        f"volume_shares={format_candidate_volume_shares(candidates, candidate_volume_shares)} "
-                        f"expected_value={query_record['expected_value']:.6f} "
-                        f"seconds={query_record['seconds']:.3f}",
-                        flush=True,
-                    )
-            if true_winner not in candidates:
-                raise RuntimeError("true winner was removed from the candidate set")
-            final_candidates = candidates
-            final_candidate_volumes = candidate_volumes
-            final_candidate_volume_shares = candidate_volume_shares
-            if len(candidates) <= 1:
-                termination_reason = "exact_single_candidate"
-                if candidates:
-                    selected_candidate = int(candidates[0])
-                    if candidate_volumes is not None:
-                        selected_candidate_volume = float(
-                            candidate_volumes[selected_candidate]
-                        )
-                    if candidate_volume_shares is not None:
-                        selected_candidate_volume_share = float(
-                            candidate_volume_shares[selected_candidate]
-                        )
-                        residual_volume_share = max(
-                            0.0,
-                            1.0 - selected_candidate_volume_share,
-                        )
-                    if candidate_volumes is not None:
-                        residual_volume = max(
-                            0.0,
-                            sum(candidate_volumes.values())
-                            - float(candidate_volumes[selected_candidate]),
-                        )
-                break
-
-            confidence_decision = evaluate_volume_confidence_termination(
-                candidate_analysis=state.candidate_analysis,
-                threshold=config.volume_confidence_threshold,
-            )
-            if confidence_decision is not None:
-                termination_reason = "volume_confidence"
-                selected_candidate = confidence_decision.selected_candidate
-                selected_candidate_volume = (
-                    confidence_decision.selected_candidate_volume
-                )
-                selected_candidate_volume_share = (
-                    confidence_decision.selected_candidate_volume_share
-                )
-                residual_volume = confidence_decision.residual_volume
-                residual_volume_share = confidence_decision.residual_volume_share
-                if progress_per_query:
-                    print(
-                        f"termination={termination_reason} "
-                        f"selected_candidate={selected_candidate} "
-                        f"confidence={selected_candidate_volume_share:.6f} "
-                        f"residual_volume_share={residual_volume_share:.6f}",
-                        flush=True,
-                    )
-                break
-            if question_index >= max_questions:
-                break
-
-            efficiency_result = None
-            if query_strategy in {"reduction_per_query", "reduction_per_query_stop_aware"}:
-                efficiency_result = session.compute_query_efficiency(
-                    answered_queries=answered_queries, max_horizon=depth,
-                )
-                if efficiency_result.choice is None:
-                    raise RuntimeError("query-efficiency planner returned no query")
-                best_evaluation = efficiency_result.choice.evaluation
-                best_query = best_evaluation.query
-                expected_value = best_evaluation.expected_value
-            else:
-                result = session.compute(
-                    answered_queries=answered_queries,
-                    remaining_depth=depth,
-                )
-                if result.best_query is None:
-                    raise RuntimeError("exact planner returned no query")
-                best_query = result.best_query
-                best_evaluation = next(
-                    evaluation
-                    for evaluation in result.query_evaluations
-                    if evaluation.query == best_query
-                )
-                expected_value = float(result.value)
-            expected_values = (
-                best_evaluation.lexicographic_expected_values
-                or (float(best_evaluation.expected_value),)
-            )
-            answer = classify_query_answer(
-                weights=target_weights,
-                query=best_query,
-                equality_tol=0.0,
-            )
-            if answer == "=":
-                raise RuntimeError("random target produced an exact equality answer")
-            answered_queries.append(best_query.answer(answer))
-            query_records.append(
-                query_to_json(
-                    best_query,
-                    answer,
-                    time.perf_counter() - iteration_started,
-                )
-            )
-            query_records[-1]["expected_value"] = float(expected_value)
-            query_records[-1]["lexicographic_expected_values"] = [
-                float(value) for value in expected_values
-            ]
-            if efficiency_result is not None:
-                from multistep.optimized.query_efficiency import query_efficiency_evaluation_to_json
-
-                choice = efficiency_result.choice
-                assert choice is not None
-                query_records[-1].update({
-                    "query_strategy": query_strategy,
-                    "selected_horizon": choice.horizon,
-                    "expected_terminal_candidates": choice.evaluation.expected_value,
-                    "expected_queries": choice.expected_queries,
-                    "gain": choice.gain, "rate": choice.rate,
-                    "horizon_best_plans": [
-                        query_efficiency_evaluation_to_json(plan)
-                        for _, plan in sorted(efficiency_result.best_by_horizon.items())
-                        if plan is not None
-                    ],
-                    "horizon_evaluation_seconds": {
-                        str(horizon): seconds
-                        for horizon, seconds in efficiency_result.evaluation_seconds_by_horizon.items()
-                    },
-                })
-                if config.query_efficiency_stop_aware:
-                    if choice.expected_terminal_loss is None:
-                        raise RuntimeError("stop-aware decision lacks its terminal loss")
-                    query_records[-1].update({
-                        "planning_stop_aware": True,
-                        "candidate_count_before_planning": len(candidates),
-                        "expected_terminal_loss": float(choice.expected_terminal_loss),
-                        "expected_value_semantics": "expected_actual_terminal_candidate_count",
-                        "planning_terminal_loss_semantics": (
-                            "one_for_single_candidate_or_volume_confidence_else_actual_candidate_count"
-                        ),
-                    })
-
-    seconds = time.perf_counter() - started
-    cache = polytope_volume_cache_info()
-    return {
-        "solved": selected_candidate is not None,
-        "exactly_solved": len(final_candidates) == 1,
-        "termination_reason": termination_reason,
-        "question_count": len(answered_queries),
-        "seconds": seconds,
-        "initial_candidate_count": initial_candidate_count,
-        "initial_candidates": initial_candidates,
-        "initial_candidate_volumes": initial_candidate_volumes,
-        "initial_candidate_volume_shares": initial_candidate_volume_shares,
-        "final_candidates": final_candidates,
-        "final_candidate_volumes": final_candidate_volumes,
-        "final_candidate_volume_shares": final_candidate_volume_shares,
-        "target_winner": true_winner,
-        "final_candidate": final_candidates[0] if len(final_candidates) == 1 else None,
-        "selected_candidate": selected_candidate,
-        "selected_candidate_volume": selected_candidate_volume,
-        "selected_candidate_volume_share": selected_candidate_volume_share,
-        "residual_volume": residual_volume,
-        "residual_volume_share": residual_volume_share,
-        "selection_is_correct": (
-            selected_candidate == true_winner
-            if selected_candidate is not None
-            else None
-        ),
-        "query_seconds": [record["seconds"] for record in query_records],
-        "queries": query_records,
-        "volume_cache": {
-            "hits": cache.hits,
-            "misses": cache.misses,
-            "size": cache.currsize,
-        },
-    }
+        optimized_config=config,
+        answer_query=answer_query,
+        depth=depth,
+        query_strategy=query_strategy,
+        max_queries=max_questions,
+        session_factory=OptimizedValueFunctionSession,
+        on_state=check_true_winner,
+        progress_per_query=progress_per_query,
+        raise_on_no_query=True,
+    )
+    result["target_winner"] = true_winner
+    result["selection_is_correct"] = (
+        result["selected_candidate"] == true_winner if result["selected_candidate"] is not None else None
+    )
+    return result
 
 
 def run(args: argparse.Namespace) -> list[dict[str, Any]]:

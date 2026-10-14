@@ -294,6 +294,7 @@ def _compute_all_ratio_intervals_from_vertices(
             system=optimality_region,
             tolerance=tolerance,
         )
+        positive_volume_correction = False
         if candidate_volumes is not None:
             candidate_volumes[int(candidate_index)] = (
                 compute_polytope_intrinsic_volume_from_vertices(
@@ -301,17 +302,21 @@ def _compute_all_ratio_intervals_from_vertices(
                     polytope=polytope,
                 )
             )
+            positive_volume_correction = bool(getattr(
+                candidate_volumes[int(candidate_index)],
+                "_exact_lowdimensional_volume_correction", False,
+            ))
         geometric_intervals = (
             _compute_ratio_intervals_from_vertices(
                 vertices=polytope.vertices,
                 goal_count=goal_count,
                 tolerance=tolerance,
             )
-            if polytope.status in {"full_dimensional", "point"}
+            if polytope.status in {"full_dimensional", "point"} and not positive_volume_correction
             else None
         )
         for goal_index_a, goal_index_b in get_ordered_goal_pairs(goal_count):
-            if polytope.status == "infeasible":
+            if polytope.status == "infeasible" and not positive_volume_correction:
                 interval = _build_infeasible_ratio_interval(polytope.message)
             elif geometric_intervals is not None:
                 interval = geometric_intervals[(goal_index_a, goal_index_b)]

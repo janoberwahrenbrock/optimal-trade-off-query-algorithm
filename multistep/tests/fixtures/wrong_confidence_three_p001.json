@@ -1,0 +1,429 @@
+{
+  "source_fingerprint": "870a07851e55132d08acfff4b86e7b10422f321628eafe9f1c5db3af60642aa8",
+  "raw_result_sha256": "7260417aac0ee13180de8d7742dd3bd85872722ff131d7a7567130ddb1a9abef",
+  "case": {
+    "case_key": "three:p001",
+    "cohort": "new3D5A_smoke",
+    "dimension": 3,
+    "problem_index": 1,
+    "alternatives": [
+      [
+        0.21265216902495598,
+        0.684761929208163,
+        0.3954917313640063
+      ],
+      [
+        0.16857587332060997,
+        0.4331526137601356,
+        0.7811795059179425
+      ],
+      [
+        0.7038732102574664,
+        0.7582410853609938,
+        0.3548002812615886
+      ],
+      [
+        0.8991235909460948,
+        0.9649082061772063,
+        0.11928360479356581
+      ],
+      [
+        0.8077198568401636,
+        0.43737573697931276,
+        0.18879018916822154
+      ]
+    ],
+    "target_weights": [
+      0.011896685524361272,
+      0.7856434093927647,
+      0.20245990508287398
+    ]
+  },
+  "answers": [
+    {
+      "question_index": 1,
+      "new_question_index": 1,
+      "goal_index_a": 2,
+      "goal_index_b": 0,
+      "value": 1.2544489196050452,
+      "value_hex": "0x1.4123907c34c9bp+0",
+      "answer": ">"
+    },
+    {
+      "question_index": 2,
+      "new_question_index": 2,
+      "goal_index_a": 2,
+      "goal_index_b": 0,
+      "value": 3.7483465497973114,
+      "value_hex": "0x1.dfc9d1daba190p+1",
+      "answer": ">"
+    },
+    {
+      "question_index": 3,
+      "new_question_index": 3,
+      "goal_index_a": 2,
+      "goal_index_b": 0,
+      "value": 8.518827069949658,
+      "value_hex": "0x1.109a3b3a36d34p+3",
+      "answer": ">"
+    },
+    {
+      "question_index": 4,
+      "new_question_index": 4,
+      "goal_index_a": 2,
+      "goal_index_b": 0,
+      "value": 15.768299189364214,
+      "value_hex": "0x1.f895e82e7b9a8p+3",
+      "answer": ">"
+    },
+    {
+      "question_index": 5,
+      "new_question_index": 5,
+      "goal_index_a": 2,
+      "goal_index_b": 0,
+      "value": 39.70931778482755,
+      "value_hex": "0x1.3dacaecd8271ap+5",
+      "answer": "<"
+    },
+    {
+      "question_index": 6,
+      "new_question_index": 6,
+      "goal_index_a": 0,
+      "goal_index_b": 2,
+      "value": 0.03996330165569447,
+      "value_hex": "0x1.47611e34d830bp-5",
+      "answer": ">"
+    },
+    {
+      "question_index": 7,
+      "new_question_index": 7,
+      "goal_index_a": 2,
+      "goal_index_b": 0,
+      "value": 19.863773078160882,
+      "value_hex": "0x1.3dd203b81ddc2p+4",
+      "answer": "<"
+    },
+    {
+      "question_index": 8,
+      "new_question_index": 8,
+      "goal_index_a": 0,
+      "goal_index_b": 2,
+      "value": 0.05650367581625407,
+      "value_hex": "0x1.cee0cbf781d24p-5",
+      "answer": ">"
+    },
+    {
+      "question_index": 9,
+      "new_question_index": 9,
+      "goal_index_a": 0,
+      "goal_index_b": 2,
+      "value": 0.05986126978559308,
+      "value_hex": "0x1.ea622e80d6437p-5",
+      "answer": "<"
+    },
+    {
+      "question_index": 10,
+      "new_question_index": 10,
+      "goal_index_a": 2,
+      "goal_index_b": 0,
+      "value": 17.19446576546166,
+      "value_hex": "0x1.131c88226d975p+4",
+      "answer": "<"
+    },
+    {
+      "question_index": 11,
+      "new_question_index": 11,
+      "goal_index_a": 0,
+      "goal_index_b": 2,
+      "value": 0.05900361479698018,
+      "value_hex": "0x1.e35b8c7cc3107p-5",
+      "answer": "<"
+    },
+    {
+      "question_index": 12,
+      "new_question_index": 12,
+      "goal_index_a": 0,
+      "goal_index_b": 2,
+      "value": 0.05857940634552801,
+      "value_hex": "0x1.dfe1eb4f23f1ap-5",
+      "answer": ">"
+    },
+    {
+      "question_index": 13,
+      "new_question_index": 13,
+      "goal_index_a": 2,
+      "goal_index_b": 0,
+      "value": 17.009369179749612,
+      "value_hex": "0x1.1026604c09d6cp+4",
+      "answer": ">"
+    },
+    {
+      "question_index": 14,
+      "new_question_index": 14,
+      "goal_index_a": 2,
+      "goal_index_b": 0,
+      "value": 17.024717493566815,
+      "value_hex": "0x1.10653e2ba8231p+4",
+      "answer": "<"
+    },
+    {
+      "question_index": 15,
+      "new_question_index": 15,
+      "goal_index_a": 0,
+      "goal_index_b": 2,
+      "value": 0.05876462096868928,
+      "value_hex": "0x1.e16657a71d8afp-5",
+      "answer": "<"
+    },
+    {
+      "question_index": 16,
+      "new_question_index": 16,
+      "goal_index_a": 0,
+      "goal_index_b": 2,
+      "value": 0.05875137195403331,
+      "value_hex": "0x1.e14a8ea46813ap-5",
+      "answer": ">"
+    },
+    {
+      "question_index": 17,
+      "new_question_index": 17,
+      "goal_index_a": 0,
+      "goal_index_b": 2,
+      "value": 0.05875799608793044,
+      "value_hex": "0x1.e15872f26fe13p-5",
+      "answer": ">"
+    },
+    {
+      "question_index": 18,
+      "new_question_index": 18,
+      "goal_index_a": 0,
+      "goal_index_b": 2,
+      "value": 0.05876130843494688,
+      "value_hex": "0x1.e15f653ff1cb2p-5",
+      "answer": "<"
+    },
+    {
+      "question_index": 19,
+      "new_question_index": 19,
+      "goal_index_a": 0,
+      "goal_index_b": 2,
+      "value": 0.05875965223809858,
+      "value_hex": "0x1.e15bec15fba16p-5",
+      "answer": ">"
+    },
+    {
+      "question_index": 20,
+      "new_question_index": 20,
+      "goal_index_a": 0,
+      "goal_index_b": 2,
+      "value": 0.05876048033068764,
+      "value_hex": "0x1.e15da8aa29687p-5",
+      "answer": ">"
+    },
+    {
+      "question_index": 21,
+      "new_question_index": 21,
+      "goal_index_a": 0,
+      "goal_index_b": 2,
+      "value": 0.058760894381358474,
+      "value_hex": "0x1.e15e86f4da463p-5",
+      "answer": "<"
+    },
+    {
+      "question_index": 22,
+      "new_question_index": 22,
+      "goal_index_a": 0,
+      "goal_index_b": 2,
+      "value": 0.05876068735565835,
+      "value_hex": "0x1.e15e17cf75025p-5",
+      "answer": ">"
+    },
+    {
+      "question_index": 23,
+      "new_question_index": 23,
+      "goal_index_a": 2,
+      "goal_index_b": 0,
+      "value": 17.01815079785593,
+      "value_hex": "0x1.104a587db3002p+4",
+      "answer": ">"
+    },
+    {
+      "question_index": 24,
+      "new_question_index": 24,
+      "goal_index_a": 0,
+      "goal_index_b": 2,
+      "value": 0.058760739112014994,
+      "value_hex": "0x1.e15e3398cbeb5p-5",
+      "answer": "<"
+    },
+    {
+      "question_index": 25,
+      "new_question_index": 25,
+      "goal_index_a": 0,
+      "goal_index_b": 2,
+      "value": 0.05876071323383096,
+      "value_hex": "0x1.e15e25b420436p-5",
+      "answer": "<"
+    },
+    {
+      "question_index": 26,
+      "new_question_index": 26,
+      "goal_index_a": 0,
+      "goal_index_b": 2,
+      "value": 0.05876070029474323,
+      "value_hex": "0x1.e15e1ec1ca960p-5",
+      "answer": "<"
+    },
+    {
+      "question_index": 27,
+      "new_question_index": 27,
+      "goal_index_a": 0,
+      "goal_index_b": 2,
+      "value": 0.05876069382520043,
+      "value_hex": "0x1.e15e1b489fc8fp-5",
+      "answer": ">"
+    },
+    {
+      "question_index": 28,
+      "new_question_index": 28,
+      "goal_index_a": 0,
+      "goal_index_b": 2,
+      "value": 0.05876069705997176,
+      "value_hex": "0x1.e15e1d05352edp-5",
+      "answer": ">"
+    },
+    {
+      "question_index": 29,
+      "new_question_index": 29,
+      "goal_index_a": 0,
+      "goal_index_b": 2,
+      "value": 0.05876069867735747,
+      "value_hex": "0x1.e15e1de37fe23p-5",
+      "answer": ">"
+    },
+    {
+      "question_index": 30,
+      "new_question_index": 30,
+      "goal_index_a": 0,
+      "goal_index_b": 2,
+      "value": 0.058760699081703914,
+      "value_hex": "0x1.e15e1e1b128f3p-5",
+      "answer": "<"
+    },
+    {
+      "question_index": 31,
+      "new_question_index": 31,
+      "goal_index_a": 1,
+      "goal_index_b": 2,
+      "value": 9769114.225791214,
+      "value_hex": "0x1.2a2134739ae7fp+23",
+      "answer": "<"
+    },
+    {
+      "question_index": 32,
+      "new_question_index": 32,
+      "goal_index_a": 0,
+      "goal_index_b": 2,
+      "value": 0.058760698879530705,
+      "value_hex": "0x1.e15e1dff4938dp-5",
+      "answer": ">"
+    }
+  ],
+  "raw_final_state": {
+    "answered_query_count": 32,
+    "is_feasible": true,
+    "candidates": [
+      1,
+      3
+    ],
+    "candidate_volumes": {
+      "1": 1.2075432147124555e-10,
+      "3": 0.0
+    },
+    "candidate_volume_shares": {
+      "1": 1.0,
+      "3": 0.0
+    }
+  },
+  "independent_exact_regions": {
+    "sum_projected_candidate_areas": "248938492181525085976860944759252362368453998627370582254982112493328303303657355030055889423858820710400/2760540165368560280713558346562979140232917991782167862331798024458335689722732791693223678259261481282184085983489",
+    "partition_matches_state_area_exactly": true,
+    "regions": {
+      "0": {
+        "polygon": [],
+        "projected_area_exact": "0",
+        "intrinsic_area_decimal": "0E-69",
+        "share_exact": "0",
+        "share_float": 0.0,
+        "target_satisfies_all_optimality_rows": false
+      },
+      "1": {
+        "polygon": [
+          [
+            "1843638896845550705819518479737/69740236678018122877370984738709",
+            "133911154696987662216407362504636/255714201152733117217026944041933"
+          ],
+          [
+            "20280027795525197865590091294797/767142603484284439754062293278489",
+            "401733464186823934650628160648908/767142603484284439754062293278489"
+          ],
+          [
+            "8468309170492301/152583497246348173",
+            "0"
+          ],
+          [
+            "8468309199628531/152583497275484403",
+            "0"
+          ]
+        ],
+        "projected_area_exact": "318410896575120863807235889547747992705209817765620204343109132197195036576079067637350400/4567158451178729584000327701345383488190121657596058901866178133116482551904693660514448900628836403",
+        "intrinsic_area_decimal": "1.207542625129048754012595459278600767893436458136130315929263230326741E-10",
+        "share_exact": "449566308839590867218804994087911636716390674002323372071857304833166839943333874458449210708014878357764065833010883294251022947606776893116527/581500240739610018073073291463184226695266687649385707635855680959862728476365489904652901675241831982874988158638079936014449464413634695266304",
+        "share_float": 0.7731145704562179,
+        "target_satisfies_all_optimality_rows": false
+      },
+      "2": {
+        "polygon": [],
+        "projected_area_exact": "0",
+        "intrinsic_area_decimal": "0E-69",
+        "share_exact": "0",
+        "share_float": 0.0,
+        "target_satisfies_all_optimality_rows": false
+      },
+      "3": {
+        "polygon": [
+          [
+            "1843638896845550705819518479737/69740236678018122877370984738709",
+            "133911154696987662216407362504636/255714201152733117217026944041933"
+          ],
+          [
+            "65496967043869021042422929961413/10889036921606000940311523264662373675461",
+            "10889035741470030830827987437816582766592/10889036921606000940311523264662373675461"
+          ],
+          [
+            "65496966818518877217218899912123/10889036921606000714961379439458343626171",
+            "10889035741470030830827987437816582766592/10889036921606000714961379439458343626171"
+          ],
+          [
+            "20280027795525197865590091294797/767142603484284439754062293278489",
+            "401733464186823934650628160648908/767142603484284439754062293278489"
+          ]
+        ],
+        "projected_area_exact": "1427695977191604428178106784774129575234739560287764275659550548998482052210279628690541969580082982698841487572022156703415327837388800/69780028888754021795850061620892104935759864778234165028137747242370886590347710622548302147849658571632769218673249571594880208062900292774216841",
+        "intrinsic_area_decimal": "3.543767478514310539609018848519402139628577836758993657093259597341273E-11",
+        "share_exact": "131933931900019150854268297375272589978876013647062335563998376126695888533031615446203690967226953625110922325627196641763426516806857802149777/581500240739610018073073291463184226695266687649385707635855680959862728476365489904652901675241831982874988158638079936014449464413634695266304",
+        "share_float": 0.22688542954378216,
+        "target_satisfies_all_optimality_rows": true
+      },
+      "4": {
+        "polygon": [],
+        "projected_area_exact": "0",
+        "intrinsic_area_decimal": "0E-69",
+        "share_exact": "0",
+        "share_float": 0.0,
+        "target_satisfies_all_optimality_rows": false
+      }
+    }
+  },
+  "weight_space_projected_area": "248938492181525085976860944759252362368453998627370582254982112493328303303657355030055889423858820710400/2760540165368560280713558346562979140232917991782167862331798024458335689722732791693223678259261481282184085983489"
+}

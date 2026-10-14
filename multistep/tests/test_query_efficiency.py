@@ -215,15 +215,15 @@ class QueryEfficiencyTest(unittest.TestCase):
         self.assertIsNone(result.choice)
         self.assertEqual(result.best_by_horizon, {1: None, 2: None})
 
-    def test_rejects_horizon_three_and_unsupported_sources_before_any_solver(self) -> None:
-        for horizon, config in [(3, self.config), (2, replace(self.config, grid_depth_query_source_mode="grid")), (2, replace(self.config, adaptive_depth_candidate_threshold=2)), (2, replace(self.config, answer_probability_mode="sampling"))]:
+    def test_rejects_horizon_four_and_unsupported_sources_before_any_solver(self) -> None:
+        for horizon, config in [(4, self.config), (2, replace(self.config, grid_depth_query_source_mode="central")), (2, replace(self.config, adaptive_depth_candidate_threshold=2)), (2, replace(self.config, answer_probability_mode="sampling"))]:
             with self.subTest(horizon=horizon, config=config):
                 with patch.object(efficiency, "build_weight_space") as build:
                     with self.assertRaises(ValueError):
                         efficiency.compute_query_efficiency(alternatives=self.alternatives, answered_queries=[], config=config, max_horizon=horizon)
                 build.assert_not_called()
         with self.assertRaises(ValueError):
-            benchmark.solve_problem(self.alternatives, [.8, .1, .1], 10, 3, root_query_source="both", depth_one_query_source="ratio", query_strategy="reduction_per_query")
+            benchmark.solve_problem(self.alternatives, [.8, .1, .1], 10, 4, root_query_source="both", depth_one_query_source="ratio", query_strategy="reduction_per_query")
 
     def test_child_observer_preserves_existing_query_evaluation(self) -> None:
         kwargs = dict(alternatives=self.alternatives, answered_queries=[], weight_space=self.space, query=self.query, samples=None, remaining_depth=2, config=self.config, candidate_subset=[0, 1, 2])

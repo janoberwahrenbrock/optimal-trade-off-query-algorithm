@@ -276,3 +276,9 @@ Die beste Query ist genau dann identisch zur Terminierungsanalyse, wenn
 Alternativenmatrix, beantwortete Queries und Algorithmus-Parameter gleich sind.
 Unterschiede koennen durch andere Grid-Groesse, andere Samples, andere Seeds,
 conditioned samples oder andere zufaellig erzeugte Problemdaten entstehen.
+
+## Gemeinsamer exakter Queryalgorithmus
+
+`multistep.optimized.AlgorithmConfig` und `solve` bündeln die exakten festen und
+adaptiven Varianten, einschließlich Tiefe 3 und getrennter tatsächlicher und
+geplanter Abbruchregeln. [Schnittstelle, Parameter und Beispiele](multistep/docs/unified_algorithm.md).

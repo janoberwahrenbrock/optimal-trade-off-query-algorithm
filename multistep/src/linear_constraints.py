@@ -145,7 +145,16 @@ class LinearConstraintSystem(BaseModel):
                 solver_message=result.message,
             )
 
-        raise RuntimeError(f"linprog failed: {result.message}")
+        # Ordinary success and recognized-failure paths above stay unchanged.
+        # Only an exhausted, unclassified native failure reaches exact recovery.
+        from .exact_lp_recovery import recover_exact_linear_minimum
+
+        recovery = recover_exact_linear_minimum(system=self, objective=objective)
+        if recovery.certificate is not None:
+            return recovery.certificate.to_linear_result()
+        error = RuntimeError(f"linprog failed: {result.message}")
+        error.add_note(f"exact LP recovery unavailable: {recovery.rejection_reason}")
+        raise error
 
     def maximize(self, objective: Vector) -> LinearOptimizationResult:
         minimization_result = self.minimize([-value for value in objective])

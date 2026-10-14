@@ -89,10 +89,17 @@ def compute_polytope_intrinsic_volume_from_vertices(
 ) -> float:
     """Return intrinsic volume while reusing already enumerated vertices."""
 
-    if polytope.status in {"infeasible", "lower_dimensional", "point"}:
+    if polytope.status == "point":
         return 0.0
+    if polytope.status in {"infeasible", "lower_dimensional"}:
+        return _recover_ambiguous_native_volume(system, original_zero=True)
     if polytope.status != "full_dimensional":
-        raise RuntimeError(polytope.message or f"polytope status {polytope.status}")
+        original_error = _tag_native_geometry_volume_error(
+            RuntimeError(polytope.message or f"polytope status {polytope.status}")
+        )
+        return _recover_ambiguous_native_volume(
+            system, original_error=original_error,
+        )
 
     vertices = np.asarray(polytope.vertices, dtype=float)
     _, _, equality_matrix, equality_right_side = system.get_solver_matrices()
@@ -104,11 +111,56 @@ def compute_polytope_intrinsic_volume_from_vertices(
     if dimension == 0:
         return 0.0
     if dimension == 1:
-        return float(np.ptp(coordinates[:, 0]))
+        native_volume = float(np.ptp(coordinates[:, 0]))
+    else:
+        try:
+            native_volume = float(ConvexHull(coordinates).volume)
+        except QhullError:
+            native_volume = float(ConvexHull(coordinates, qhull_options="QJ").volume)
+    if native_volume == 0.0:
+        return _recover_ambiguous_native_volume(system, original_zero=True)
+    return native_volume
+
+
+class _ExactRecoveryVolume(float):
+    """Private cache provenance for native zero/error corrected to positive."""
+
+    _exact_lowdimensional_volume_correction = True
+
+
+class _ExactRecoveredZeroVolume(float):
+    """A rescued native exception with exact zero in the explicit measure."""
+
+    _exact_lowdimensional_volume_exception_recovery = True
+
+
+def _tag_native_geometry_volume_error(error):
+    # Preserve original exception class/message/identity; callback exceptions
+    # raised before a native geometry result remain untagged and propagate.
+    error._otqa_native_geometry_volume_error = True
+    return error
+
+
+def _recover_ambiguous_native_volume(system, *, original_zero=False, original_error=None):
+    from .exact_geometry_recovery import (
+        RecoveryGeometryError, RecoveryNotApplicable, recover_intrinsic_volume_from_system,
+    )
     try:
-        return float(ConvexHull(coordinates).volume)
-    except QhullError:
-        return float(ConvexHull(coordinates, qhull_options="QJ").volume)
+        value = recover_intrinsic_volume_from_system(system)
+        if value > 0.0:
+            return _ExactRecoveryVolume(value)
+        return _ExactRecoveredZeroVolume(0.0) if original_error is not None else 0.0
+    except RecoveryNotApplicable:
+        if original_zero:
+            return 0.0
+        raise original_error
+    except RecoveryGeometryError as error:
+        if original_error is not None:
+            raise original_error from error
+        original_error = _tag_native_geometry_volume_error(
+            RuntimeError("ambiguous zero intrinsic volume could not be certified")
+        )
+        raise original_error from error
 
 
 def compute_exact_query_answer_probabilities(
@@ -157,11 +209,18 @@ def compute_exact_query_answer_probabilities(
     if upper_value <= tolerance:
         return {"<": 1.0, "=": 0.0, ">": 0.0}
 
-    total_volume = _compute_polytope_intrinsic_volume_cached(
-        constraint_key, float(tolerance)
-    )
+    try:
+        total_volume = _compute_polytope_intrinsic_volume_cached(
+            constraint_key, float(tolerance)
+        )
+    except RuntimeError as original_error:
+        if not getattr(original_error, "_otqa_native_geometry_volume_error", False):
+            raise
+        return _recover_query_volume_exception(weight_space, query, original_error)
     if total_volume <= 0.0:
-        raise RuntimeError("weight space has no positive intrinsic volume")
+        return _recover_query_probability_failure(
+            weight_space, query, "weight space has no positive intrinsic volume",
+        )
 
     # These signatures are identical to copying the system, appending the
     # cutting inequality and converting the copy back to a signature. Reuse
@@ -179,13 +238,26 @@ def compute_exact_query_answer_probabilities(
         equalities,
         equality_right_side,
     )
-    less_volume = _compute_polytope_intrinsic_volume_cached(less_key, float(tolerance))
-    greater_volume = _compute_polytope_intrinsic_volume_cached(greater_key, float(tolerance))
+    try:
+        less_volume = _compute_polytope_intrinsic_volume_cached(less_key, float(tolerance))
+        greater_volume = _compute_polytope_intrinsic_volume_cached(greater_key, float(tolerance))
+    except RuntimeError as original_error:
+        if not getattr(original_error, "_otqa_native_geometry_volume_error", False):
+            raise
+        return _recover_query_volume_exception(weight_space, query, original_error)
+    if any(getattr(value, "_exact_lowdimensional_volume_correction", False)
+           or getattr(value, "_exact_lowdimensional_volume_exception_recovery", False)
+           for value in (total_volume, less_volume, greater_volume)):
+        return _recover_query_probability_failure(
+            weight_space, query, "native volume recovery requires a common exact partition",
+        )
     raw = np.asarray([less_volume, greater_volume], dtype=float) / total_volume
     raw = np.maximum(raw, 0.0)
     probability_sum = float(np.sum(raw))
     if probability_sum <= 0.0:
-        raise RuntimeError("exact query branches have zero total probability")
+        return _recover_query_probability_failure(
+            weight_space, query, "exact query branches have zero total probability",
+        )
     # The shared cutting hyperplane has volume zero.  Renormalization only
     # removes floating-point accumulation from two independent hull volumes.
     raw /= probability_sum
@@ -194,6 +266,36 @@ def compute_exact_query_answer_probabilities(
         "=": 0.0,
         ">": float(raw[1]),
     }
+
+
+class _ExactRecoveryProbabilities(dict):
+    """Internal provenance; the public three-key float mapping is unchanged."""
+
+    _exact_lowdimensional_recovery = True
+
+    def copy(self):
+        return type(self)(self)
+
+
+def _recover_query_volume_exception(weight_space, query, original_error):
+    from .exact_geometry_recovery import (
+        RecoveryGeometryError, RecoveryNotApplicable, recover_probabilities_from_system,
+    )
+    try:
+        return _ExactRecoveryProbabilities(recover_probabilities_from_system(weight_space, query))
+    except (RecoveryGeometryError, RecoveryNotApplicable) as error:
+        raise original_error from error
+
+
+def _recover_query_probability_failure(weight_space, query, original_message):
+    # Import and exact RREF/clipping occur only at the two existing failures.
+    from .exact_geometry_recovery import (
+        RecoveryGeometryError, RecoveryNotApplicable, recover_probabilities_from_system,
+    )
+    try:
+        return _ExactRecoveryProbabilities(recover_probabilities_from_system(weight_space, query))
+    except (RecoveryGeometryError, RecoveryNotApplicable) as error:
+        raise RuntimeError(original_message) from error
 
 
 def clear_polytope_volume_cache() -> None:
@@ -386,7 +488,8 @@ def _compute_polytope_intrinsic_volume_cached(
     system = _constraint_system_from_key(key)
     polytope = enumerate_polytope_vertices(system, tolerance=tolerance)
     volume = compute_polytope_intrinsic_volume_from_vertices(system, polytope)
-    _remember_polytope_vertices(key, tolerance, polytope)
+    if not getattr(volume, "_exact_lowdimensional_volume_correction", False):
+        _remember_polytope_vertices(key, tolerance, polytope)
     return volume
 
 

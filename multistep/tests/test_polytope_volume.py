@@ -213,14 +213,25 @@ class PolytopeVolumeTests(unittest.TestCase):
             message="geometry failed",
         )
         with patch.object(polytope_volume, "enumerate_polytope_vertices", return_value=failed):
-            with self.assertRaisesRegex(RuntimeError, "geometry failed"):
-                compute_polytope_intrinsic_volume(weight_space)
+            recovered = compute_polytope_intrinsic_volume(weight_space)
+            self.assertGreater(recovered, 0.0)
+            self.assertTrue(getattr(recovered, "_exact_lowdimensional_volume_correction", False))
+            self.assertEqual(polytope_volume.polytope_vertex_cache_info().currsize, 0)
         with self._record_support_lps() as calls:
             probabilities = compute_exact_query_answer_probabilities(
                 weight_space, Query(ziel_index_a=0, ziel_index_b=1, value=1.0)
             )
         self.assertEqual(len(calls), 2)
         self.assertEqual(probabilities[">"], 1.0)
+
+    def test_unsupported_geometry_failure_still_raises_without_support_cache_hit(self) -> None:
+        weight_space = build_weight_space(5, [])
+        failed = PolytopeVertices(status="error", vertices=np.empty((0, 5)),
+                                 affine_dimension=4, message="geometry failed")
+        with patch.object(polytope_volume, "enumerate_polytope_vertices", return_value=failed):
+            with self.assertRaisesRegex(RuntimeError, "^geometry failed$"):
+                compute_polytope_intrinsic_volume(weight_space)
+        self.assertEqual(polytope_volume.polytope_vertex_cache_info().currsize, 0)
 
     def test_geometry_for_candidate_region_does_not_replace_whole_weight_space(self) -> None:
         weight_space = build_weight_space(3, [])

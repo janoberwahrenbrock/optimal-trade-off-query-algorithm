@@ -1,0 +1,493 @@
+{
+  "pid": 42086,
+  "worker_lp_count": 43934,
+  "kwargs": {
+    "c": [
+      -1.0,
+      -0.0,
+      -0.0,
+      -0.0,
+      -0.0
+    ],
+    "A_ub": [
+      [
+        -1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        -1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        -1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        -1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -1.0
+      ],
+      [
+        0.0,
+        -1.0,
+        0.31622776601683794,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        -0.001,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        -0.001,
+        1.0,
+        0.0
+      ],
+      [
+        -8.872765358691479e-06,
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.7167071237809111,
+        -0.8043786175011841,
+        0.30900459221658716,
+        -0.18734332982116597,
+        0.2800705444626287
+      ],
+      [
+        0.7138408285121645,
+        -0.4810274706610249,
+        0.002109566108028371,
+        -0.2496282562862392,
+        0.6358561753604195
+      ],
+      [
+        0.5154653079428089,
+        -0.0032975626071808373,
+        0.6793889436712105,
+        0.30021533142262413,
+        0.5964569257846235
+      ],
+      [
+        0.23829829355339238,
+        -0.12233334494136383,
+        0.6007075893506425,
+        -0.3677807688616096,
+        -0.025124470289619727
+      ]
+    ],
+    "b_ub": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "A_eq": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ]
+    ],
+    "b_eq": [
+      1.0
+    ],
+    "bounds": [
+      [
+        null,
+        null
+      ],
+      [
+        null,
+        null
+      ],
+      [
+        null,
+        null
+      ],
+      [
+        null,
+        null
+      ],
+      [
+        null,
+        null
+      ]
+    ],
+    "method": "highs",
+    "options": {
+      "primal_feasibility_tolerance": 1e-10,
+      "dual_feasibility_tolerance": 1e-10,
+      "disp": false
+    }
+  },
+  "attempt_results": [
+    {
+      "method": "highs",
+      "options": {
+        "primal_feasibility_tolerance": 1e-10,
+        "dual_feasibility_tolerance": 1e-10,
+        "disp": false
+      },
+      "status": 4,
+      "success": false,
+      "message": "(HiGHS Status 0: Not Set)"
+    },
+    {
+      "method": "highs",
+      "options": {
+        "primal_feasibility_tolerance": 1e-10,
+        "dual_feasibility_tolerance": 1e-10,
+        "disp": false,
+        "presolve": false
+      },
+      "status": 4,
+      "success": false,
+      "message": "(HiGHS Status 0: Not Set)"
+    },
+    {
+      "method": "highs-ds",
+      "options": {
+        "primal_feasibility_tolerance": 1e-10,
+        "dual_feasibility_tolerance": 1e-10,
+        "disp": false,
+        "presolve": false
+      },
+      "status": 4,
+      "success": false,
+      "message": "(HiGHS Status 0: Not Set)"
+    },
+    {
+      "method": "highs-ipm",
+      "options": {
+        "primal_feasibility_tolerance": 1e-10,
+        "dual_feasibility_tolerance": 1e-10,
+        "disp": false,
+        "presolve": false
+      },
+      "status": 4,
+      "success": false,
+      "message": "(HiGHS Status 0: Not Set)"
+    }
+  ],
+  "context": [
+    {
+      "function": "minimize",
+      "file": "/Users/janoberwahrenbrock/Code/optimal-trade-off-query-algorithm/outputs/benchmarks/bench-i7/20261014-unified-query-algorithm-validation/new-repo/multistep/src/linear_constraints.py",
+      "line": 111
+    },
+    {
+      "function": "maximize",
+      "file": "/Users/janoberwahrenbrock/Code/optimal-trade-off-query-algorithm/outputs/benchmarks/bench-i7/20261014-unified-query-algorithm-validation/new-repo/multistep/src/linear_constraints.py",
+      "line": 151
+    },
+    {
+      "function": "_compute_goal_index_interval",
+      "file": "/Users/janoberwahrenbrock/Code/optimal-trade-off-query-algorithm/outputs/benchmarks/bench-i7/20261014-unified-query-algorithm-validation/new-repo/multistep/src/ratio_intervals.py",
+      "line": 652,
+      "goal_index": 0
+    },
+    {
+      "function": "_compute_ratio_interval_for_candidate_in_normalized_weight_space",
+      "file": "/Users/janoberwahrenbrock/Code/optimal-trade-off-query-algorithm/outputs/benchmarks/bench-i7/20261014-unified-query-algorithm-validation/new-repo/multistep/src/ratio_intervals.py",
+      "line": 635,
+      "alternative_index": 1,
+      "goal_index_a": 0
+    },
+    {
+      "function": "compute_ratio_interval_for_candidate",
+      "file": "/Users/janoberwahrenbrock/Code/optimal-trade-off-query-algorithm/outputs/benchmarks/bench-i7/20261014-unified-query-algorithm-validation/new-repo/multistep/src/ratio_intervals.py",
+      "line": 125,
+      "alternative_index": 1,
+      "goal_index_a": 0,
+      "goal_index_b": 3
+    },
+    {
+      "function": "_compute_all_ratio_intervals_from_vertices",
+      "file": "/Users/janoberwahrenbrock/Code/optimal-trade-off-query-algorithm/outputs/benchmarks/bench-i7/20261014-unified-query-algorithm-validation/new-repo/multistep/src/ratio_intervals.py",
+      "line": 322,
+      "candidate_index": 1,
+      "goal_index_a": 0,
+      "goal_index_b": 3
+    },
+    {
+      "function": "compute_all_ratio_interval_analysis",
+      "file": "/Users/janoberwahrenbrock/Code/optimal-trade-off-query-algorithm/outputs/benchmarks/bench-i7/20261014-unified-query-algorithm-validation/new-repo/multistep/src/ratio_intervals.py",
+      "line": 205
+    },
+    {
+      "function": "_compute_all_ratio_intervals_profiled",
+      "file": "/Users/janoberwahrenbrock/Code/optimal-trade-off-query-algorithm/outputs/benchmarks/bench-i7/20261014-unified-query-algorithm-validation/new-repo/multistep/optimized/value_function.py",
+      "line": 1147
+    },
+    {
+      "function": "compute_ratio_relevant_candidate_analysis",
+      "file": "/Users/janoberwahrenbrock/Code/optimal-trade-off-query-algorithm/outputs/benchmarks/bench-i7/20261014-unified-query-algorithm-validation/new-repo/multistep/optimized/value_function.py",
+      "line": 1058
+    },
+    {
+      "function": "compute_candidate_analysis_for_mode",
+      "file": "/Users/janoberwahrenbrock/Code/optimal-trade-off-query-algorithm/outputs/benchmarks/bench-i7/20261014-unified-query-algorithm-validation/new-repo/multistep/optimized/value_function.py",
+      "line": 1011
+    },
+    {
+      "function": "_evaluate_stop_aware_query",
+      "file": "/Users/janoberwahrenbrock/Code/optimal-trade-off-query-algorithm/outputs/benchmarks/bench-i7/20261014-unified-query-algorithm-validation/new-repo/multistep/optimized/query_efficiency.py",
+      "line": 319,
+      "horizon": 1,
+      "answered_queries": [
+        {
+          "ziel_index_a": 1,
+          "ziel_index_b": 2,
+          "value": 0.31622776601683794,
+          "operator": ">"
+        },
+        {
+          "ziel_index_a": 2,
+          "ziel_index_b": 1,
+          "value": 0.001,
+          "operator": "<"
+        },
+        {
+          "ziel_index_a": 3,
+          "ziel_index_b": 2,
+          "value": 0.001,
+          "operator": "<"
+        }
+      ],
+      "child_answers": [
+        {
+          "ziel_index_a": 1,
+          "ziel_index_b": 2,
+          "value": 0.31622776601683794,
+          "operator": ">"
+        },
+        {
+          "ziel_index_a": 2,
+          "ziel_index_b": 1,
+          "value": 0.001,
+          "operator": "<"
+        },
+        {
+          "ziel_index_a": 3,
+          "ziel_index_b": 2,
+          "value": 0.001,
+          "operator": "<"
+        },
+        {
+          "ziel_index_a": 0,
+          "ziel_index_b": 2,
+          "value": 112704.43425176704,
+          "operator": ">"
+        }
+      ],
+      "query": {
+        "ziel_index_a": 0,
+        "ziel_index_b": 2,
+        "value": 112704.43425176704
+      }
+    },
+    {
+      "function": "_compute_stop_aware_depth_one_plan",
+      "file": "/Users/janoberwahrenbrock/Code/optimal-trade-off-query-algorithm/outputs/benchmarks/bench-i7/20261014-unified-query-algorithm-validation/new-repo/multistep/optimized/query_efficiency.py",
+      "line": 251,
+      "answered_queries": [
+        {
+          "ziel_index_a": 1,
+          "ziel_index_b": 2,
+          "value": 0.31622776601683794,
+          "operator": ">"
+        },
+        {
+          "ziel_index_a": 2,
+          "ziel_index_b": 1,
+          "value": 0.001,
+          "operator": "<"
+        },
+        {
+          "ziel_index_a": 3,
+          "ziel_index_b": 2,
+          "value": 0.001,
+          "operator": "<"
+        }
+      ],
+      "query": {
+        "ziel_index_a": 0,
+        "ziel_index_b": 2,
+        "value": 112704.43425176704
+      }
+    },
+    {
+      "function": "_evaluate_stop_aware_query",
+      "file": "/Users/janoberwahrenbrock/Code/optimal-trade-off-query-algorithm/outputs/benchmarks/bench-i7/20261014-unified-query-algorithm-validation/new-repo/multistep/optimized/query_efficiency.py",
+      "line": 329,
+      "horizon": 2,
+      "answered_queries": [
+        {
+          "ziel_index_a": 1,
+          "ziel_index_b": 2,
+          "value": 0.31622776601683794,
+          "operator": ">"
+        },
+        {
+          "ziel_index_a": 2,
+          "ziel_index_b": 1,
+          "value": 0.001,
+          "operator": "<"
+        }
+      ],
+      "child_answers": [
+        {
+          "ziel_index_a": 1,
+          "ziel_index_b": 2,
+          "value": 0.31622776601683794,
+          "operator": ">"
+        },
+        {
+          "ziel_index_a": 2,
+          "ziel_index_b": 1,
+          "value": 0.001,
+          "operator": "<"
+        },
+        {
+          "ziel_index_a": 3,
+          "ziel_index_b": 2,
+          "value": 0.001,
+          "operator": "<"
+        }
+      ],
+      "query": {
+        "ziel_index_a": 3,
+        "ziel_index_b": 2,
+        "value": 0.001
+      }
+    },
+    {
+      "function": "_evaluate_fixed_stop_aware_worker",
+      "file": "/Users/janoberwahrenbrock/Code/optimal-trade-off-query-algorithm/outputs/benchmarks/bench-i7/20261014-unified-query-algorithm-validation/new-repo/multistep/optimized/stopping_value_function.py",
+      "line": 52,
+      "depth": 2,
+      "answers": [
+        {
+          "ziel_index_a": 1,
+          "ziel_index_b": 2,
+          "value": 0.31622776601683794,
+          "operator": ">"
+        },
+        {
+          "ziel_index_a": 2,
+          "ziel_index_b": 1,
+          "value": 0.001,
+          "operator": "<"
+        }
+      ],
+      "query": {
+        "ziel_index_a": 3,
+        "ziel_index_b": 2,
+        "value": 0.001
+      }
+    },
+    {
+      "function": "_compute_fixed_stop_aware",
+      "file": "/Users/janoberwahrenbrock/Code/optimal-trade-off-query-algorithm/outputs/benchmarks/bench-i7/20261014-unified-query-algorithm-validation/new-repo/multistep/optimized/stopping_value_function.py",
+      "line": 198,
+      "remaining_depth": 2,
+      "answered_queries": [
+        {
+          "ziel_index_a": 1,
+          "ziel_index_b": 2,
+          "value": 0.31622776601683794,
+          "operator": ">"
+        },
+        {
+          "ziel_index_a": 2,
+          "ziel_index_b": 1,
+          "value": 0.001,
+          "operator": "<"
+        }
+      ]
+    },
+    {
+      "function": "_evaluate_fixed_stop_aware_worker",
+      "file": "/Users/janoberwahrenbrock/Code/optimal-trade-off-query-algorithm/outputs/benchmarks/bench-i7/20261014-unified-query-algorithm-validation/new-repo/multistep/optimized/stopping_value_function.py",
+      "line": 101,
+      "depth": 3,
+      "answers": [
+        {
+          "ziel_index_a": 1,
+          "ziel_index_b": 2,
+          "value": 0.31622776601683794,
+          "operator": ">"
+        }
+      ],
+      "child_answers": [
+        {
+          "ziel_index_a": 1,
+          "ziel_index_b": 2,
+          "value": 0.31622776601683794,
+          "operator": ">"
+        },
+        {
+          "ziel_index_a": 2,
+          "ziel_index_b": 1,
+          "value": 0.001,
+          "operator": "<"
+        }
+      ],
+      "query": {
+        "ziel_index_a": 2,
+        "ziel_index_b": 1,
+        "value": 0.001
+      }
+    }
+  ],
+  "cache": {
+    "calls": 182370,
+    "model_hits": 5799,
+    "model_misses": 176571,
+    "solver_creations": 35,
+    "solver_reuses": 182335,
+    "fallbacks": 4,
+    "currsize": 0,
+    "currbytes": 0,
+    "maxsize": 32,
+    "maxbytes": 4194304
+  }
+}

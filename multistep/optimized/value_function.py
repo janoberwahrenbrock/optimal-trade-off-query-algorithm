@@ -486,7 +486,7 @@ class OptimizedValueFunctionSession:
         max_horizon: int = 2,
         candidate_subset: list[int] | None = None,
     ) -> "QueryEfficiencyResult":
-        """Compare one/two-query plans by expected reduction per query.
+        """Compare one-, two-, and three-query plans by expected reduction per query.
 
         This experimental entry point leaves ``compute`` and its result cache
         unchanged.  Actual volume-confidence termination remains the caller's
@@ -1974,6 +1974,25 @@ def evaluate_query_candidate_optimized(
                         config=config,
                     )
                 )
+            if (
+                child_candidate_count == 0 and probability > 0.0
+                and getattr(probabilities, "_exact_lowdimensional_recovery", False)
+            ):
+                child_answers = answered_queries + [query.answer(answer)]
+                child_space = build_weight_space(
+                    goal_count=alternatives.get_anzahl_spalten(),
+                    answered_queries=child_answers,
+                )
+                child_subset = filter_candidate_subset_for_query_answer(
+                    candidate_subset=candidate_subset, query=query, answer=answer,
+                    ratio_intervals_by_goal_pair=ratio_intervals_by_goal_pair,
+                    tolerance=config.ratio_terminal_tolerance,
+                )
+                _recover_strict_singleton_child_analysis(
+                    alternatives, weight_space, child_space, candidate_subset,
+                    child_subset, probability, query, answer, config,
+                )
+                child_candidate_count, is_child_feasible = 1, True
             child_value = float(child_candidate_count)
             expected_value += probability * child_value
             branches.append(
@@ -2007,19 +2026,34 @@ def evaluate_query_candidate_optimized(
                 and partitioned_samples is not None
                 else None
             )
-            child_result = compute_value_function_optimized(
-                alternatives=alternatives,
-                answered_queries=child_answered_queries,
-                remaining_depth=remaining_depth - 1,
-                config=config,
-                candidate_subset=child_candidate_subset,
-                samples=child_samples,
-                is_root_call=False,
-                precomputed_state_analysis=StateAnalysis(
-                    weight_space=child_weight_space,
+            if (
+                child_candidate_subset == []
+                and probability > 0.0
+                and getattr(probabilities, "_exact_lowdimensional_recovery", False)
+            ):
+                _recover_strict_singleton_child_analysis(
+                    alternatives, weight_space, child_weight_space, candidate_subset,
+                    child_candidate_subset, probability, query, answer, config,
+                )
+                child_result = ValueFunctionResult(
+                    remaining_depth=remaining_depth - 1, value=1.0,
+                    best_query=None, candidate_count=1, query_evaluations=(),
                     is_feasible=True,
-                ),
-            )
+                )
+            else:
+                child_result = compute_value_function_optimized(
+                    alternatives=alternatives,
+                    answered_queries=child_answered_queries,
+                    remaining_depth=remaining_depth - 1,
+                    config=config,
+                    candidate_subset=child_candidate_subset,
+                    samples=child_samples,
+                    is_root_call=False,
+                    precomputed_state_analysis=StateAnalysis(
+                        weight_space=child_weight_space,
+                        is_feasible=True,
+                    ),
+                )
             if _child_result_observer is not None:
                 _child_result_observer(answer, probability, child_result)
             child_value = child_result.value
@@ -2030,6 +2064,12 @@ def evaluate_query_candidate_optimized(
             child_candidate_count = 0
             is_child_feasible = False
 
+        if (
+            probability > 0.0
+            and (not is_child_feasible or child_candidate_count is None or child_candidate_count <= 0)
+            and getattr(probabilities, "_exact_lowdimensional_recovery", False)
+        ):
+            raise RuntimeError("recovered positive-probability branch has no valid candidates")
         expected_value += probability * child_value
         branches.append(
             QueryBranchResult(
@@ -2047,6 +2087,32 @@ def evaluate_query_candidate_optimized(
         branches=tuple(branches),
         query_source=query_source,
     )
+
+
+def _recover_strict_singleton_child_analysis(
+    alternatives, parent_space, child_space, parent_candidates,
+    filtered_candidates, probability, query, answer, config,
+):
+    # Only called for an empty prefilter on a newly recovered positive branch.
+    from multistep.src.exact_geometry_recovery import (
+        RecoveryGeometryError, RecoveryNotApplicable,
+        recover_strict_singleton_from_systems,
+    )
+    try:
+        fields = recover_strict_singleton_from_systems(
+            parent_system=parent_space, child_system=child_space,
+            alternatives=alternatives, parent_candidate_subset=parent_candidates,
+            filtered_child_subset=filtered_candidates, probability=probability,
+            query=query, answer=answer,
+        )
+    except (RecoveryGeometryError, RecoveryNotApplicable) as error:
+        raise RuntimeError(
+            "recovered positive-probability branch has no valid candidates"
+        ) from error
+    if config.volume_confidence_threshold is None:
+        fields["candidate_volumes"] = None
+        fields["candidate_volume_shares"] = None
+    return CandidateAnalysis(**fields)
 
 
 def filter_candidate_subset_for_query_answer(

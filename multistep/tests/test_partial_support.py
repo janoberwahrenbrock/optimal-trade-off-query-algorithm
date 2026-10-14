@@ -132,8 +132,10 @@ class PartialSupportTests(unittest.TestCase):
                                  message='deliberate geometry failure')
         polytope_volume.clear_polytope_volume_cache()
         with patch.object(polytope_volume, 'enumerate_polytope_vertices', return_value=failed):
-            with self.assertRaisesRegex(RuntimeError, 'deliberate geometry failure'):
-                polytope_volume.compute_polytope_intrinsic_volume(safe)
+            recovered = polytope_volume.compute_polytope_intrinsic_volume(safe)
+            self.assertGreater(recovered, 0.0)
+            self.assertTrue(getattr(recovered, '_exact_lowdimensional_volume_correction', False))
+            self.assertEqual(polytope_volume.polytope_vertex_cache_info().currsize, 0)
         with record_minimize(LinearConstraintSystem) as calls:
             polytope_volume.compute_exact_query_answer_probabilities(
                 safe, Query(ziel_index_a=0, ziel_index_b=1, value=0.0))
